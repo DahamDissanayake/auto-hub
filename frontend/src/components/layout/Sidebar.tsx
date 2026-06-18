@@ -45,7 +45,7 @@ export default function Sidebar() {
   const router = useRouter()
 
   const handleLogout = () => {
-    localStorage.removeItem('autohub_token')
+    sessionStorage.removeItem('autohub_token')
     router.replace('/login')
   }
 
