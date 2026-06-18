@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -44,7 +44,28 @@ export class SchedulerService implements OnModuleInit {
     );
   }
 
+  private validateCron(cron: string): void {
+    // Must be a valid 5-field cron expression (no sub-minute seconds field)
+    const FIELDS = 5;
+    const parts = cron.trim().split(/\s+/);
+    if (parts.length !== FIELDS) {
+      throw new BadRequestException(
+        `Invalid cron expression "${cron}": expected 5 fields (minute hour day month weekday), got ${parts.length}`,
+      );
+    }
+    // Each field must be a valid cron token: *, digit, range, step, or list
+    const FIELD_RE = /^(\*|(\d+)(-\d+)?(\/\d+)?)(\,(\*|(\d+)(-\d+)?(\/\d+)?))*$/;
+    for (const part of parts) {
+      if (!FIELD_RE.test(part)) {
+        throw new BadRequestException(
+          `Invalid cron expression "${cron}": unrecognised token "${part}"`,
+        );
+      }
+    }
+  }
+
   async create(pluginId: string, name: string, cron: string): Promise<ScheduledJob> {
+    this.validateCron(cron);
     const job = await this.jobRepo.save({ pluginId, name, cron, enabled: true });
     await this.addToQueue(job);
     return job;
