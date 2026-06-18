@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   startOfMonth, endOfMonth, eachDayOfInterval, getDay,
   isSameDay, isToday, format, addMonths, subMonths,
@@ -64,11 +64,27 @@ function DayPopover({
 
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [hoveredDay, setHoveredDay] = useState<Date | null>(null)
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const { data, isLoading } = useCalendar()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const schedules: ScheduledJob[] = data?.schedules ?? []
   const n8nWorkflows: N8nWorkflow[] = data?.n8nWorkflows ?? []
+
+  // Dismiss popover when clicking outside the calendar grid
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSelectedDay(null)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  const handleDayClick = useCallback((day: Date) => {
+    setSelectedDay(prev => (prev && isSameDay(prev, day) ? null : day))
+  }, [])
 
   const days = eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -132,7 +148,7 @@ export default function CalendarPage() {
         </span>
       </div>
 
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
+      <div ref={containerRef} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-[#2a2a2a]">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -144,20 +160,18 @@ export default function CalendarPage() {
 
         {/* Calendar grid */}
         <div className="grid grid-cols-7">
-          {/* Empty cells for first week offset */}
           {Array.from({ length: firstDayOffset }).map((_, i) => (
             <div key={`empty-${i}`} className="border-b border-r border-[#2a2a2a] h-20" />
           ))}
 
           {days.map(day => {
             const dots = hasDots(day)
-            const isHovered = hoveredDay && isSameDay(hoveredDay, day)
+            const isSelected = selectedDay && isSameDay(selectedDay, day)
             return (
               <div
                 key={day.toISOString()}
-                className="relative border-b border-r border-[#2a2a2a] h-20 p-2 cursor-pointer hover:bg-[#111111] transition-colors"
-                onMouseEnter={() => setHoveredDay(day)}
-                onMouseLeave={() => setHoveredDay(null)}
+                className="calendar-day relative border-b border-r border-[#2a2a2a] h-20 p-2 cursor-pointer hover:bg-[#111111] transition-colors"
+                onClick={() => handleDayClick(day)}
               >
                 <span
                   className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
@@ -176,7 +190,7 @@ export default function CalendarPage() {
                     <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
                   )}
                 </div>
-                {isHovered && (
+                {isSelected && (
                   <DayPopover
                     date={day}
                     schedules={schedules}
