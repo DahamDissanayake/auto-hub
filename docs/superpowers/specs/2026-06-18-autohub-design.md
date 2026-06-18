@@ -151,12 +151,12 @@ PLUGIN_DIR/
 
 **Endpoints:**
 - `GET /api/plugins` — list all plugins
+- `POST /api/plugins/register` — manual register from manifest (**must be declared before `/:id` routes in the controller to avoid NestJS matching "register" as an id**)
 - `GET /api/plugins/:id` — single plugin
 - `POST /api/plugins/:id/run` — run immediately
 - `PATCH /api/plugins/:id/config` — update config `{ config: {} }`
 - `POST /api/plugins/:id/toggle` — toggle active/inactive
 - `GET /api/plugins/:id/executions` — execution history
-- `POST /api/plugins/register` — manual register from manifest
 
 ### Scheduler
 
@@ -232,7 +232,7 @@ PLUGIN_DIR/
 
 ### Seed Script (`src/seed.ts`)
 
-Writes 3 plugin folders to `PLUGIN_DIR` before the backend starts (run as a pre-start step or called manually):
+Writes 3 plugin folders to `PLUGIN_DIR`. Runs during the Docker entrypoint **before** the NestJS app boots: `node dist/seed.js && node dist/main.js`. This ensures the plugin files exist on disk before `PluginsService.onModuleInit()` scans them. The script is idempotent — it skips folders that already exist.
 
 | Slug | Name | Icon | Category | Config schema |
 |---|---|---|---|---|
@@ -383,9 +383,13 @@ Mutations use `useMutation` + `queryClient.invalidateQueries` on success.
 (anything else)   → "Custom schedule (`{cron}`)"
 ```
 
+### API Base URL
+
+`NEXT_PUBLIC_API_URL` is baked at build time in Next.js. For production Docker (browser calls through Nginx on the same domain), leave it **unset** — Axios will use relative paths like `/api/...` which Nginx proxies to the backend. For local development outside Docker, set `NEXT_PUBLIC_API_URL=http://localhost:4000`. The Axios instance defaults to `''` (empty string) when the env var is absent, producing relative URLs.
+
 ### Frontend Dockerfile
 
-Multi-stage: `node:20-alpine` builder + `node:20-alpine` production. Uses `dumb-init`. `NEXT_PUBLIC_API_URL` set to `https://${DOMAIN}/api` in docker-compose env.
+Multi-stage: `node:20-alpine` builder + `node:20-alpine` production. Uses `dumb-init`. `NEXT_PUBLIC_API_URL` is left unset in docker-compose (relative paths work through Nginx); for standalone dev set it to `http://localhost:4000`.
 
 ---
 
