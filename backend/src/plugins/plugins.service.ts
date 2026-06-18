@@ -27,7 +27,11 @@ export class PluginsService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.scanPlugins();
+    try {
+      await this.scanPlugins();
+    } catch (err) {
+      this.logger.error(`Plugin scan failed: ${(err as Error).message}`);
+    }
   }
 
   async scanPlugins() {
@@ -112,12 +116,13 @@ export class PluginsService implements OnModuleInit {
       const pluginModule = require(pluginPath);
       const fn = pluginModule.default ?? pluginModule;
 
+      let timeoutHandle: ReturnType<typeof setTimeout>;
       await Promise.race([
         fn({ config: plugin.config, log }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Plugin timeout (60s)')), 60_000),
-        ),
-      ]);
+        new Promise<void>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error('Plugin timeout (60s)')), 60_000);
+        }),
+      ]).finally(() => clearTimeout(timeoutHandle!));
 
       const durationMs = Date.now() - startTime;
       const output = logs.join('\n');
@@ -160,6 +165,8 @@ export class PluginsService implements OnModuleInit {
     }
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
     await this.upsertFromManifest(manifest);
-    return this.pluginRepo.findOne({ where: { slug: manifest.slug } });
+    const plugin = await this.pluginRepo.findOne({ where: { slug: manifest.slug } });
+    if (!plugin) throw new NotFoundException(`Plugin not found after registering: ${manifest.slug}`);
+    return plugin;
   }
 }
