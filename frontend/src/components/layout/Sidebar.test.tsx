@@ -18,8 +18,8 @@ vi.mock('next/link', () => ({
 import Sidebar from './Sidebar'
 import { usePathname, useRouter } from 'next/navigation'
 
-// Mock localStorage
-const localStorageMock = (() => {
+// Mock sessionStorage (app uses sessionStorage for autohub_token everywhere)
+const sessionStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
     getItem: (key: string) => store[key] ?? null,
@@ -28,11 +28,11 @@ const localStorageMock = (() => {
     clear: () => { store = {} },
   }
 })()
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStorageMock, writable: true })
 
 describe('Sidebar', () => {
   beforeEach(() => {
-    localStorage.clear()
+    sessionStorage.clear()
     vi.mocked(usePathname).mockReturnValue('/')
     vi.mocked(useRouter).mockReturnValue({ replace: vi.fn() } as any)
   })
@@ -59,13 +59,13 @@ describe('Sidebar', () => {
     expect(pluginsLink).toHaveClass('text-[#3b82f6]')
   })
 
-  it('clears localStorage and redirects on logout', async () => {
+  it('clears sessionStorage and redirects on logout', async () => {
     const mockReplace = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ replace: mockReplace } as any)
-    localStorage.setItem('autohub_token', 'test-token')
+    sessionStorage.setItem('autohub_token', 'test-token')
     render(<Sidebar />)
     await userEvent.click(screen.getByTestId('logout-button'))
-    expect(localStorage.getItem('autohub_token')).toBeNull()
+    expect(sessionStorage.getItem('autohub_token')).toBeNull()
     expect(mockReplace).toHaveBeenCalledWith('/login')
   })
 })

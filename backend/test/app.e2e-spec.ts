@@ -7,6 +7,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { getQueueToken } from '@nestjs/bullmq';
 import request from 'supertest';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Auth
 import { AuthService } from '../src/auth/auth.service';
@@ -214,6 +216,8 @@ class TestAppModule {}
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+const TEST_PLUGIN_DIR = path.join(require('os').tmpdir(), 'autohub-e2e-plugins');
+
 describe('AutoHub E2E', () => {
   let app: INestApplication;
   let authToken: string;
@@ -231,6 +235,16 @@ describe('AutoHub E2E', () => {
     if (!process.env.JWT_SECRET) {
       process.env.JWT_SECRET = 'test-jwt-secret-e2e';
     }
+    // Point PLUGIN_DIR at a controlled temp dir so run() can resolve the file
+    process.env.PLUGIN_DIR = TEST_PLUGIN_DIR;
+
+    // Create the seed plugin file on disk so PluginsService.run() can resolve it
+    const pluginDir = path.join(TEST_PLUGIN_DIR, seedPlugin.slug);
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, seedPlugin.entryFile),
+      `exports.run = async function({ log }) { log('e2e test plugin ran'); return { ok: true }; };`,
+    );
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [TestAppModule],
@@ -244,6 +258,7 @@ describe('AutoHub E2E', () => {
 
   afterAll(async () => {
     await app.close();
+    fs.rmSync(TEST_PLUGIN_DIR, { recursive: true, force: true });
   });
 
   // ─── Health ─────────────────────────────────────────────────────────────────
