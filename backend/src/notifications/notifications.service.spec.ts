@@ -1,6 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { ConfigService } from '@nestjs/config';
+
+jest.mock('node-telegram-bot-api', () => {
+  return jest.fn().mockImplementation(() => ({
+    sendMessage: jest.fn().mockRejectedValue(new Error('Fake Telegram error')),
+  }));
+});
 
 describe('NotificationsService', () => {
   it('send() is a no-op when TELEGRAM_BOT_TOKEN is not set', async () => {
@@ -18,6 +25,10 @@ describe('NotificationsService', () => {
   });
 
   it('send() does not throw when bot fails', async () => {
+    const logSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => {});
+
     const module = await Test.createTestingModule({
       providers: [
         NotificationsService,
@@ -36,5 +47,7 @@ describe('NotificationsService', () => {
     const service = module.get<NotificationsService>(NotificationsService);
     // Should not throw even if Telegram API call fails
     await expect(service.send('test')).resolves.not.toThrow();
+
+    logSpy.mockRestore();
   });
 });
