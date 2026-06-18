@@ -45,6 +45,9 @@ export class SchedulerService implements OnModuleInit {
   }
 
   private validateCron(cron: string): void {
+    if (typeof cron !== 'string' || cron.trim() === '') {
+      throw new BadRequestException('cron is required and must be a non-empty string');
+    }
     const FIELDS = 5;
     const parts = cron.trim().split(/\s+/);
     if (parts.length !== FIELDS) {
@@ -52,8 +55,8 @@ export class SchedulerService implements OnModuleInit {
         `Invalid cron expression "${cron}": expected 5 fields (minute hour day month weekday), got ${parts.length}`,
       );
     }
-    // Each token: optional (*|digit|range) followed by optional /step, comma-separated
-    const TOKEN_RE = /^(\*|\d+(-\d+)?)(\/\d+)?$/;
+    // Each token: optional (*|digit|named-abbrev|range) followed by optional /step, comma-separated
+    const TOKEN_RE = /^(\*|[A-Za-z]{2,3}|\d+(-([A-Za-z]{2,3}|\d+))?)(\/\d+)?$/;
     for (const part of parts) {
       const tokens = part.split(',');
       if (tokens.length === 0 || tokens.some(t => !TOKEN_RE.test(t))) {
