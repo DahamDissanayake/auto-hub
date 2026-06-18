@@ -24,3 +24,5 @@ coverage/
 
 # plugins (mounted as Docker volume, not committed)
 plugins/
+# but keep NestJS source modules named plugins
+!backend/src/plugins/
