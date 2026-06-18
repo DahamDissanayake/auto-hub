@@ -1,6 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { Play, Settings2, Clock, Power } from 'lucide-react'
+import {
+  Play, Settings2, Clock, Power,
+  ClipboardList, Server, Wrench, TrendingUp, DollarSign, Puzzle,
+  type LucideIcon,
+} from 'lucide-react'
 import StatusBadge from '@/components/ui/StatusBadge'
 import ConfigModal from './ConfigModal'
 import ScheduleModal from './ScheduleModal'
@@ -9,13 +13,14 @@ import { useToast } from '@/components/ui/Toast'
 import { formatDistanceToNow } from 'date-fns'
 import type { Plugin } from '@/lib/types'
 
-const categoryColors: Record<string, string> = {
-  productivity: 'bg-[#3b82f6]/10 text-[#3b82f6]',
-  ops: 'bg-[#8b5cf6]/10 text-[#8b5cf6]',
-  utility: 'bg-[#6b7280]/10 text-[#9ca3af]',
-  marketing: 'bg-[#f59e0b]/10 text-[#f59e0b]',
-  finance: 'bg-[#22c55e]/10 text-[#22c55e]',
+const categoryMeta: Record<string, { icon: LucideIcon; bg: string; fg: string }> = {
+  productivity: { icon: ClipboardList, bg: 'bg-[#3b82f6]/10', fg: 'text-[#3b82f6]' },
+  ops:          { icon: Server,        bg: 'bg-[#8b5cf6]/10', fg: 'text-[#8b5cf6]' },
+  utility:      { icon: Wrench,        bg: 'bg-[#6b7280]/10', fg: 'text-[#9ca3af]' },
+  marketing:    { icon: TrendingUp,    bg: 'bg-[#f59e0b]/10', fg: 'text-[#f59e0b]' },
+  finance:      { icon: DollarSign,    bg: 'bg-[#22c55e]/10', fg: 'text-[#22c55e]' },
 }
+const defaultMeta = { icon: Puzzle, bg: 'bg-[#6b7280]/10', fg: 'text-[#9ca3af]' }
 
 export default function PluginCard({ plugin }: { plugin: Plugin }) {
   const [configOpen, setConfigOpen] = useState(false)
@@ -47,19 +52,20 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
     }
   }
 
-  const categoryStyle = categoryColors[plugin.category] ?? categoryColors.utility
+  const meta = categoryMeta[plugin.category] ?? defaultMeta
+  const CategoryIcon = meta.icon
 
   return (
     <>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4 flex flex-col gap-3 hover:border-[#3b82f6]/40 transition-colors">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl" role="img" aria-label={plugin.name}>
-              {plugin.icon}
-            </span>
+            <div className={`p-1.5 rounded-md ${meta.bg}`}>
+              <CategoryIcon size={16} className={meta.fg} />
+            </div>
             <div>
               <h3 className="text-white font-medium text-sm">{plugin.name}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryStyle}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${meta.bg} ${meta.fg}`}>
                 {plugin.category}
               </span>
             </div>
