@@ -181,7 +181,12 @@ This gives AutoHub a public HTTPS URL without port-forwarding on your router.
 1. Go to [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com/) → **Networks** → **Tunnels** → **Create a tunnel**
 2. Select **Cloudflared** as the connector type
 3. Name it `autohub` → **Save tunnel**
-4. Copy the tunnel token shown on the next screen (long string starting with `eyJ...`)
+4. Cloudflare will show you an **Install and run a connector** page with a command like:
+   ```
+   cloudflared service install eyJhIjoiMTIz...
+   ```
+   **Do NOT run this command on the Pi.** The connector already runs inside Docker via the `cloudflared` service in `docker-compose.yml`. You only need the token.
+5. Copy just the token — the long `eyJ...` string at the end of that command. That is the only thing you need from this page.
 
 ### 6b — Add the token to `.env`
 
