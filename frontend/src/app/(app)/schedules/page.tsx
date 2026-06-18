@@ -120,67 +120,116 @@ export default function SchedulesPage() {
           and schedule one.
         </div>
       ) : (
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#2a2a2a]">
-                {['Name', 'Plugin', 'Cron', 'Human readable', 'Status', 'Last run', 'Actions'].map(h => (
-                  <th key={h} className="text-left text-[#6b7280] font-medium px-4 py-3 text-xs uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#2a2a2a]">
-              {schedules.map(schedule => {
-                const plugin = pluginMap.get(schedule.pluginId)
-                return (
-                  <tr key={schedule.id} className="hover:bg-[#111111] transition-colors">
-                    <td className="px-4 py-3 text-[#f1f1f1]">{schedule.name}</td>
-                    <td className="px-4 py-3 text-[#9ca3af]">
-                      {plugin ? (
-                        <span className="flex items-center gap-1.5">
-                          <span>{plugin.icon}</span>
-                          {plugin.name}
-                        </span>
-                      ) : (
-                        <span className="text-[#6b7280]">{schedule.pluginId.slice(0, 8)}…</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[#9ca3af] text-xs">{schedule.cron}</td>
-                    <td className="px-4 py-3 text-[#9ca3af]">{cronToHuman(schedule.cron)}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggle(schedule.id)}
-                        className={`text-xs px-2 py-1 rounded border transition-colors ${
-                          schedule.enabled
-                            ? 'border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10'
-                            : 'border-[#2a2a2a] text-[#6b7280] hover:border-[#3b82f6]'
-                        }`}
-                      >
-                        {schedule.enabled ? 'Enabled' : 'Disabled'}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-[#6b7280] text-xs">
+        <>
+          {/* Mobile card list */}
+          <div className="sm:hidden space-y-3">
+            {schedules.map(schedule => {
+              const plugin = pluginMap.get(schedule.pluginId)
+              return (
+                <div
+                  key={schedule.id}
+                  className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[#f1f1f1] text-sm font-medium truncate">{schedule.name}</p>
+                    <button
+                      onClick={() => handleToggle(schedule.id)}
+                      className={`text-xs px-2 py-1 rounded border shrink-0 transition-colors ${
+                        schedule.enabled
+                          ? 'border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10'
+                          : 'border-[#2a2a2a] text-[#6b7280] hover:border-[#3b82f6]'
+                      }`}
+                    >
+                      {schedule.enabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
+                    {plugin && <span>{plugin.icon}</span>}
+                    <span>{plugin?.name ?? schedule.pluginId.slice(0, 8) + '…'}</span>
+                    <span className="font-mono text-[#6b7280]">{schedule.cron}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-[#6b7280]">
+                    <span>
                       {schedule.lastRunAt
                         ? formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })
-                        : 'Never'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setDeleteTarget({ id: schedule.id, name: schedule.name })}
-                        className="text-[#6b7280] hover:text-[#ef4444] transition-colors"
-                        aria-label={`Delete ${schedule.name}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                        : 'Never run'}
+                    </span>
+                    <button
+                      onClick={() => setDeleteTarget({ id: schedule.id, name: schedule.name })}
+                      className="text-[#6b7280] hover:text-[#ef4444] transition-colors p-1"
+                      aria-label={`Delete ${schedule.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#2a2a2a]">
+                  {['Name', 'Plugin', 'Cron', 'Human readable', 'Status', 'Last run', 'Actions'].map(h => (
+                    <th key={h} className="text-left text-[#6b7280] font-medium px-4 py-3 text-xs uppercase tracking-wide">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a2a]">
+                {schedules.map(schedule => {
+                  const plugin = pluginMap.get(schedule.pluginId)
+                  return (
+                    <tr key={schedule.id} className="hover:bg-[#111111] transition-colors">
+                      <td className="px-4 py-3 text-[#f1f1f1]">{schedule.name}</td>
+                      <td className="px-4 py-3 text-[#9ca3af]">
+                        {plugin ? (
+                          <span className="flex items-center gap-1.5">
+                            <span>{plugin.icon}</span>
+                            {plugin.name}
+                          </span>
+                        ) : (
+                          <span className="text-[#6b7280]">{schedule.pluginId.slice(0, 8)}…</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[#9ca3af] text-xs">{schedule.cron}</td>
+                      <td className="px-4 py-3 text-[#9ca3af]">{cronToHuman(schedule.cron)}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggle(schedule.id)}
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${
+                            schedule.enabled
+                              ? 'border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10'
+                              : 'border-[#2a2a2a] text-[#6b7280] hover:border-[#3b82f6]'
+                          }`}
+                        >
+                          {schedule.enabled ? 'Enabled' : 'Disabled'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-[#6b7280] text-xs">
+                        {schedule.lastRunAt
+                          ? formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })
+                          : 'Never'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setDeleteTarget({ id: schedule.id, name: schedule.name })}
+                          className="text-[#6b7280] hover:text-[#ef4444] transition-colors"
+                          aria-label={`Delete ${schedule.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <DeleteConfirmModal
