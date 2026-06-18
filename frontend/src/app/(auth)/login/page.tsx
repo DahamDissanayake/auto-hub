@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
@@ -29,8 +30,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-8">
           <div className="text-center mb-8">
-            <span className="text-3xl">⚡</span>
-            <h1 className="text-white font-semibold text-xl mt-2">AutoHub</h1>
+            <Image
+              src="/img/Base Logo - Light.png"
+              alt="AutoHub logo"
+              width={110}
+              height={61}
+              className="object-contain mx-auto"
+              priority
+            />
+            <h1 className="text-white font-semibold text-xl mt-4">AutoHub</h1>
             <p className="text-[#6b7280] text-sm mt-1">Personal Automation OS</p>
           </div>
 

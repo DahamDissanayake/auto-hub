@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -51,8 +52,16 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 bg-[#111111] border-r border-[#2a2a2a] flex flex-col h-screen sticky top-0 shrink-0">
-      <div className="p-4 border-b border-[#2a2a2a]">
-        <span className="text-white font-medium text-sm">⚡ AutoHub</span>
+      <div className="p-4 border-b border-[#2a2a2a] flex items-center gap-2">
+        <Image
+          src="/img/Base Logo - Light.png"
+          alt="AutoHub logo"
+          width={44}
+          height={24}
+          className="object-contain"
+          priority
+        />
+        <span className="text-white font-medium text-sm">AutoHub</span>
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">

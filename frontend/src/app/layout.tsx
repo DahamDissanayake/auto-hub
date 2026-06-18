@@ -5,6 +5,9 @@ import { Providers } from './providers'
 export const metadata: Metadata = {
   title: 'AutoHub',
   description: 'Personal automation OS',
+  icons: {
+    icon: '/img/icons/Base Logo - Dark.ico',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

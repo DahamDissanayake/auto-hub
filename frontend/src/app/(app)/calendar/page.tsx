@@ -40,8 +40,9 @@ function DayPopover({
         <div className="mb-2">
           <p className="text-xs text-[#6b7280] uppercase tracking-wide mb-1">Plugins</p>
           {daySchedules.map(s => (
-            <p key={s.id} className="text-xs text-[#f1f1f1] truncate">
-              • {s.name} <span className="text-[#6b7280]">({cronToHuman(s.cron)})</span>
+            <p key={s.id} className="text-xs text-[#f1f1f1] flex items-start gap-1.5 min-w-0">
+              <svg width="4" height="4" viewBox="0 0 4 4" fill="currentColor" className="shrink-0 mt-1 text-[#3b82f6]"><circle cx="2" cy="2" r="2" /></svg>
+              <span className="truncate">{s.name} <span className="text-[#6b7280]">({cronToHuman(s.cron)})</span></span>
             </p>
           ))}
         </div>
@@ -50,7 +51,10 @@ function DayPopover({
         <div>
           <p className="text-xs text-[#6b7280] uppercase tracking-wide mb-1">n8n</p>
           {dayWorkflows.map(w => (
-            <p key={w.id} className="text-xs text-[#a78bfa] truncate">• {w.name}</p>
+            <p key={w.id} className="text-xs text-[#a78bfa] flex items-start gap-1.5 min-w-0">
+              <svg width="4" height="4" viewBox="0 0 4 4" fill="currentColor" className="shrink-0 mt-1"><circle cx="2" cy="2" r="2" /></svg>
+              <span className="truncate">{w.name}</span>
+            </p>
           ))}
         </div>
       )}
