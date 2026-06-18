@@ -60,6 +60,10 @@ export class PluginsService implements OnModuleInit {
 
   private async upsertFromManifest(manifest: Record<string, unknown>) {
     const slug = manifest.slug as string;
+    const entryFile = (manifest.entryFile as string) ?? 'index.js';
+    if (entryFile.includes('..') || path.isAbsolute(entryFile)) {
+      throw new BadRequestException(`Invalid entryFile "${entryFile}": must be a relative path within the plugin directory`);
+    }
     const existing = await this.pluginRepo.findOne({ where: { slug } });
     const fields = {
       name: manifest.name as string,
@@ -67,7 +71,7 @@ export class PluginsService implements OnModuleInit {
       icon: (manifest.icon as string) ?? '⚙️',
       category: (manifest.category as string) ?? 'utility',
       version: (manifest.version as string) ?? '1.0.0',
-      entryFile: (manifest.entryFile as string) ?? 'index.js',
+      entryFile,
       configSchema: (manifest.configSchema as any[]) ?? [],
     };
     if (existing) {
@@ -105,8 +109,15 @@ export class PluginsService implements OnModuleInit {
     triggeredBy: 'manual' | 'scheduled' = 'manual',
   ): Promise<PluginExecution> {
     const plugin = await this.findOne(id);
-    const pluginPath = path.resolve(this.pluginDir, plugin.slug, plugin.entryFile);
-    this.assertPathWithinPluginDir(pluginPath);
+    const resolvedPath = path.resolve(this.pluginDir, plugin.slug, plugin.entryFile);
+    this.assertPathWithinPluginDir(resolvedPath);
+    let realPath: string;
+    try {
+      realPath = fs.realpathSync(resolvedPath);
+    } catch {
+      throw new BadRequestException('Plugin entry file does not exist or cannot be resolved');
+    }
+    this.assertPathWithinPluginDir(realPath);
 
     const execution = await this.executionRepo.save({
       pluginId: id,
@@ -119,9 +130,9 @@ export class PluginsService implements OnModuleInit {
     const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
 
     try {
-      delete require.cache[require.resolve(pluginPath)];
+      delete require.cache[require.resolve(realPath)];
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pluginModule = require(pluginPath);
+      const pluginModule = require(realPath);
       const fn = pluginModule.default ?? pluginModule;
 
       let timeoutHandle: ReturnType<typeof setTimeout>;
@@ -175,6 +186,9 @@ export class PluginsService implements OnModuleInit {
       throw new NotFoundException(`manifest.json not found for plugin: ${slug}`);
     }
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    if (!/^[a-zA-Z0-9_-]+$/.test(manifest.slug)) {
+      throw new BadRequestException(`Invalid manifest slug "${manifest.slug}": only alphanumeric, hyphens and underscores allowed`);
+    }
     await this.upsertFromManifest(manifest);
     const plugin = await this.pluginRepo.findOne({ where: { slug: manifest.slug } });
     if (!plugin) throw new NotFoundException(`Plugin not found after registering: ${manifest.slug}`);
