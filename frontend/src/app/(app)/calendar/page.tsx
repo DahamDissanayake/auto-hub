@@ -176,7 +176,7 @@ export default function CalendarPage() {
                   <DayPopover
                     date={day}
                     schedules={schedules}
-                    n8nWorkflows={n8nWorkflows}
+                    n8nWorkflows={isToday(day) ? n8nWorkflows : []}
                   />
                 )}
               </div>
