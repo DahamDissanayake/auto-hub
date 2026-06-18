@@ -63,7 +63,7 @@ describe('DashboardService', () => {
     expect(result.n8nWorkflows).toEqual([]);
   });
 
-  it('getCalendar returns enabled schedules', async () => {
+  it('getCalendar returns all schedules (enabled and disabled)', async () => {
     const result = await service.getCalendar();
     expect(result.schedules).toHaveLength(2);
   });
