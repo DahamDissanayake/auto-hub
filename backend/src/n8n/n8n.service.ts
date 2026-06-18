@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
@@ -22,6 +22,12 @@ export class N8nService {
     }
   }
 
+  private validateWorkflowId(id: string): void {
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      throw new BadRequestException(`Invalid workflow id: "${id}"`);
+    }
+  }
+
   private get headers() {
     return { 'X-N8N-API-KEY': this.apiKey };
   }
@@ -36,6 +42,7 @@ export class N8nService {
 
   async getWorkflow(id: string) {
     this.checkApiKey();
+    this.validateWorkflowId(id);
     const { data } = await firstValueFrom(
       this.httpService.get(`${this.n8nUrl}/api/v1/workflows/${id}`, { headers: this.headers }),
     );
@@ -44,6 +51,7 @@ export class N8nService {
 
   async activateWorkflow(id: string) {
     this.checkApiKey();
+    this.validateWorkflowId(id);
     const { data } = await firstValueFrom(
       this.httpService.post(
         `${this.n8nUrl}/api/v1/workflows/${id}/activate`,
@@ -56,6 +64,7 @@ export class N8nService {
 
   async deactivateWorkflow(id: string) {
     this.checkApiKey();
+    this.validateWorkflowId(id);
     const { data } = await firstValueFrom(
       this.httpService.post(
         `${this.n8nUrl}/api/v1/workflows/${id}/deactivate`,
