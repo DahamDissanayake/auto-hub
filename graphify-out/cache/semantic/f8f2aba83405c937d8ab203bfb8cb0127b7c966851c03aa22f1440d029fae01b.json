@@ -1,0 +1,1 @@
+{"nodes": [{"id": "notifications_notifications_module_notificationsmodule", "label": "NotificationsModule", "file_type": "code", "source_file": "backend/src/notifications/notifications.module.ts", "source_location": "line 3", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

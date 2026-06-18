@@ -45,7 +45,6 @@ export class SchedulerService implements OnModuleInit {
   }
 
   private validateCron(cron: string): void {
-    // Must be a valid 5-field cron expression (no sub-minute seconds field)
     const FIELDS = 5;
     const parts = cron.trim().split(/\s+/);
     if (parts.length !== FIELDS) {
@@ -53,10 +52,11 @@ export class SchedulerService implements OnModuleInit {
         `Invalid cron expression "${cron}": expected 5 fields (minute hour day month weekday), got ${parts.length}`,
       );
     }
-    // Each field must be a valid cron token: *, digit, range, step, or list
-    const FIELD_RE = /^(\*|(\d+)(-\d+)?(\/\d+)?)(\,(\*|(\d+)(-\d+)?(\/\d+)?))*$/;
+    // Each token: optional (*|digit|range) followed by optional /step, comma-separated
+    const TOKEN_RE = /^(\*|\d+(-\d+)?)(\/\d+)?$/;
     for (const part of parts) {
-      if (!FIELD_RE.test(part)) {
+      const tokens = part.split(',');
+      if (tokens.length === 0 || tokens.some(t => !TOKEN_RE.test(t))) {
         throw new BadRequestException(
           `Invalid cron expression "${cron}": unrecognised token "${part}"`,
         );

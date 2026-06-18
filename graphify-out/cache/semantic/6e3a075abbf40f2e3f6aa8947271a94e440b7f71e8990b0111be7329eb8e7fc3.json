@@ -1,0 +1,1 @@
+{"nodes": [{"id": "plugins_entities_plugin_plugin", "label": "Plugin entity", "file_type": "code", "source_file": "backend/src/plugins/entities/plugin.entity.ts", "source_location": "line 17", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

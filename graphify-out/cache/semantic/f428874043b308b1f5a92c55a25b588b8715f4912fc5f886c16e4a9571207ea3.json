@@ -1,0 +1,1 @@
+{"nodes": [{"id": "scheduler_entities_scheduled_job_scheduledjob", "label": "ScheduledJob entity", "file_type": "code", "source_file": "backend/src/scheduler/entities/scheduled-job.entity.ts", "source_location": "line 6", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}
