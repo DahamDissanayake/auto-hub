@@ -75,7 +75,7 @@ export default function CalendarPage() {
 
   const hasDots = (date: Date) => ({
     blue: schedules.some(s => s.enabled && cronMatchesDay(s.cron, date)),
-    purple: n8nWorkflows.some(w => w.active),
+    purple: isToday(date) && n8nWorkflows.some(w => w.active),
   })
 
   if (isLoading) {
