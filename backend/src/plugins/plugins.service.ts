@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, OnModuleInit, Logger,
+  Injectable, NotFoundException, BadRequestException, OnModuleInit, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,6 +24,13 @@ export class PluginsService implements OnModuleInit {
     private notifications: NotificationsService,
   ) {
     this.pluginDir = config.get<string>('PLUGIN_DIR') ?? '/app/plugins';
+  }
+
+  private assertPathWithinPluginDir(resolvedPath: string): void {
+    const resolvedBase = path.resolve(this.pluginDir) + path.sep;
+    if (!resolvedPath.startsWith(resolvedBase)) {
+      throw new BadRequestException('Plugin path escapes the plugin directory');
+    }
   }
 
   async onModuleInit() {
@@ -98,7 +105,8 @@ export class PluginsService implements OnModuleInit {
     triggeredBy: 'manual' | 'scheduled' = 'manual',
   ): Promise<PluginExecution> {
     const plugin = await this.findOne(id);
-    const pluginPath = path.join(this.pluginDir, plugin.slug, plugin.entryFile);
+    const pluginPath = path.resolve(this.pluginDir, plugin.slug, plugin.entryFile);
+    this.assertPathWithinPluginDir(pluginPath);
 
     const execution = await this.executionRepo.save({
       pluginId: id,
@@ -159,6 +167,9 @@ export class PluginsService implements OnModuleInit {
   }
 
   async registerFromManifest(slug: string): Promise<Plugin> {
+    if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+      throw new BadRequestException(`Invalid plugin slug "${slug}": only alphanumeric, hyphens and underscores allowed`);
+    }
     const manifestPath = path.join(this.pluginDir, slug, 'manifest.json');
     if (!fs.existsSync(manifestPath)) {
       throw new NotFoundException(`manifest.json not found for plugin: ${slug}`);
