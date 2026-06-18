@@ -146,13 +146,13 @@ export default function SchedulesPage() {
                   <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
                     {plugin && <span>{plugin.icon}</span>}
                     <span>{plugin?.name ?? schedule.pluginId.slice(0, 8) + '…'}</span>
-                    <span className="font-mono text-[#6b7280]">{schedule.cron}</span>
+                    <span className="text-[#6b7280]">{cronToHuman(schedule.cron)}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-[#6b7280]">
                     <span>
                       {schedule.lastRunAt
                         ? formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })
-                        : 'Never run'}
+                        : 'Never'}
                     </span>
                     <button
                       onClick={() => setDeleteTarget({ id: schedule.id, name: schedule.name })}

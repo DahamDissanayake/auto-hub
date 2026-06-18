@@ -6,8 +6,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('next/link', () => ({
-  default: ({ href, children, className }: any) => (
-    <a href={href} className={className}>{children}</a>
+  default: ({ href, children, className, 'aria-current': ariaCurrent }: any) => (
+    <a href={href} className={className} aria-current={ariaCurrent}>{children}</a>
   ),
 }))
 
@@ -42,10 +42,19 @@ describe('BottomNav', () => {
     expect(dashLink?.className).toContain('text-[#6b7280]')
   })
 
-  it('has flex md:hidden for responsive visibility', () => {
+  it('has flex md:hidden classes for responsive visibility', () => {
     render(<BottomNav />)
-    const nav = screen.getByRole('navigation')
+    const nav = screen.getByRole('navigation', { name: 'Mobile navigation' })
     expect(nav.className).toContain('flex')
     expect(nav.className).toContain('md:hidden')
+  })
+
+  it('sets aria-current on active item', () => {
+    vi.mocked(usePathname).mockReturnValue('/schedules')
+    render(<BottomNav />)
+    const activeLink = screen.getByText('Schedules').closest('a')
+    expect(activeLink).toHaveAttribute('aria-current', 'page')
+    const inactiveLink = screen.getByText('Dashboard').closest('a')
+    expect(inactiveLink).not.toHaveAttribute('aria-current')
   })
 })

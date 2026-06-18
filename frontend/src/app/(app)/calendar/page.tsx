@@ -148,7 +148,7 @@ export default function CalendarPage() {
         </span>
       </div>
 
-      <div ref={containerRef} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
+      <div ref={containerRef} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-visible">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-[#2a2a2a]">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
