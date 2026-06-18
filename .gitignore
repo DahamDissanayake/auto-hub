@@ -26,3 +26,5 @@ coverage/
 plugins/
 # but keep NestJS source modules named plugins
 !backend/src/plugins/
+# but keep frontend React plugin components
+!frontend/src/components/plugins/
