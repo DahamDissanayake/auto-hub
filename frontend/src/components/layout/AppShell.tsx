@@ -7,7 +7,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem('autohub_token')
+    const token = sessionStorage.getItem('autohub_token')
     if (!token) {
       router.replace('/login')
     }

@@ -15,7 +15,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const { data } = await api.post('/api/auth/login', { password })
-      localStorage.setItem('autohub_token', data.access_token)
+      sessionStorage.setItem('autohub_token', data.access_token)
       router.replace('/')
     } catch {
       setError('Invalid password')
