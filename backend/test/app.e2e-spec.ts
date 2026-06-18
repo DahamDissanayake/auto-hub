@@ -332,6 +332,14 @@ describe('AutoHub E2E', () => {
   describe('Schedules', () => {
     let scheduleId: string;
 
+    it('GET /api/schedules returns array', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/schedules')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
     it('POST /api/schedules creates a schedule', async () => {
       const pluginsRes = await request(app.getHttpServer())
         .get('/api/plugins')
