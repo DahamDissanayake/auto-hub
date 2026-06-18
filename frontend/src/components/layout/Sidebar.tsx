@@ -51,7 +51,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-56 bg-[#111111] border-r border-[#2a2a2a] flex flex-col h-screen sticky top-0 shrink-0">
+    <aside className="hidden md:flex w-56 bg-[#111111] border-r border-[#2a2a2a] flex-col h-screen sticky top-0 shrink-0">
       <div className="p-4 border-b border-[#2a2a2a] flex items-center gap-2">
         <Image
           src="/img/Base Logo - Light.png"

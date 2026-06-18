@@ -37,9 +37,9 @@ describe('Sidebar', () => {
     vi.mocked(useRouter).mockReturnValue({ replace: vi.fn() } as any)
   })
 
-  it('renders AutoHub logo', () => {
+  it('renders AutoHub branding', () => {
     render(<Sidebar />)
-    expect(screen.getByText('⚡ AutoHub')).toBeInTheDocument()
+    expect(screen.getByText('AutoHub')).toBeInTheDocument()
   })
 
   it('renders all navigation items', () => {
@@ -67,5 +67,12 @@ describe('Sidebar', () => {
     await userEvent.click(screen.getByTestId('logout-button'))
     expect(sessionStorage.getItem('autohub_token')).toBeNull()
     expect(mockReplace).toHaveBeenCalledWith('/login')
+  })
+
+  it('has hidden md:flex classes for responsive visibility', () => {
+    render(<Sidebar />)
+    const aside = screen.getByRole('complementary')
+    expect(aside.className).toContain('hidden')
+    expect(aside.className).toContain('md:flex')
   })
 })
