@@ -12,6 +12,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { N8nModule } from './n8n/n8n.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { TerminalModule } from './terminal/terminal.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { Plugin } from './plugins/entities/plugin.entity';
 import { PluginExecution } from './plugins/entities/plugin-execution.entity';
@@ -48,6 +49,7 @@ import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
     DashboardModule,
     N8nModule,
     NotificationsModule,
+    TerminalModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
