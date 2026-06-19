@@ -3,7 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { RealIpThrottlerGuard } from './auth/guards/real-ip-throttler.guard';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { PluginsModule } from './plugins/plugins.module';
@@ -29,7 +30,7 @@ import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
         type: 'postgres',
         url: config.get('DATABASE_URL'),
         entities: [Plugin, PluginExecution, ScheduledJob],
-        synchronize: true,
+        synchronize: false,
       }),
       inject: [ConfigService],
     }),
@@ -50,7 +51,7 @@ import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: RealIpThrottlerGuard },
   ],
 })
 export class AppModule {}

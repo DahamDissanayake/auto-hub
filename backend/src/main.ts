@@ -4,6 +4,9 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Trust the nginx reverse proxy so req.ip reflects the real client IP
+  // rather than the Docker bridge address, enabling per-client rate limiting.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors({

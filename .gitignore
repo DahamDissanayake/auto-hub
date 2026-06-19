@@ -31,3 +31,4 @@ plugins/
 # but keep Next.js app route for plugins page
 !frontend/src/app/(app)/plugins/
 # .superpowers
+nginx/htpasswd
