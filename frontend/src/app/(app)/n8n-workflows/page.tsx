@@ -14,9 +14,14 @@ export default function N8nWorkflowsPage() {
   const deactivate = useDeactivateWorkflow()
   const toast = useToast()
 
-  const isN8nKeyError =
-    error &&
-    (error as any)?.response?.status === 503
+  const errorMessage: string | null = error
+    ? ((error as any)?.response?.data?.message ?? (error as any)?.message ?? 'Unknown error')
+    : null
+
+  const isKeyError = errorMessage?.toLowerCase().includes('api_key') ||
+    errorMessage?.toLowerCase().includes('api key') ||
+    errorMessage?.toLowerCase().includes('not configured') ||
+    errorMessage?.toLowerCase().includes('revoked')
 
   const handleToggle = async (id: string, active: boolean) => {
     try {
@@ -57,9 +62,10 @@ export default function N8nWorkflowsPage() {
         </div>
       )}
 
-      {isN8nKeyError && (
+      {error && isKeyError && (
         <div className="p-6 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg space-y-3">
-          <p className="text-[#f59e0b] font-medium text-sm">n8n API key not configured</p>
+          <p className="text-[#f59e0b] font-medium text-sm">n8n API key not configured or invalid</p>
+          <p className="text-[#6b7280] text-xs">{errorMessage}</p>
           <ol className="text-[#9ca3af] text-sm space-y-1 list-decimal list-inside">
             <li>
               Open n8n at{' '}
@@ -67,15 +73,22 @@ export default function N8nWorkflowsPage() {
                 /n8n
               </a>
             </li>
-            <li>Go to Settings → API → Create API Key</li>
+            <li>Go to Settings → API → Create or regenerate API Key</li>
             <li>
-              Add it to your <code className="text-[#f1f1f1]">.env</code> file as{' '}
-              <code className="text-[#f1f1f1]">N8N_API_KEY=your-key</code>
+              Update <code className="text-[#f1f1f1]">N8N_API_KEY</code> in your{' '}
+              <code className="text-[#f1f1f1]">.env</code> file
             </li>
             <li>
               Restart the backend: <code className="text-[#f1f1f1]">docker compose restart backend</code>
             </li>
           </ol>
+        </div>
+      )}
+
+      {error && !isKeyError && (
+        <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
+          <p className="text-[#ef4444] text-sm font-medium">Failed to connect to n8n</p>
+          <p className="text-[#6b7280] text-xs mt-1">{errorMessage}</p>
         </div>
       )}
 
