@@ -29,6 +29,8 @@ services:
       DB_POSTGRESDB_USER: autohub
       DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
       GENERIC_TIMEZONE: ${TIMEZONE}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
