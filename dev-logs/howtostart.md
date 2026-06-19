@@ -111,7 +111,7 @@ DOMAIN=autohub.yourdomain.com
 # Your Pi's timezone string (same as timedatectl above)
 TIMEZONE=Asia/Colombo
 
-# Telegram bot notifications (optional — leave blank to disable)
+# Telegram bot notifications (optional — fill in after Step 7, leave blank to disable)
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 
@@ -225,11 +225,127 @@ You should see `Connection registered` or `Registered tunnel connection`. Visit 
 
 ---
 
-## Step 7 — Configure n8n
+## Step 7 — Set up Telegram notifications (optional)
+
+AutoHub sends you a Telegram message every time a plugin succeeds or fails. You need two things: a **bot token** and your **personal chat ID**.
+
+### 7a — Create a Telegram bot via BotFather
+
+1. Open Telegram and search for **@BotFather** (the official blue-tick bot)
+2. Start a chat with it and send:
+   ```
+   /newbot
+   ```
+3. BotFather will ask for a **name** — this is the display name shown in chats. Type something like:
+   ```
+   AutoHub
+   ```
+4. BotFather will then ask for a **username** — must end in `bot`, must be unique globally. For example:
+   ```
+   MyAutoHubBot
+   ```
+5. BotFather replies with your **bot token** — a string that looks like:
+   ```
+   7123456789:AAFxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxx
+   ```
+   Copy this — it is your `TELEGRAM_BOT_TOKEN`.
+
+> Keep the bot token secret. Anyone who has it can send messages as your bot.
+
+### 7b — Start a chat with your new bot
+
+Open Telegram, search for the username you just created (e.g. `@MyAutoHubBot`), and press **Start**. This is required — Telegram will not deliver messages to a chat that has never been initiated.
+
+### 7c — Get your personal chat ID
+
+Your chat ID tells the bot which conversation to send messages to. The easiest way is to use the Telegram API directly:
+
+Open this URL in your browser (replace `YOUR_TOKEN` with your actual bot token):
+
+```
+https://api.telegram.org/botYOUR_TOKEN/getUpdates
+```
+
+Example with a real token:
+```
+https://api.telegram.org/bot7123456789:AAFxxxxxxxx/getUpdates
+```
+
+After pressing **Start** in Step 7b, you will see a JSON response like:
+
+```json
+{
+  "ok": true,
+  "result": [
+    {
+      "message": {
+        "chat": {
+          "id": 987654321,
+          "first_name": "Daham",
+          "type": "private"
+        },
+        "text": "/start"
+      }
+    }
+  ]
+}
+```
+
+The number under `"chat" → "id"` is your `TELEGRAM_CHAT_ID`. In this example it is `987654321`.
+
+> If `result` is an empty array `[]`, go back to Telegram and send any message to your bot (e.g. `/start`), then refresh the URL.
+
+### 7d — Add both values to `.env`
+
+```bash
+nano .env
+```
+
+Fill in the two Telegram lines:
+
+```
+TELEGRAM_BOT_TOKEN=7123456789:AAFxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxx
+TELEGRAM_CHAT_ID=987654321
+```
+
+Save and exit.
+
+### 7e — Restart the backend to pick up the new values
+
+```bash
+docker compose up -d backend
+```
+
+### 7f — Test that notifications work
+
+Send a test message directly from the Pi to confirm the bot and chat ID are correct:
+
+```bash
+BOT_TOKEN=$(grep TELEGRAM_BOT_TOKEN ~/auto-hub/.env | cut -d= -f2)
+CHAT_ID=$(grep TELEGRAM_CHAT_ID ~/auto-hub/.env | cut -d= -f2)
+
+curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+  -d chat_id="${CHAT_ID}" \
+  -d text="AutoHub is online 🟢"
+```
+
+You should receive the message in Telegram within a second or two. If the response JSON shows `"ok": true`, the bot is wired up correctly.
+
+**Common errors:**
+
+| Error | Cause | Fix |
+|---|---|---|
+| `{"ok":false,"error_code":401}` | Wrong bot token | Double-check `TELEGRAM_BOT_TOKEN` in `.env` |
+| `{"ok":false,"error_code":400,"description":"Bad Request: chat not found"}` | Wrong chat ID | Double-check `TELEGRAM_CHAT_ID` in `.env` |
+| `result: []` in getUpdates | Bot never received a message | Open Telegram, send `/start` to your bot, then retry |
+
+---
+
+## Step 8 — Configure n8n (required for workflow features)
 
 n8n needs a first-run setup before the backend can talk to it.
 
-### 7a — Access the n8n UI
+### 8a — Access the n8n UI
 
 Open `https://autohub.yourdomain.com/n8n/` in your browser.
 
@@ -237,16 +353,16 @@ Open `https://autohub.yourdomain.com/n8n/` in your browser.
 > - Set up a Cloudflare Access policy for `/n8n/` path, or
 > - SSH port-forward: `ssh -L 8080:localhost:80 pi@<your-pi-ip>` then open `http://localhost:8080/n8n/`
 
-### 7b — Complete n8n setup wizard
+### 8b — Complete n8n setup wizard
 
 Create your n8n owner account when prompted. Use a strong password — store it somewhere safe.
 
-### 7c — Generate an n8n API key
+### 8c — Generate an n8n API key
 
 1. In the n8n UI: click your user avatar (bottom-left) → **Settings** → **n8n API** → **Create an API key**
 2. Copy the generated key
 
-### 7d — Add the API key to `.env`
+### 8d — Add the API key to `.env`
 
 ```bash
 nano .env
@@ -262,7 +378,7 @@ docker compose up -d backend
 
 ---
 
-## Step 8 — Log in to AutoHub
+## Step 9 — Log in to AutoHub
 
 Open `https://autohub.yourdomain.com` in your browser.
 
@@ -272,7 +388,7 @@ You should land on the dashboard showing system health, plugin count, and n8n wo
 
 ---
 
-## Step 9 — Install plugins (optional)
+## Step 10 — Install plugins (optional)
 
 Plugins are Node.js scripts dropped into the plugin volume. Each plugin is a folder containing:
 - `manifest.json` — name, slug, description, entryFile, configSchema
