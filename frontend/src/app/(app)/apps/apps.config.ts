@@ -7,4 +7,12 @@ export interface AppEntry {
   color?: string     // hex accent, defaults to #3b82f6
 }
 
-export const apps: AppEntry[] = []
+export const apps: AppEntry[] = [
+  {
+    id: 'claude-terminal',
+    name: 'Claude Code Terminal',
+    description: 'Browser terminal on the Raspberry Pi — run Claude Code and shell commands from any device.',
+    url: '/terminal',
+    color: '#10b981',
+  },
+]
