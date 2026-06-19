@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
 import { PluginsService } from './plugins.service';
 
 @Controller('plugins')
@@ -10,8 +10,16 @@ export class PluginsController {
     return this.pluginsService.findAll();
   }
 
-  // register MUST be declared before :id routes to prevent NestJS
-  // from matching "register" as an id parameter
+  // Static routes MUST come before :id routes to avoid NestJS matching them as id params
+  @Get('executions')
+  getAllExecutions(
+    @Query('pluginId') pluginId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.pluginsService.getAllExecutions({ pluginId, from, to });
+  }
+
   @Post('register')
   register(@Body() body: { slug: string }) {
     return this.pluginsService.registerFromManifest(body.slug);

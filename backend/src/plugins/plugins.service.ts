@@ -149,9 +149,12 @@ export class PluginsService implements OnModuleInit {
         status: 'success', output, durationMs, finishedAt: new Date(),
       });
       await this.pluginRepo.update(id, { lastRunAt: new Date(), lastRunStatus: 'success' });
-      await this.notifications.send(
-        `✅ <b>${plugin.name}</b> ran successfully (${durationMs}ms)`,
-      );
+      const MAX = 3500;
+      const truncated = output.length > MAX ? output.slice(0, MAX) + '\n…(truncated)' : output;
+      const telegramMsg = output.trim()
+        ? `✅ <b>${plugin.name}</b> ran successfully (${durationMs}ms)\n\n<pre>${truncated}</pre>`
+        : `✅ <b>${plugin.name}</b> ran successfully (${durationMs}ms)`;
+      await this.notifications.send(telegramMsg);
       return { ...execution, status: 'success', output, durationMs } as PluginExecution;
     } catch (err) {
       const durationMs = Date.now() - startTime;
@@ -175,6 +178,29 @@ export class PluginsService implements OnModuleInit {
       order: { startedAt: 'DESC' },
       take: 50,
     });
+  }
+
+  async getAllExecutions(filters: {
+    pluginId?: string;
+    from?: string;
+    to?: string;
+  }): Promise<PluginExecution[]> {
+    const qb = this.executionRepo.createQueryBuilder('e')
+      .leftJoinAndSelect('e.plugin', 'plugin')
+      .orderBy('e.startedAt', 'DESC')
+      .take(100);
+
+    if (filters.pluginId) {
+      qb.andWhere('e.pluginId = :pluginId', { pluginId: filters.pluginId });
+    }
+    if (filters.from) {
+      qb.andWhere('e.startedAt >= :from', { from: new Date(filters.from) });
+    }
+    if (filters.to) {
+      qb.andWhere('e.startedAt <= :to', { to: new Date(filters.to) });
+    }
+
+    return qb.getMany();
   }
 
   async registerFromManifest(slug: string): Promise<Plugin> {

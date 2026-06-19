@@ -34,6 +34,21 @@ export function useExecutions(pluginId: string) {
   })
 }
 
+export function useAllExecutions(filters: { pluginId?: string; from?: string; to?: string }) {
+  return useQuery<PluginExecution[]>({
+    queryKey: ['executions', 'all', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (filters.pluginId) params.set('pluginId', filters.pluginId)
+      if (filters.from) params.set('from', filters.from)
+      if (filters.to) params.set('to', filters.to)
+      const { data } = await api.get(`/api/plugins/executions?${params.toString()}`)
+      return data
+    },
+    refetchInterval: 15_000,
+  })
+}
+
 export function useRunPlugin() {
   const queryClient = useQueryClient()
   return useMutation<PluginExecution, Error, string>({

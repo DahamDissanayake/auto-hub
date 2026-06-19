@@ -9,29 +9,9 @@ interface SeedPlugin {
   index: string;
 }
 
+const REMOVED_SLUGS = ['daily-summary'];
+
 const seedPlugins: SeedPlugin[] = [
-  {
-    slug: 'daily-summary',
-    manifest: {
-      slug: 'daily-summary',
-      name: 'Daily Summary',
-      description: 'Logs a daily summary message',
-      version: '1.0.0',
-      category: 'productivity',
-      icon: '📋',
-      entryFile: 'index.js',
-      configSchema: [
-        { key: 'title', label: 'Summary Title', type: 'string', required: false },
-      ],
-    },
-    index: `module.exports = async function({ config, log }) {
-  const title = config.title || 'Daily Summary';
-  log('=== ' + title + ' ===');
-  log('Date: ' + new Date().toLocaleDateString());
-  log('Time: ' + new Date().toLocaleTimeString());
-  log('All systems operational. Have a productive day!');
-};`,
-  },
   {
     slug: 'system-health',
     manifest: {
@@ -105,6 +85,14 @@ function writeSeedPlugins() {
   if (!fs.existsSync(PLUGIN_DIR)) {
     fs.mkdirSync(PLUGIN_DIR, { recursive: true });
     console.log(`[seed] Created plugin directory: ${PLUGIN_DIR}`);
+  }
+
+  for (const slug of REMOVED_SLUGS) {
+    const dir = path.join(PLUGIN_DIR, slug);
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log(`[seed] Removed deprecated plugin: ${slug}`);
+    }
   }
 
   for (const plugin of seedPlugins) {
