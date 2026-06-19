@@ -50,6 +50,7 @@ services:
       N8N_URL: http://n8n:5678
       PLUGIN_DIR: /app/plugins
       TIMEZONE: ${TIMEZONE}
+      TERMINAL_DIRS: /workspace/home,/workspace/repo
     volumes:
       - plugins_data:/app/plugins
     depends_on:
@@ -65,6 +66,16 @@ services:
       - backend
     restart: unless-stopped
 
+  terminal:
+    build: ./terminal
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      TERMINAL_DIRS: /workspace/home,/workspace/repo
+    volumes:
+      - /home/dama:/workspace/home:rw
+      - /home/dama/repo/auto-hub:/workspace/repo:rw
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
@@ -76,6 +87,7 @@ services:
       - frontend
       - backend
       - n8n
+      - terminal
     restart: unless-stopped
 
   cloudflared:
