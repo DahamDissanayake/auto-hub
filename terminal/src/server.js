@@ -42,6 +42,7 @@ wss.on('connection', (ws, req) => {
   }
 
   let pty;
+  let ptyDead = false;
   try {
     pty = nodePty.spawn('bash', [], {
       name: 'xterm-256color',
@@ -59,9 +60,13 @@ wss.on('connection', (ws, req) => {
     if (ws.readyState === ws.OPEN) ws.send(data);
   });
 
-  pty.onExit(() => ws.close(1000, 'Process exited'));
+  pty.onExit(() => {
+    ptyDead = true;
+    ws.close(1000, 'Process exited');
+  });
 
   ws.on('message', raw => {
+    if (ptyDead) return;
     const msg = raw.toString();
     try {
       const parsed = JSON.parse(msg);
@@ -75,7 +80,9 @@ wss.on('connection', (ws, req) => {
     pty.write(msg);
   });
 
-  ws.on('close', () => pty.kill());
+  ws.on('close', () => {
+    if (!ptyDead) pty.kill();
+  });
 });
 
 const PORT = 7681;
