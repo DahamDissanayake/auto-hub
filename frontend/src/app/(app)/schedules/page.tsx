@@ -144,7 +144,6 @@ export default function SchedulesPage() {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
-                    {plugin && <span>{plugin.icon}</span>}
                     <span>{plugin?.name ?? schedule.pluginId.slice(0, 8) + '…'}</span>
                     <span className="text-[#6b7280]">{cronToHuman(schedule.cron)}</span>
                   </div>
@@ -186,12 +185,7 @@ export default function SchedulesPage() {
                     <tr key={schedule.id} className="hover:bg-[#111111] transition-colors">
                       <td className="px-4 py-3 text-[#f1f1f1]">{schedule.name}</td>
                       <td className="px-4 py-3 text-[#9ca3af]">
-                        {plugin ? (
-                          <span className="flex items-center gap-1.5">
-                            <span>{plugin.icon}</span>
-                            {plugin.name}
-                          </span>
-                        ) : (
+                        {plugin ? plugin.name : (
                           <span className="text-[#6b7280]">{schedule.pluginId.slice(0, 8)}…</span>
                         )}
                       </td>

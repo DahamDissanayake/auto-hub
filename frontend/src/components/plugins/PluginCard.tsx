@@ -1,17 +1,16 @@
 'use client'
 import { useState } from 'react'
-import {
-  Play, Settings2, Clock, Power,
-  ClipboardList, Server, Wrench, TrendingUp, DollarSign, Puzzle,
-  type LucideIcon,
-} from 'lucide-react'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { Play, Settings2, Clock } from 'lucide-react'
 import ConfigModal from './ConfigModal'
 import ScheduleModal from './ScheduleModal'
-import { useRunPlugin, useTogglePlugin } from '@/lib/hooks/usePlugins'
+import { useRunPlugin } from '@/lib/hooks/usePlugins'
 import { useToast } from '@/components/ui/Toast'
 import { formatDistanceToNow } from 'date-fns'
 import type { Plugin } from '@/lib/types'
+import {
+  ClipboardList, Server, Wrench, TrendingUp, DollarSign, Puzzle,
+  type LucideIcon,
+} from 'lucide-react'
 
 const categoryMeta: Record<string, { icon: LucideIcon; bg: string; fg: string }> = {
   productivity: { icon: ClipboardList, bg: 'bg-[#3b82f6]/10', fg: 'text-[#3b82f6]' },
@@ -26,7 +25,6 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
   const [configOpen, setConfigOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const runPlugin = useRunPlugin()
-  const togglePlugin = useTogglePlugin()
   const toast = useToast()
 
   const handleRun = async () => {
@@ -44,33 +42,22 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
     }
   }
 
-  const handleToggle = async () => {
-    try {
-      await togglePlugin.mutateAsync(plugin.id)
-    } catch {
-      toast.error('Failed to toggle plugin')
-    }
-  }
-
   const meta = categoryMeta[plugin.category] ?? defaultMeta
   const CategoryIcon = meta.icon
 
   return (
     <>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4 flex flex-col gap-3 hover:border-[#3b82f6]/40 transition-colors">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-md ${meta.bg}`}>
-              <CategoryIcon size={16} className={meta.fg} />
-            </div>
-            <div>
-              <h3 className="text-white font-medium text-sm">{plugin.name}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${meta.bg} ${meta.fg}`}>
-                {plugin.category}
-              </span>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md ${meta.bg}`}>
+            <CategoryIcon size={16} className={meta.fg} />
           </div>
-          <StatusBadge status={plugin.status} />
+          <div>
+            <h3 className="text-white font-medium text-sm">{plugin.name}</h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${meta.bg} ${meta.fg}`}>
+              {plugin.category}
+            </span>
+          </div>
         </div>
 
         <p className="text-[#6b7280] text-xs leading-relaxed line-clamp-2">
@@ -117,20 +104,6 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
           >
             <Clock size={12} />
             Schedule
-          </button>
-
-          <button
-            onClick={handleToggle}
-            disabled={togglePlugin.isPending}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md transition-colors ml-auto disabled:opacity-50 ${
-              plugin.status === 'active'
-                ? 'border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10'
-                : 'border-[#2a2a2a] text-[#6b7280] hover:border-[#3b82f6] hover:text-[#f1f1f1]'
-            }`}
-            data-testid={`toggle-plugin-${plugin.id}`}
-          >
-            <Power size={12} />
-            {plugin.status === 'active' ? 'Disable' : 'Enable'}
           </button>
         </div>
       </div>
