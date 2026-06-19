@@ -3,14 +3,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Puzzle, Clock, Calendar,
+  LayoutDashboard, Puzzle, LayoutGrid, Calendar,
   GitBranch, Settings, LogOut,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/plugins', label: 'Plugins', icon: Puzzle },
-  { href: '/schedules', label: 'Schedules', icon: Clock },
+  { href: '/apps', label: 'Apps', icon: LayoutGrid },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/n8n-workflows', label: 'n8n Workflows', icon: GitBranch },
 ]

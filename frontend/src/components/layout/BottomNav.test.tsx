@@ -23,9 +23,10 @@ describe('BottomNav', () => {
     render(<BottomNav />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Plugins')).toBeInTheDocument()
-    expect(screen.getByText('Schedules')).toBeInTheDocument()
+    expect(screen.getByText('Apps')).toBeInTheDocument()
     expect(screen.getByText('Calendar')).toBeInTheDocument()
     expect(screen.getByText('n8n')).toBeInTheDocument()
+    expect(screen.queryByText('Schedules')).not.toBeInTheDocument()
   })
 
   it('applies active colour to current path item', () => {
@@ -50,9 +51,9 @@ describe('BottomNav', () => {
   })
 
   it('sets aria-current on active item', () => {
-    vi.mocked(usePathname).mockReturnValue('/schedules')
+    vi.mocked(usePathname).mockReturnValue('/apps')
     render(<BottomNav />)
-    const activeLink = screen.getByText('Schedules').closest('a')
+    const activeLink = screen.getByText('Apps').closest('a')
     expect(activeLink).toHaveAttribute('aria-current', 'page')
     const inactiveLink = screen.getByText('Dashboard').closest('a')
     expect(inactiveLink).not.toHaveAttribute('aria-current')

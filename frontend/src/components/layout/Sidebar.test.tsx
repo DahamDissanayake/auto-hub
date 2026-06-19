@@ -46,10 +46,11 @@ describe('Sidebar', () => {
     render(<Sidebar />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Plugins')).toBeInTheDocument()
-    expect(screen.getByText('Schedules')).toBeInTheDocument()
+    expect(screen.getByText('Apps')).toBeInTheDocument()
     expect(screen.getByText('Calendar')).toBeInTheDocument()
     expect(screen.getByText('n8n Workflows')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.queryByText('Schedules')).not.toBeInTheDocument()
   })
 
   it('applies active style to current path link', () => {
