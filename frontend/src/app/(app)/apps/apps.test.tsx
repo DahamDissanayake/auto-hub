@@ -34,21 +34,13 @@ describe('AppsPage', () => {
 // Test the AppCard rendering logic directly by importing and calling with test data
 // We do this by testing the rendered HTML structure
 
-describe('AppCard internal vs external links', () => {
-  it('uses <a target="_blank"> for external URLs', () => {
-    // Temporarily override apps to test a single external card
-    const { container } = render(
-      <a
-        href="https://example.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="test-card"
-      >
-        External App
-      </a>
-    )
-    const link = container.querySelector('a')
-    expect(link?.getAttribute('target')).toBe('_blank')
-    expect(link?.getAttribute('rel')).toContain('noopener')
+describe('AppCard link types', () => {
+  it('internal URL card does not open in a new tab', () => {
+    render(<AppsPage />)
+    const links = screen.getAllByRole('link')
+    // Claude Code Terminal has url='/terminal' (internal) — must not have target="_blank"
+    const terminalCard = links.find(l => l.getAttribute('href') === '/terminal')
+    expect(terminalCard).toBeDefined()
+    expect(terminalCard?.getAttribute('target')).not.toBe('_blank')
   })
 })

@@ -24,6 +24,7 @@ const KEY_SEQUENCES = [
 
 export default function TerminalPage() {
   const [dirs, setDirs] = useState<DirEntry[]>([])
+  const [dirsLoading, setDirsLoading] = useState(true)
   const [cwd, setCwd] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -34,9 +35,11 @@ export default function TerminalPage() {
   // Client-side init: detect mobile, restore last cwd, fetch dirs
   useEffect(() => {
     setIsMobile(window.innerWidth < 768 || navigator.maxTouchPoints > 0)
-    const saved = sessionStorage.getItem(LAST_CWD_KEY)
+    const saved = localStorage.getItem(LAST_CWD_KEY)
     if (saved) setCwd(saved)
-    api.get<DirEntry[]>('/api/terminal/dirs').then(r => setDirs(r.data))
+    api.get<DirEntry[]>('/api/terminal/dirs')
+      .then(r => { setDirs(r.data); setDirsLoading(false) })
+      .catch(() => { setDirsLoading(false); setError('Failed to load directories. Is the backend reachable?') })
   }, [])
 
   // Mount xterm.js whenever cwd is set
@@ -92,6 +95,8 @@ export default function TerminalPage() {
         if (ws.readyState === WebSocket.OPEN) ws.send(data)
       })
 
+      ws.onopen = () => fit()
+
       const fit = () => {
         fitAddon.fit()
         if (ws.readyState === WebSocket.OPEN) {
@@ -124,7 +129,7 @@ export default function TerminalPage() {
   }, [cwd, isMobile])
 
   const selectDir = (path: string) => {
-    sessionStorage.setItem(LAST_CWD_KEY, path)
+    localStorage.setItem(LAST_CWD_KEY, path)
     setError(null)
     setSessionEnded(false)
     setCwd(path)
@@ -140,7 +145,7 @@ export default function TerminalPage() {
 
   const clearAndPick = () => {
     setError(null)
-    sessionStorage.removeItem(LAST_CWD_KEY)
+    localStorage.removeItem(LAST_CWD_KEY)
     setCwd(null)
   }
 
@@ -153,8 +158,10 @@ export default function TerminalPage() {
             <FolderOpen size={18} className="text-[#10b981]" />
             <h2 className="text-white text-sm font-semibold">Select Working Directory</h2>
           </div>
-          {dirs.length === 0 ? (
+          {dirsLoading ? (
             <p className="text-[#6b7280] text-xs">Loading directories...</p>
+          ) : dirs.length === 0 ? (
+            <p className="text-[#ef4444] text-xs">No directories configured. Check TERMINAL_DIRS in docker-compose.yml.</p>
           ) : (
             <div className="space-y-2">
               {dirs.map(d => (
