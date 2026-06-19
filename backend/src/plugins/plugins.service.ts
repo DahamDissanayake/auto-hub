@@ -46,14 +46,25 @@ export class PluginsService implements OnModuleInit {
     const entries = fs.readdirSync(this.pluginDir, { withFileTypes: true })
       .filter(d => d.isDirectory());
 
+    const activeSlugs = new Set<string>();
     for (const entry of entries) {
       const manifestPath = path.join(this.pluginDir, entry.name, 'manifest.json');
       if (!fs.existsSync(manifestPath)) continue;
       try {
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
         await this.upsertFromManifest(manifest);
+        activeSlugs.add(manifest.slug as string);
       } catch (err) {
         this.logger.error(`Failed to load ${entry.name}: ${err.message}`);
+      }
+    }
+
+    // Remove DB records for plugins no longer present on disk
+    const allPlugins = await this.pluginRepo.find();
+    for (const plugin of allPlugins) {
+      if (!activeSlugs.has(plugin.slug)) {
+        await this.pluginRepo.delete(plugin.id);
+        this.logger.log(`Removed stale plugin from DB: ${plugin.slug}`);
       }
     }
   }
