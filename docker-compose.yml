@@ -68,12 +68,13 @@ services:
 
   terminal:
     build: ./terminal
+    user: "1001:1001"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      TERMINAL_DIRS: /workspace/home,/workspace/repo
+      TERMINAL_DIRS: /workspace/claude-home,/workspace/github
     volumes:
-      - /home/dama:/workspace/home:rw
-      - /home/dama/repo:/workspace/repo:rw
+      - /home/claude:/workspace/claude-home:rw
+      - /home/claude/github:/workspace/github:rw
     restart: unless-stopped
 
   nginx:
