@@ -276,6 +276,14 @@ describe('DELETE /sessions/:name', () => {
     expect(sessions.removeSession).toHaveBeenCalledWith('dead');
   });
 
+  it('returns 400 for invalid session name', async () => {
+    const res = await request(app)
+      .delete('/sessions/bad..name')
+      .set('Authorization', auth)
+      .expect(400);
+    expect(res.body.error).toBe('Invalid session name');
+  });
+
   it('returns 401 without auth', async () => {
     await request(app).delete('/sessions/test').expect(401);
   });

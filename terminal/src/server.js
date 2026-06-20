@@ -162,6 +162,10 @@ app.delete('/sessions/:name', (req, res) => {
   if (!requireAuth(req, res)) return;
   const { name } = req.params;
 
+  if (!/^[a-zA-Z0-9_-]{1,40}$/.test(name)) {
+    return res.status(400).json({ error: 'Invalid session name' });
+  }
+
   try {
     cp.execFileSync('tmux', ['kill-session', '-t', name], { stdio: 'ignore' });
   } catch {
@@ -183,6 +187,9 @@ wss.on('connection', (ws, req) => {
     ws.close(4401, 'Unauthorized');
     return;
   }
+
+  if (!sessionName) { ws.close(4400, 'Session name required'); return; }
+  if (!/^[a-zA-Z0-9_-]{1,40}$/.test(sessionName)) { ws.close(4400, 'Invalid session name'); return; }
 
   const session = getSession(sessionName);
   if (!session) {

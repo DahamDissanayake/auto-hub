@@ -12,7 +12,9 @@ function readManifest() {
 }
 
 function writeManifest(manifest) {
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2), 'utf8');
+  const tmp = MANIFEST_PATH + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(manifest, null, 2), 'utf8');
+  fs.renameSync(tmp, MANIFEST_PATH);
 }
 
 function getSessions() {
