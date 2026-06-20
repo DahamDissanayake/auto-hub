@@ -1,6 +1,7 @@
 'use client'
 import '@xterm/xterm/css/xterm.css'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import type { Terminal } from '@xterm/xterm'
 import api from '@/lib/api'
 import { SessionManager, Session } from './components/SessionManager'
 import { WorkspacePicker } from './components/WorkspacePicker'
@@ -8,6 +9,7 @@ import { RepoPicker } from './components/RepoPicker'
 import { CloneDialog } from './components/CloneDialog'
 import { SessionTabs, TabSession } from './components/SessionTabs'
 import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
+import { Clipboard, MousePointer, MoveVertical } from 'lucide-react'
 
 interface Repo {
   name: string
@@ -40,8 +42,16 @@ export default function TerminalPage() {
   const [sessionEnded, setSessionEnded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showSessionOverlay, setShowSessionOverlay] = useState(false)
+  // scroll = touch scrolls the buffer; select = touch selects text for copying
+  const [touchMode, setTouchMode] = useState<'scroll' | 'select'>('scroll')
+  const [copyFeedback, setCopyFeedback] = useState(false)
+
   const termContainerRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
+  const termRef = useRef<Terminal | null>(null)
+  const touchModeRef = useRef<'scroll' | 'select'>('scroll')
+
+  useEffect(() => { touchModeRef.current = touchMode }, [touchMode])
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 768 || navigator.maxTouchPoints > 0)
@@ -68,6 +78,8 @@ export default function TerminalPage() {
         cursorBlink: true,
         scrollback: 5000,
       })
+
+      termRef.current = term
 
       const fitAddon = new FitAddon()
       term.loadAddon(fitAddon)
@@ -106,11 +118,59 @@ export default function TerminalPage() {
       ro.observe(termContainerRef.current!)
       window.visualViewport?.addEventListener('resize', fit)
 
+      const el = termContainerRef.current!
+
+      // Desktop: capture wheel in the capture phase (fires before xterm's own
+      // listener on its canvas) then stopPropagation so xterm never sees it.
+      // Without capture:true, xterm processes first and may send ↑/↓ cursor keys
+      // to the pty (shell history navigation) before our handler even runs.
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        let delta = e.deltaY
+        if (e.deltaMode === 1) delta *= 15       // DOM_DELTA_LINE → pixels
+        else if (e.deltaMode === 2) delta *= 300  // DOM_DELTA_PAGE → pixels
+        const lineH = (term.options.fontSize ?? 12) * 1.2
+        const lines = Math.sign(delta) * Math.max(1, Math.round(Math.abs(delta) / lineH))
+        term.scrollLines(lines)
+      }
+      el.addEventListener('wheel', onWheel, { passive: false, capture: true })
+
+      // Mobile touch scroll: accumulate sub-pixel movement for smooth scrolling.
+      // Direction: swipe UP (dy > 0) → scrollLines(-N) = scroll up = older content.
+      let touchY = 0
+      let scrollRemainder = 0
+      const onTouchStart = (e: TouchEvent) => {
+        if (touchModeRef.current === 'scroll') {
+          touchY = e.touches[0].clientY
+          scrollRemainder = 0
+        }
+      }
+      const onTouchMove = (e: TouchEvent) => {
+        if (touchModeRef.current !== 'scroll') return
+        e.preventDefault()
+        const dy = touchY - e.touches[0].clientY
+        touchY = e.touches[0].clientY
+        scrollRemainder += dy
+        const lineH = (term.options.fontSize ?? 15) * 1.2
+        const lines = Math.trunc(scrollRemainder / lineH)
+        if (lines !== 0) {
+          scrollRemainder -= lines * lineH
+          term.scrollLines(-lines)
+        }
+      }
+      el.addEventListener('touchstart', onTouchStart, { passive: true })
+      el.addEventListener('touchmove', onTouchMove, { passive: false })
+
       cleanup = () => {
         ro.disconnect()
         window.visualViewport?.removeEventListener('resize', fit)
+        el.removeEventListener('wheel', onWheel, { capture: true })
+        el.removeEventListener('touchstart', onTouchStart)
+        el.removeEventListener('touchmove', onTouchMove)
         ws.close()
         term.dispose()
+        termRef.current = null
       }
     }
 
@@ -123,6 +183,24 @@ export default function TerminalPage() {
       cleanup?.()
     }
   }, [sessionName, isMobile])
+
+  const copySelection = useCallback(async () => {
+    const term = termRef.current
+    if (!term) return
+    const text = term.getSelection()
+    if (!text) {
+      // Nothing selected — select all and copy
+      term.selectAll()
+      const all = term.getSelection()
+      term.clearSelection()
+      if (!all) return
+      await navigator.clipboard.writeText(all)
+    } else {
+      await navigator.clipboard.writeText(text)
+    }
+    setCopyFeedback(true)
+    setTimeout(() => setCopyFeedback(false), 1200)
+  }, [])
 
   const createAndOpenSession = async (
     name: string,
@@ -151,7 +229,7 @@ export default function TerminalPage() {
   }
 
   const handleSessionOpen = (session: Session) => {
-    if (session.name === sessionName && step === 'terminal') return  // already active
+    if (session.name === sessionName && step === 'terminal') return
     setWorkspace(session.workspace)
     setRepoName(session.repoName)
     if (!openTabs.some(t => t.name === session.name)) {
@@ -295,7 +373,7 @@ export default function TerminalPage() {
   }
 
   return (
-    <div className="-mx-6 -mt-6 -mb-20 md:-mb-6 flex flex-col" style={{ height: '100dvh' }}>
+    <div className="-mx-6 -mt-6 -mb-6 flex flex-col" style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}>
       <SessionTabs
         tabs={openTabs}
         activeTab={sessionName ?? ''}
@@ -310,7 +388,7 @@ export default function TerminalPage() {
         onChangeDir={handleChangeDir}
       />
       {isMobile && (
-        <div className="h-10 flex gap-1 px-2 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
+        <div className="flex gap-1 px-2 py-1 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
           {KEY_SEQUENCES.map(k => (
             <button
               key={k.label}
@@ -318,11 +396,43 @@ export default function TerminalPage() {
                 e.preventDefault()
                 if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(k.seq)
               }}
-              className="px-3 py-1 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap"
+              className="px-3 py-1.5 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap shrink-0"
             >
               {k.label}
             </button>
           ))}
+          {/* divider */}
+          <div className="w-px h-5 bg-[#3a3a3a] shrink-0 mx-1" />
+          {/* scroll/select mode toggle */}
+          <button
+            onPointerDown={e => {
+              e.preventDefault()
+              setTouchMode(m => m === 'scroll' ? 'select' : 'scroll')
+            }}
+            title={touchMode === 'scroll' ? 'Switch to select mode' : 'Switch to scroll mode'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
+              touchMode === 'select'
+                ? 'bg-[#3b82f6] text-white'
+                : 'bg-[#2a2a2a] text-[#9ca3af]'
+            }`}
+          >
+            {touchMode === 'scroll'
+              ? <><MoveVertical size={11} /> Scroll</>
+              : <><MousePointer size={11} /> Select</>
+            }
+          </button>
+          {/* copy button */}
+          <button
+            onPointerDown={e => { e.preventDefault(); void copySelection() }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
+              copyFeedback
+                ? 'bg-[#10b981] text-white'
+                : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#10b981]'
+            }`}
+          >
+            <Clipboard size={11} />
+            {copyFeedback ? 'Copied!' : 'Copy'}
+          </button>
         </div>
       )}
       <div ref={termContainerRef} className="flex-1 overflow-hidden" />

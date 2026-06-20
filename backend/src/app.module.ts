@@ -14,6 +14,7 @@ import { N8nModule } from './n8n/n8n.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TerminalModule } from './terminal/terminal.module';
 import { SettingsModule } from './settings/settings.module';
+import { DockerModule } from './docker/docker.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { Plugin } from './plugins/entities/plugin.entity';
 import { PluginExecution } from './plugins/entities/plugin-execution.entity';
@@ -25,7 +26,7 @@ import { AppSetting } from './settings/entities/app-setting.entity';
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{
       ttl: 60_000,
-      limit: 10,
+      limit: 300,
     }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -53,6 +54,7 @@ import { AppSetting } from './settings/entities/app-setting.entity';
     NotificationsModule,
     TerminalModule,
     SettingsModule,
+    DockerModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

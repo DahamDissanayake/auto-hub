@@ -54,6 +54,10 @@ services:
     volumes:
       - ./backend/plugins:/app/plugins
       - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/data:/mnt/data:ro
+      - /:/host:ro
+    cap_add:
+      - SYS_BOOT
     group_add:
       - "984"
     depends_on:
@@ -71,7 +75,7 @@ services:
 
   terminal:
     build: ./terminal
-    user: "1001:1001"
+    user: "1000:1000"
     group_add:
       - "984"
     environment:

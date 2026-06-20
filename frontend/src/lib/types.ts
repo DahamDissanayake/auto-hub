@@ -101,3 +101,36 @@ export interface HealthData {
   telegramConfigured: boolean
   n8nConfigured: boolean
 }
+
+// Docker monitor types
+export interface DiskStats {
+  path: string
+  usedGb: number
+  totalGb: number
+  freeGb: number
+  percent: number
+}
+
+export interface SystemMetrics {
+  cpuPercent: number
+  memUsedMb: number
+  memTotalMb: number
+  memPercent: number
+  rootDisk: DiskStats
+  dataDisk: DiskStats | null
+}
+
+export interface ContainerInfo {
+  id: string
+  shortId: string
+  name: string
+  image: string
+  state: string
+  status: string
+  health: string | null
+  uptime: string
+  cpuPercent: number
+  memUsageMb: number
+  memLimitMb: number
+  memPercent: number
+}

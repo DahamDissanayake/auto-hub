@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { LayoutGrid, Terminal, Globe, Database, Settings, Code, Monitor, type LucideIcon } from 'lucide-react'
+import { LayoutGrid, Terminal, Globe, Database, Settings, Code, Monitor, Container, type LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import { apps } from './apps.config'
 import type { AppEntry } from './apps.config'
@@ -12,6 +12,7 @@ const LUCIDE_ICONS: Record<string, LucideIcon> = {
   Settings,
   Code,
   Monitor,
+  Container,
 }
 
 function AppCard({ app }: { app: AppEntry }) {

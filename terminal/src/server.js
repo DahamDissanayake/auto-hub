@@ -92,7 +92,7 @@ app.post('/clone', (req, res) => {
   if (fs.existsSync(targetPath)) {
     return res.status(409).json({ error: `Directory "${repoName}" already exists` });
   }
-  const cloneEnv = { ...process.env, HOME: DATA_HOME, USER: 'claude', LOGNAME: 'claude' };
+  const cloneEnv = { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' };
   let cmd, cmdArgs;
   if (ghRepo && process.env.GH_TOKEN) {
     cmd = 'gh'; cmdArgs = ['repo', 'clone', ghRepo, targetPath];
@@ -139,7 +139,7 @@ app.post('/sessions', (req, res) => {
 
   try {
     cp.execFileSync('tmux', ['new-session', '-d', '-s', name, '-c', cwd], {
-      env: { ...process.env, HOME: DATA_HOME, USER: 'claude', LOGNAME: 'claude' },
+      env: { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' },
       stdio: 'ignore',
     });
   } catch (err) {
@@ -206,9 +206,11 @@ wss.on('connection', (ws, req) => {
         ...process.env,
         TERM: 'xterm-256color',
         HOME: DATA_HOME,
-        USER: 'claude',
-        LOGNAME: 'claude',
+        USER: 'dama',
+        LOGNAME: 'dama',
         SHELL: '/bin/bash',
+        LANG: 'C.utf8',
+        LC_ALL: 'C.utf8',
       },
       cols: 80,
       rows: 24,

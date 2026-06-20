@@ -1,0 +1,10 @@
+{
+  "slug": "system-health",
+  "name": "System Health",
+  "description": "Reports CPU load and memory usage from /proc (Linux/Pi only)",
+  "version": "1.0.0",
+  "category": "ops",
+  "icon": "🖥️",
+  "entryFile": "index.js",
+  "configSchema": []
+}

@@ -1,0 +1,23 @@
+{
+  "slug": "webhook-ping",
+  "name": "Webhook Ping",
+  "description": "Sends a GET request to a configurable URL",
+  "version": "1.0.0",
+  "category": "utility",
+  "icon": "🔔",
+  "entryFile": "index.js",
+  "configSchema": [
+    {
+      "key": "url",
+      "label": "Target URL",
+      "type": "string",
+      "required": true
+    },
+    {
+      "key": "label",
+      "label": "Label",
+      "type": "string",
+      "required": false
+    }
+  ]
+}

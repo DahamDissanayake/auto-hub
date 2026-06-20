@@ -13,11 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN npm install -g @anthropic-ai/claude-code
 
-RUN groupadd --gid 1001 claude \
-    && useradd --uid 1001 --gid 1001 --no-create-home \
-       --home-dir /workspace/data --shell /bin/bash claude \
-    && echo 'claude ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/claude \
-    && chmod 440 /etc/sudoers.d/claude
+RUN usermod -l dama -d /workspace/data node \
+    && groupmod -n dama node \
+    && echo 'dama ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dama \
+    && chmod 440 /etc/sudoers.d/dama
 
 ENV HOME=/workspace/data
 WORKDIR /app

@@ -17,4 +17,12 @@ export const apps: AppEntry[] = [
     lucideIcon: 'Terminal',
     color: '#10b981',
   },
+  {
+    id: 'docker-monitor',
+    name: 'Docker Monitor',
+    description: 'Real-time container health, CPU/RAM/disk usage, and system controls for the Raspberry Pi.',
+    url: '/docker',
+    lucideIcon: 'Container',
+    color: '#3b82f6',
+  },
 ]
