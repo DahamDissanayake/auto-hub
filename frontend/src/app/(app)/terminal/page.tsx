@@ -39,6 +39,7 @@ export default function TerminalPage() {
   const [error, setError] = useState<string | null>(null)
   const [sessionEnded, setSessionEnded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showSessionOverlay, setShowSessionOverlay] = useState(false)
   const termContainerRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
 
@@ -150,6 +151,7 @@ export default function TerminalPage() {
   }
 
   const handleSessionOpen = (session: Session) => {
+    if (session.name === sessionName && step === 'terminal') return  // already active
     setWorkspace(session.workspace)
     setRepoName(session.repoName)
     if (!openTabs.some(t => t.name === session.name)) {
@@ -299,7 +301,7 @@ export default function TerminalPage() {
         activeTab={sessionName ?? ''}
         onSwitch={handleSwitchTab}
         onEnd={name => { void handleEndTab(name) }}
-        onNew={handleChangeDir}
+        onNew={() => setShowSessionOverlay(true)}
       />
       <TerminalBreadcrumb
         sessionName={sessionName ?? ''}
@@ -324,6 +326,19 @@ export default function TerminalPage() {
         </div>
       )}
       <div ref={termContainerRef} className="flex-1 overflow-hidden" />
+      {showSessionOverlay && (
+        <div
+          className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center"
+          onClick={() => setShowSessionOverlay(false)}
+        >
+          <div onClick={e => e.stopPropagation()}>
+            <SessionManager
+              onOpen={session => { setShowSessionOverlay(false); handleSessionOpen(session) }}
+              onNew={name => { setPendingName(name); setShowSessionOverlay(false); setStep('workspace') }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
