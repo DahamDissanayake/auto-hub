@@ -13,10 +13,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { N8nModule } from './n8n/n8n.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TerminalModule } from './terminal/terminal.module';
+import { SettingsModule } from './settings/settings.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { Plugin } from './plugins/entities/plugin.entity';
 import { PluginExecution } from './plugins/entities/plugin-execution.entity';
 import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
+import { AppSetting } from './settings/entities/app-setting.entity';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [Plugin, PluginExecution, ScheduledJob],
+        entities: [Plugin, PluginExecution, ScheduledJob, AppSetting],
         synchronize: false,
       }),
       inject: [ConfigService],
@@ -50,6 +52,7 @@ import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
     N8nModule,
     NotificationsModule,
     TerminalModule,
+    SettingsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
