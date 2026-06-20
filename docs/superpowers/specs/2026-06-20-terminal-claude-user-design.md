@@ -44,7 +44,8 @@ terminal:
 ### terminal/src/server.js
 
 - Spawn bash with `HOME: '/workspace/claude-home'`, `USER: 'claude'`, `LOGNAME: 'claude'`
-- Add `GET /repos` endpoint — scans `/workspace/github`, returns `[{ name, path, isGitRepo }]` where `isGitRepo` checks for `.git` subdir existence. Requires `Authorization: Bearer <token>` header.
+- **cwd validation**: change from exact set membership (`TERMINAL_DIRS.has(cwd)`) to a prefix check — cwd is valid if it starts with one of the configured dirs. This is required because users now connect to `/workspace/github/<repo>`, not just `/workspace/github`.
+- Add `GET /repos` endpoint — scans `/workspace/github`, returns `[{ name, path, isGitRepo }]` where `isGitRepo` checks for `.git` subdir existence. Requires `Authorization: Bearer <token>` header (JWT forwarded by backend proxy).
 - Add `POST /clone` endpoint — accepts `{ url, name? }`, derives name from URL if omitted, validates target dir doesn't exist, runs `git clone` via `child_process.execFile` with 120s timeout. Returns `{ path }` on success or `{ error, detail }` on failure. Requires JWT auth header.
 
 ### backend/src/terminal/terminal.controller.ts
