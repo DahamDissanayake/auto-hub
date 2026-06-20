@@ -58,6 +58,8 @@ const seedPlugin: Plugin = {
   status: 'active',
   config: {},
   configSchema: [],
+  actions: [],
+  requiresPassword: false,
   lastRunAt: null as any,
   lastRunStatus: null as any,
   createdAt: new Date(),
