@@ -3,12 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "jest"
   },
   "dependencies": {
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "node-pty": "^1.0.0",
     "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "supertest": "^6.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
