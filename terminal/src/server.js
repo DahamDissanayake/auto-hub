@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const { getSessions, getSession, addSession, removeSession, updateLastActive } = require('./sessions');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -35,6 +36,18 @@ function requireAuth(req, res) {
   } catch {
     res.status(401).json({ error: 'Unauthorized' });
     return false;
+  }
+}
+
+function getLiveSessions() {
+  try {
+    const output = cp.execFileSync('tmux', ['list-sessions', '-F', '#{session_name}'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return new Set(output.trim().split('\n').filter(Boolean));
+  } catch {
+    return new Set();
   }
 }
 
@@ -69,7 +82,6 @@ app.post('/clone', (req, res) => {
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url is required' });
   }
-  // Extract owner/repo from GitHub URLs (SSH or HTTPS)
   const ghMatch = url.match(/^(?:git@github\.com:|https?:\/\/github\.com\/)(.+?)(?:\.git)?$/);
   const ghRepo = ghMatch ? ghMatch[1] : null;
   const repoName = (name?.trim() || url.split('/').pop()?.replace(/\.git$/, '') || '').trim();
@@ -81,15 +93,11 @@ app.post('/clone', (req, res) => {
     return res.status(409).json({ error: `Directory "${repoName}" already exists` });
   }
   const cloneEnv = { ...process.env, HOME: DATA_HOME, USER: 'claude', LOGNAME: 'claude' };
-  // Use gh when GH_TOKEN is available (works for public + private repos)
-  // Otherwise fall back to git clone with HTTPS (public repos only)
   let cmd, cmdArgs;
   if (ghRepo && process.env.GH_TOKEN) {
     cmd = 'gh'; cmdArgs = ['repo', 'clone', ghRepo, targetPath];
   } else {
-    const httpsUrl = ghRepo
-      ? `https://github.com/${ghRepo}.git`
-      : url;
+    const httpsUrl = ghRepo ? `https://github.com/${ghRepo}.git` : url;
     cmd = 'git'; cmdArgs = ['clone', httpsUrl, targetPath];
   }
   cp.execFile(cmd, cmdArgs, { timeout: 120_000, env: cloneEnv }, (err, _stdout, stderr) => {
@@ -102,10 +110,72 @@ app.post('/clone', (req, res) => {
   });
 });
 
+app.get('/sessions', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const liveSessions = getLiveSessions();
+  const sessionList = getSessions().map(s => ({
+    ...s,
+    alive: liveSessions.has(s.name),
+  }));
+  res.json(sessionList);
+});
+
+app.post('/sessions', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { name, cwd, workspace, repoName } = req.body ?? {};
+
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  if (!/^[a-zA-Z0-9_-]{1,40}$/.test(name)) {
+    return res.status(400).json({ error: 'name must be 1–40 alphanumeric/dash/underscore characters' });
+  }
+  if (!cwd || !isValidCwd(cwd)) {
+    return res.status(400).json({ error: 'invalid cwd' });
+  }
+  if (getSession(name)) {
+    return res.status(409).json({ error: `Session "${name}" already exists` });
+  }
+
+  try {
+    cp.execFileSync('tmux', ['new-session', '-d', '-s', name, '-c', cwd], {
+      env: { ...process.env, HOME: DATA_HOME, USER: 'claude', LOGNAME: 'claude' },
+      stdio: 'ignore',
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+  const session = {
+    name,
+    cwd,
+    workspace: workspace ?? 'home',
+    repoName: repoName ?? null,
+    createdAt: new Date().toISOString(),
+    lastActive: new Date().toISOString(),
+  };
+  addSession(session);
+  res.status(201).json({ ...session, alive: true });
+});
+
+app.delete('/sessions/:name', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { name } = req.params;
+
+  try {
+    cp.execFileSync('tmux', ['kill-session', '-t', name], { stdio: 'ignore' });
+  } catch {
+    // session may already be dead — not an error
+  }
+
+  removeSession(name);
+  res.json({ ok: true });
+});
+
 wss.on('connection', (ws, req) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
   const token = params.get('token') ?? '';
-  const cwd = params.get('cwd') ?? '';
+  const sessionName = params.get('session') ?? '';
 
   try {
     jwt.verify(token, JWT_SECRET);
@@ -114,17 +184,17 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  if (!cwd || !isValidCwd(cwd)) {
-    ws.close(4400, 'Bad cwd');
+  const session = getSession(sessionName);
+  if (!session) {
+    ws.close(4400, 'Session not found');
     return;
   }
 
   let pty;
   let ptyDead = false;
   try {
-    pty = nodePty.spawn('bash', ['-l'], {
+    pty = nodePty.spawn('tmux', ['attach-session', '-t', sessionName], {
       name: 'xterm-256color',
-      cwd,
       env: {
         ...process.env,
         TERM: 'xterm-256color',
@@ -140,6 +210,8 @@ wss.on('connection', (ws, req) => {
     ws.close(4500, 'Spawn failed');
     return;
   }
+
+  updateLastActive(sessionName);
 
   pty.onData(data => { if (ws.readyState === ws.OPEN) ws.send(data); });
   pty.onExit(() => { ptyDead = true; ws.close(1000, 'Process exited'); });

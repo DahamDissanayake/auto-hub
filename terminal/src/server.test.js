@@ -1,5 +1,6 @@
+jest.mock('./sessions');
 process.env.JWT_SECRET = 'test-secret';
-process.env.TERMINAL_DIRS = '/workspace/claude-home,/workspace/github';
+process.env.TERMINAL_DIRS = '/workspace/data,/workspace/github';
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -7,13 +8,14 @@ const fs = require('fs');
 const cp = require('child_process');
 
 const { app, isValidCwd } = require('./server');
+const sessions = require('./sessions');
 
 const token = jwt.sign({ sub: 1 }, 'test-secret');
 const auth = `Bearer ${token}`;
 
 describe('isValidCwd', () => {
   it('accepts exact dir match', () =>
-    expect(isValidCwd('/workspace/claude-home')).toBe(true));
+    expect(isValidCwd('/workspace/data')).toBe(true));
 
   it('accepts subdirectory of configured dir', () =>
     expect(isValidCwd('/workspace/github/my-repo')).toBe(true));
@@ -156,5 +158,125 @@ describe('POST /clone', () => {
       .set('authorization', auth)
       .send({ url: 'https://github.com/u/repo', name: '../etc' })
       .expect(400);
+  });
+});
+
+describe('GET /sessions', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('returns sessions with alive=true when tmux reports them', async () => {
+    sessions.getSessions.mockReturnValue([
+      { name: 'alpha', cwd: '/workspace/data', workspace: 'home', repoName: null,
+        createdAt: '2026-01-01T00:00:00.000Z', lastActive: '2026-01-01T00:00:00.000Z' }
+    ]);
+    jest.spyOn(cp, 'execFileSync').mockReturnValue('alpha\n');
+    const res = await request(app).get('/sessions').set('Authorization', auth).expect(200);
+    expect(res.body[0].alive).toBe(true);
+    expect(res.body[0].name).toBe('alpha');
+  });
+
+  it('marks session alive=false when tmux has no matching session', async () => {
+    sessions.getSessions.mockReturnValue([
+      { name: 'dead', cwd: '/workspace/data', workspace: 'home', repoName: null,
+        createdAt: '2026-01-01T00:00:00.000Z', lastActive: '2026-01-01T00:00:00.000Z' }
+    ]);
+    jest.spyOn(cp, 'execFileSync').mockReturnValue('');
+    const res = await request(app).get('/sessions').set('Authorization', auth).expect(200);
+    expect(res.body[0].alive).toBe(false);
+  });
+
+  it('returns 401 without auth', async () => {
+    await request(app).get('/sessions').expect(401);
+  });
+});
+
+describe('POST /sessions', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('creates session and returns 201', async () => {
+    sessions.getSession.mockReturnValue(null);
+    sessions.addSession.mockImplementation(() => {});
+    jest.spyOn(cp, 'execFileSync').mockReturnValue(undefined);
+    const res = await request(app)
+      .post('/sessions')
+      .set('Authorization', auth)
+      .send({ name: 'my-sess', cwd: '/workspace/data', workspace: 'home', repoName: null })
+      .expect(201);
+    expect(res.body.name).toBe('my-sess');
+    expect(res.body.alive).toBe(true);
+    expect(sessions.addSession).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-sess' }));
+  });
+
+  it('returns 409 when session name already exists', async () => {
+    sessions.getSession.mockReturnValue({ name: 'my-sess' });
+    await request(app)
+      .post('/sessions')
+      .set('Authorization', auth)
+      .send({ name: 'my-sess', cwd: '/workspace/data', workspace: 'home' })
+      .expect(409);
+  });
+
+  it('returns 400 for name with slashes', async () => {
+    await request(app)
+      .post('/sessions')
+      .set('Authorization', auth)
+      .send({ name: 'bad/name', cwd: '/workspace/data', workspace: 'home' })
+      .expect(400);
+  });
+
+  it('returns 400 for name over 40 chars', async () => {
+    await request(app)
+      .post('/sessions')
+      .set('Authorization', auth)
+      .send({ name: 'a'.repeat(41), cwd: '/workspace/data', workspace: 'home' })
+      .expect(400);
+  });
+
+  it('returns 400 for invalid cwd', async () => {
+    sessions.getSession.mockReturnValue(null);
+    await request(app)
+      .post('/sessions')
+      .set('Authorization', auth)
+      .send({ name: 'valid', cwd: '/etc/passwd', workspace: 'home' })
+      .expect(400);
+  });
+
+  it('returns 401 without auth', async () => {
+    await request(app)
+      .post('/sessions')
+      .send({ name: 'test', cwd: '/workspace/data', workspace: 'home' })
+      .expect(401);
+  });
+});
+
+describe('DELETE /sessions/:name', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('kills session and removes from manifest', async () => {
+    sessions.removeSession.mockImplementation(() => {});
+    jest.spyOn(cp, 'execFileSync').mockReturnValue(undefined);
+    const res = await request(app)
+      .delete('/sessions/my-sess')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(sessions.removeSession).toHaveBeenCalledWith('my-sess');
+  });
+
+  it('still returns ok when tmux session is already dead', async () => {
+    sessions.removeSession.mockImplementation(() => {});
+    jest.spyOn(cp, 'execFileSync').mockImplementation(() => {
+      throw new Error('session not found');
+    });
+    const res = await request(app)
+      .delete('/sessions/dead')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(sessions.removeSession).toHaveBeenCalledWith('dead');
+  });
+
+  it('returns 401 without auth', async () => {
+    await request(app).delete('/sessions/test').expect(401);
   });
 });
