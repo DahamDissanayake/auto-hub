@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as fs from 'fs';
 import { statfs } from 'fs/promises';
-import { exec } from 'child_process';
 
 export interface DiskStats {
   path: string;
@@ -281,15 +280,29 @@ export class DockerService {
     await this.dockerRequest('POST', `/containers/${id}/start`);
   }
 
-  rebootSystem(): void {
-    exec('reboot', (err) => {
-      if (err) this.logger.error('reboot failed', err);
+  private async runHostCommand(command: 'reboot' | 'poweroff'): Promise<void> {
+    const body = JSON.stringify({
+      Image: 'node:20-alpine',
+      Cmd: ['nsenter', '-t', '1', '-m', '-u', '-i', '-n', '--', command],
+      HostConfig: { Privileged: true, PidMode: 'host', AutoRemove: false },
     });
+    const container = await this.dockerRequest<{ Id: string }>(
+      'POST',
+      '/containers/create',
+      body,
+    );
+    await this.dockerRequest('POST', `/containers/${container.Id}/start`);
+  }
+
+  rebootSystem(): void {
+    this.runHostCommand('reboot').catch((err) =>
+      this.logger.error('reboot failed', err),
+    );
   }
 
   shutdownSystem(): void {
-    exec('poweroff', (err) => {
-      if (err) this.logger.error('poweroff failed', err);
-    });
+    this.runHostCommand('poweroff').catch((err) =>
+      this.logger.error('poweroff failed', err),
+    );
   }
 }
