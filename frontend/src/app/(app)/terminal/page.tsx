@@ -1,9 +1,12 @@
 'use client'
 import '@xterm/xterm/css/xterm.css'
 import { useEffect, useRef, useState } from 'react'
+import api from '@/lib/api'
+import { SessionManager, Session } from './components/SessionManager'
 import { WorkspacePicker } from './components/WorkspacePicker'
 import { RepoPicker } from './components/RepoPicker'
 import { CloneDialog } from './components/CloneDialog'
+import { SessionTabs, TabSession } from './components/SessionTabs'
 import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
 
 interface Repo {
@@ -12,7 +15,7 @@ interface Repo {
   isGitRepo: boolean
 }
 
-type Step = 'workspace' | 'repo' | 'clone' | 'terminal'
+type Step = 'session' | 'workspace' | 'repo' | 'clone' | 'terminal'
 type Workspace = 'home' | 'github' | 'auto-hub'
 
 const KEY_SEQUENCES = [
@@ -27,10 +30,12 @@ const KEY_SEQUENCES = [
 ]
 
 export default function TerminalPage() {
-  const [step, setStep] = useState<Step>('workspace')
+  const [step, setStep] = useState<Step>('session')
+  const [sessionName, setSessionName] = useState<string | null>(null)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [repoName, setRepoName] = useState<string | null>(null)
-  const [cwd, setCwd] = useState<string | null>(null)
+  const [pendingName, setPendingName] = useState<string | null>(null)
+  const [openTabs, setOpenTabs] = useState<TabSession[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sessionEnded, setSessionEnded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -42,7 +47,7 @@ export default function TerminalPage() {
   }, [])
 
   useEffect(() => {
-    if (!cwd || !termContainerRef.current) return
+    if (!sessionName || !termContainerRef.current) return
 
     let destroyed = false
     let cleanup: (() => void) | undefined
@@ -71,7 +76,7 @@ export default function TerminalPage() {
       const token = sessionStorage.getItem('autohub_token') ?? ''
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
-        `${proto}//${window.location.host}/terminal-ws/?cwd=${encodeURIComponent(cwd)}&token=${encodeURIComponent(token)}`
+        `${proto}//${window.location.host}/terminal-ws/?session=${encodeURIComponent(sessionName)}&token=${encodeURIComponent(token)}`
       )
       wsRef.current = ws
 
@@ -80,8 +85,8 @@ export default function TerminalPage() {
       ws.onclose = e => {
         wsRef.current = null
         if (e.code === 4401) setError('Authentication failed. Please log in again.')
-        else if (e.code === 4400) setError('Invalid working directory.')
-        else if (e.code === 4500) setError('Failed to start terminal. Is the terminal service running?')
+        else if (e.code === 4400) setError('Session not found.')
+        else if (e.code === 4500) setError('Session ended or failed to start.')
         else if (e.code === 1000) setSessionEnded(true)
       }
 
@@ -116,55 +121,140 @@ export default function TerminalPage() {
       wsRef.current = null
       cleanup?.()
     }
-  }, [cwd, isMobile])
+  }, [sessionName, isMobile])
 
-  const handleWorkspaceSelect = (ws: Workspace) => {
+  const createAndOpenSession = async (
+    name: string,
+    cwd: string,
+    ws: Workspace,
+    repo: string | null,
+  ) => {
+    try {
+      await api.post('/api/terminal/sessions', { name, cwd, workspace: ws, repoName: repo })
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        'Failed to create session'
+      setError(msg)
+      setStep('session')
+      return
+    }
+    const tab: TabSession = { name, workspace: ws, repoName: repo }
+    setOpenTabs(tabs => [...tabs, tab])
+    setWorkspace(ws)
+    setRepoName(repo)
+    setSessionName(name)
+    setError(null)
+    setSessionEnded(false)
+    setStep('terminal')
+  }
+
+  const handleSessionOpen = (session: Session) => {
+    setWorkspace(session.workspace)
+    setRepoName(session.repoName)
+    if (!openTabs.some(t => t.name === session.name)) {
+      setOpenTabs(tabs => [
+        ...tabs,
+        { name: session.name, workspace: session.workspace, repoName: session.repoName },
+      ])
+    }
+    setError(null)
+    setSessionEnded(false)
+    setSessionName(session.name)
+    setStep('terminal')
+  }
+
+  const handleNewSessionName = (name: string) => {
+    setPendingName(name)
+    setStep('workspace')
+  }
+
+  const handleWorkspaceSelect = async (ws: Workspace) => {
     setWorkspace(ws)
     if (ws === 'home') {
-      setRepoName(null)
-      setCwd('/workspace/data')
-      setStep('terminal')
-    } else if (ws === 'github') {
-      setStep('repo')
+      await createAndOpenSession(pendingName!, '/workspace/data', ws, null)
     } else if (ws === 'auto-hub') {
-      setRepoName(null)
-      setCwd('/home/dama/repo/auto-hub')
-      setStep('terminal')
+      await createAndOpenSession(pendingName!, '/workspace/auto-hub', ws, null)
+    } else {
+      setStep('repo')
     }
   }
 
-  const handleRepoSelect = (repo: Repo) => {
+  const handleRepoSelect = async (repo: Repo) => {
     setRepoName(repo.name)
-    setCwd(repo.path)
-    setStep('terminal')
+    await createAndOpenSession(pendingName!, repo.path, 'github', repo.name)
   }
 
-  const handleCloneSuccess = (repoPath: string, name: string) => {
+  const handleCloneSuccess = async (repoPath: string, name: string) => {
     setRepoName(name)
-    setCwd(repoPath)
-    setStep('terminal')
+    await createAndOpenSession(pendingName!, repoPath, 'github', name)
+  }
+
+  const handleSwitchTab = (name: string) => {
+    if (name === sessionName) return
+    const tab = openTabs.find(t => t.name === name)
+    if (!tab) return
+    setSessionName(null)
+    setWorkspace(tab.workspace)
+    setRepoName(tab.repoName)
+    setError(null)
+    setSessionEnded(false)
+    requestAnimationFrame(() => setSessionName(name))
+  }
+
+  const handleEndTab = async (name: string) => {
+    try {
+      await api.delete(`/api/terminal/sessions/${encodeURIComponent(name)}`)
+    } catch {
+      // session may already be dead
+    }
+    setOpenTabs(tabs => tabs.filter(t => t.name !== name))
+    if (sessionName === name) {
+      setSessionName(null)
+      setStep('session')
+    }
   }
 
   const handleChangeDir = () => {
-    setCwd(null)
+    setSessionName(null)
     setWorkspace(null)
     setRepoName(null)
     setError(null)
     setSessionEnded(false)
-    setStep('workspace')
+    setStep('session')
   }
 
   const reconnect = () => {
-    const saved = cwd
+    const saved = sessionName
     setSessionEnded(false)
     setError(null)
-    setCwd(null)
-    requestAnimationFrame(() => setCwd(saved))
+    setSessionName(null)
+    requestAnimationFrame(() => setSessionName(saved))
   }
 
-  if (step === 'workspace') return <WorkspacePicker onSelect={handleWorkspaceSelect} onBack={() => {}} />
-  if (step === 'repo') return <RepoPicker onSelect={handleRepoSelect} onClone={() => setStep('clone')} onBack={() => setStep('workspace')} />
-  if (step === 'clone') return <CloneDialog onSuccess={handleCloneSuccess} onBack={() => setStep('repo')} />
+  if (step === 'session') {
+    return <SessionManager onOpen={handleSessionOpen} onNew={handleNewSessionName} />
+  }
+  if (step === 'workspace') {
+    return <WorkspacePicker onSelect={handleWorkspaceSelect} onBack={() => setStep('session')} />
+  }
+  if (step === 'repo') {
+    return (
+      <RepoPicker
+        onSelect={repo => { void handleRepoSelect(repo) }}
+        onClone={() => setStep('clone')}
+        onBack={() => setStep('workspace')}
+      />
+    )
+  }
+  if (step === 'clone') {
+    return (
+      <CloneDialog
+        onSuccess={(path, name) => { void handleCloneSuccess(path, name) }}
+        onBack={() => setStep('repo')}
+      />
+    )
+  }
 
   if (error) {
     return (
@@ -174,7 +264,7 @@ export default function TerminalPage() {
           onClick={handleChangeDir}
           className="px-4 py-2 text-xs bg-[#2a2a2a] text-[#e5e7eb] rounded hover:bg-[#3a3a3a] transition-colors"
         >
-          Change Directory
+          Sessions
         </button>
       </div>
     )
@@ -195,7 +285,7 @@ export default function TerminalPage() {
             onClick={handleChangeDir}
             className="px-4 py-2 text-xs bg-[#2a2a2a] text-[#e5e7eb] rounded hover:bg-[#3a3a3a] transition-colors"
           >
-            Change Directory
+            Sessions
           </button>
         </div>
       </div>
@@ -204,7 +294,19 @@ export default function TerminalPage() {
 
   return (
     <div className="-mx-6 -mt-6 -mb-20 md:-mb-6 flex flex-col" style={{ height: '100dvh' }}>
-      <TerminalBreadcrumb workspace={workspace!} repoName={repoName} onChangeDir={handleChangeDir} />
+      <SessionTabs
+        tabs={openTabs}
+        activeTab={sessionName ?? ''}
+        onSwitch={handleSwitchTab}
+        onEnd={name => { void handleEndTab(name) }}
+        onNew={handleChangeDir}
+      />
+      <TerminalBreadcrumb
+        sessionName={sessionName ?? ''}
+        workspace={workspace!}
+        repoName={repoName}
+        onChangeDir={handleChangeDir}
+      />
       {isMobile && (
         <div className="h-10 flex gap-1 px-2 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
           {KEY_SEQUENCES.map(k => (
