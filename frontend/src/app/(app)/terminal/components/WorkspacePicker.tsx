@@ -18,15 +18,15 @@ export function WorkspacePicker({ onSelect }: WorkspacePickerProps) {
             onClick={() => onSelect('home')}
             className="w-full text-left p-3 rounded-md bg-[#111111] border border-[#2a2a2a] hover:border-[#10b981]/50 transition-colors"
           >
-            <p className="text-white text-sm font-medium">Home</p>
-            <p className="text-[#6b7280] text-xs mt-0.5 font-mono">/home/claude</p>
+            <p className="text-white text-sm font-medium">Data Storage</p>
+            <p className="text-[#6b7280] text-xs mt-0.5 font-mono">/mnt/data</p>
           </button>
           <button
             onClick={() => onSelect('github')}
             className="w-full text-left p-3 rounded-md bg-[#111111] border border-[#2a2a2a] hover:border-[#10b981]/50 transition-colors"
           >
             <p className="text-white text-sm font-medium">GitHub Repos</p>
-            <p className="text-[#6b7280] text-xs mt-0.5 font-mono">/home/claude/github</p>
+            <p className="text-[#6b7280] text-xs mt-0.5 font-mono">/mnt/data/github</p>
           </button>
         </div>
       </div>

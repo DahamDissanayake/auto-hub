@@ -71,10 +71,11 @@ services:
     user: "1001:1001"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      TERMINAL_DIRS: /workspace/claude-home,/workspace/github
+      TERMINAL_DIRS: /workspace/data,/workspace/github
+      GH_TOKEN: ${GH_TOKEN}
     volumes:
-      - /home/claude:/workspace/claude-home:rw
-      - /home/claude/github:/workspace/github:rw
+      - /mnt/data:/workspace/data:rw
+      - /mnt/data/github:/workspace/github:rw
     restart: unless-stopped
 
   nginx:

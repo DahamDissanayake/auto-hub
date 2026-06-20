@@ -121,7 +121,7 @@ export default function TerminalPage() {
     setWorkspace(ws)
     if (ws === 'home') {
       setRepoName(null)
-      setCwd('/workspace/claude-home')
+      setCwd('/workspace/data')
       setStep('terminal')
     } else {
       setStep('repo')

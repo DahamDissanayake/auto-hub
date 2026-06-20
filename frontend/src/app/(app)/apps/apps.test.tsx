@@ -35,11 +35,10 @@ describe('AppsPage', () => {
 // We do this by testing the rendered HTML structure
 
 describe('AppCard link types', () => {
-  it('internal URL card does not open in a new tab', () => {
+  it('app cards link to /apps/<id> and not the raw URL', () => {
     render(<AppsPage />)
     const links = screen.getAllByRole('link')
-    // Claude Code Terminal has url='/terminal' (internal) — must not have target="_blank"
-    const terminalCard = links.find(l => l.getAttribute('href') === '/terminal')
+    const terminalCard = links.find(l => l.getAttribute('href') === '/apps/claude-terminal')
     expect(terminalCard).toBeDefined()
     expect(terminalCard?.getAttribute('target')).not.toBe('_blank')
   })

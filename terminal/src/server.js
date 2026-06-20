@@ -20,6 +20,7 @@ const TERMINAL_DIRS = (process.env.TERMINAL_DIRS ?? '')
   .filter(Boolean);
 
 const GITHUB_DIR = '/workspace/github';
+const DATA_HOME = '/workspace/data';
 
 function isValidCwd(cwd) {
   return TERMINAL_DIRS.some(dir => cwd === dir || cwd.startsWith(dir + '/'));
@@ -68,6 +69,9 @@ app.post('/clone', (req, res) => {
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url is required' });
   }
+  // Extract owner/repo from GitHub URLs (SSH or HTTPS)
+  const ghMatch = url.match(/^(?:git@github\.com:|https?:\/\/github\.com\/)(.+?)(?:\.git)?$/);
+  const ghRepo = ghMatch ? ghMatch[1] : null;
   const repoName = (name?.trim() || url.split('/').pop()?.replace(/\.git$/, '') || '').trim();
   if (!repoName || repoName.includes('/') || repoName.includes('..')) {
     return res.status(400).json({ error: 'Invalid repo name' });
@@ -76,9 +80,22 @@ app.post('/clone', (req, res) => {
   if (fs.existsSync(targetPath)) {
     return res.status(409).json({ error: `Directory "${repoName}" already exists` });
   }
-  cp.execFile('git', ['clone', url, targetPath], { timeout: 120_000 }, (err, _stdout, stderr) => {
+  const cloneEnv = { ...process.env, HOME: DATA_HOME, USER: 'claude', LOGNAME: 'claude' };
+  // Use gh when GH_TOKEN is available (works for public + private repos)
+  // Otherwise fall back to git clone with HTTPS (public repos only)
+  let cmd, cmdArgs;
+  if (ghRepo && process.env.GH_TOKEN) {
+    cmd = 'gh'; cmdArgs = ['repo', 'clone', ghRepo, targetPath];
+  } else {
+    const httpsUrl = ghRepo
+      ? `https://github.com/${ghRepo}.git`
+      : url;
+    cmd = 'git'; cmdArgs = ['clone', httpsUrl, targetPath];
+  }
+  cp.execFile(cmd, cmdArgs, { timeout: 120_000, env: cloneEnv }, (err, _stdout, stderr) => {
     if (err) {
-      const detail = (stderr ?? '').split('\n').filter(Boolean)[0] ?? err.message;
+      const lines = (stderr ?? '').split('\n').filter(Boolean);
+      const detail = lines.find(l => !l.startsWith('Cloning into')) ?? lines[0] ?? err.message;
       return res.status(500).json({ error: err.killed ? 'Clone timed out. Try again.' : detail });
     }
     res.json({ path: targetPath });
@@ -111,7 +128,7 @@ wss.on('connection', (ws, req) => {
       env: {
         ...process.env,
         TERM: 'xterm-256color',
-        HOME: '/workspace/claude-home',
+        HOME: DATA_HOME,
         USER: 'claude',
         LOGNAME: 'claude',
         SHELL: '/bin/bash',
