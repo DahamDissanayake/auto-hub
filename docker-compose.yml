@@ -52,7 +52,10 @@ services:
       TIMEZONE: ${TIMEZONE}
       TERMINAL_DIRS: /workspace/data,/workspace/github,/workspace/auto-hub
     volumes:
-      - plugins_data:/app/plugins
+      - ./backend/plugins:/app/plugins
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "984"
     depends_on:
       - postgres
       - redis
@@ -109,4 +112,3 @@ services:
 volumes:
   postgres_data:
   n8n_data:
-  plugins_data:

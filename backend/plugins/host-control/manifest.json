@@ -1,0 +1,15 @@
+{
+  "slug": "host-control",
+  "name": "Host Control",
+  "description": "Safely reboot or shut down the Raspberry Pi host",
+  "version": "1.0.0",
+  "category": "ops",
+  "icon": "⚡",
+  "entryFile": "index.js",
+  "requiresPassword": true,
+  "actions": [
+    { "key": "reboot",   "label": "Reboot",   "danger": true },
+    { "key": "shutdown", "label": "Shutdown",  "danger": true }
+  ],
+  "configSchema": []
+}
