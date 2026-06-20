@@ -1,7 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
+import { useTimezone } from '@/lib/context/TimezoneContext'
 import type { PluginExecution } from '@/lib/types'
 
 function StatusIcon({ status }: { status: PluginExecution['status'] }) {
@@ -12,6 +14,7 @@ function StatusIcon({ status }: { status: PluginExecution['status'] }) {
 
 export default function ExecutionLog({ execution }: { execution: PluginExecution }) {
   const [expanded, setExpanded] = useState(false)
+  const tz = useTimezone()
   const pluginName = execution.plugin?.name ?? execution.pluginId
 
   return (
@@ -31,7 +34,7 @@ export default function ExecutionLog({ execution }: { execution: PluginExecution
           </div>
           <div className="flex items-center gap-2 mt-0.5 text-xs text-[#6b7280]">
             <Clock size={10} />
-            <span title={format(new Date(execution.startedAt), 'PPpp')}>
+            <span title={formatInTimeZone(new Date(execution.startedAt), tz, 'PPpp')}>
               {formatDistanceToNow(new Date(execution.startedAt), { addSuffix: true })}
             </span>
             {execution.durationMs != null && (
