@@ -10,6 +10,12 @@ export interface ConfigSchemaItem {
   required?: boolean
 }
 
+export interface PluginAction {
+  key: string
+  label: string
+  danger?: boolean
+}
+
 export interface Plugin {
   id: string
   slug: string
@@ -22,6 +28,8 @@ export interface Plugin {
   status: PluginStatus
   config: Record<string, unknown>
   configSchema: ConfigSchemaItem[]
+  actions: PluginAction[]
+  requiresPassword: boolean
   lastRunAt: string | null
   lastRunStatus: string | null
   createdAt: string

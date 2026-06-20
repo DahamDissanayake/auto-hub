@@ -51,14 +51,14 @@ export function useAllExecutions(filters: { pluginId?: string; from?: string; to
 
 export function useRunPlugin() {
   const queryClient = useQueryClient()
-  return useMutation<PluginExecution, Error, string>({
-    mutationFn: async (pluginId: string) => {
-      const { data } = await api.post(`/api/plugins/${pluginId}/run`)
+  return useMutation<PluginExecution, Error, { id: string; action?: string; password?: string }>({
+    mutationFn: async ({ id, action, password }) => {
+      const { data } = await api.post(`/api/plugins/${id}/run`, { action, password })
       return data
     },
-    onSuccess: (_, pluginId) => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['plugins'] })
-      queryClient.invalidateQueries({ queryKey: ['executions', pluginId] })
+      queryClient.invalidateQueries({ queryKey: ['executions', id] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })

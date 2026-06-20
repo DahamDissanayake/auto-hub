@@ -29,7 +29,7 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
 
   const handleRun = async () => {
     try {
-      const result = await runPlugin.mutateAsync(plugin.id)
+      const result = await runPlugin.mutateAsync({ id: plugin.id })
       if (result.status === 'success') {
         toast.success(`${plugin.name} ran successfully`)
       } else if (result.status === 'failed') {
