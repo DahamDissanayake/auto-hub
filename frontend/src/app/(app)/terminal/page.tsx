@@ -1,15 +1,18 @@
 'use client'
 import '@xterm/xterm/css/xterm.css'
 import { useEffect, useRef, useState } from 'react'
-import { FolderOpen } from 'lucide-react'
-import api from '@/lib/api'
+import { WorkspacePicker } from './components/WorkspacePicker'
+import { RepoPicker } from './components/RepoPicker'
+import { CloneDialog } from './components/CloneDialog'
+import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
 
-interface DirEntry {
-  label: string
+interface Repo {
+  name: string
   path: string
+  isGitRepo: boolean
 }
 
-const LAST_CWD_KEY = 'terminal.lastCwd'
+type Step = 'workspace' | 'repo' | 'clone' | 'terminal'
 
 const KEY_SEQUENCES = [
   { label: 'Tab', seq: '\t' },
@@ -23,8 +26,9 @@ const KEY_SEQUENCES = [
 ]
 
 export default function TerminalPage() {
-  const [dirs, setDirs] = useState<DirEntry[]>([])
-  const [dirsLoading, setDirsLoading] = useState(true)
+  const [step, setStep] = useState<Step>('workspace')
+  const [workspace, setWorkspace] = useState<'home' | 'github' | null>(null)
+  const [repoName, setRepoName] = useState<string | null>(null)
   const [cwd, setCwd] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -32,17 +36,10 @@ export default function TerminalPage() {
   const termContainerRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
 
-  // Client-side init: detect mobile, restore last cwd, fetch dirs
   useEffect(() => {
     setIsMobile(window.innerWidth < 768 || navigator.maxTouchPoints > 0)
-    const saved = localStorage.getItem(LAST_CWD_KEY)
-    if (saved) setCwd(saved)
-    api.get<DirEntry[]>('/api/terminal/dirs')
-      .then(r => { setDirs(r.data); setDirsLoading(false) })
-      .catch(() => { setDirsLoading(false); setError('Failed to load directories. Is the backend reachable?') })
   }, [])
 
-  // Mount xterm.js whenever cwd is set
   useEffect(() => {
     if (!cwd || !termContainerRef.current) return
 
@@ -60,11 +57,7 @@ export default function TerminalPage() {
       const term = new Terminal({
         fontSize: isMobile ? 15 : 12,
         fontFamily: 'Menlo, "DejaVu Sans Mono", monospace',
-        theme: {
-          background: '#0d0d0d',
-          foreground: '#e5e7eb',
-          cursor: '#3b82f6',
-        },
+        theme: { background: '#0d0d0d', foreground: '#e5e7eb', cursor: '#3b82f6' },
         cursorBlink: true,
         scrollback: 5000,
       })
@@ -91,11 +84,7 @@ export default function TerminalPage() {
         else if (e.code === 1000) setSessionEnded(true)
       }
 
-      term.onData(data => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data)
-      })
-
-      ws.onopen = () => fit()
+      term.onData(data => { if (ws.readyState === WebSocket.OPEN) ws.send(data) })
 
       const fit = () => {
         fitAddon.fit()
@@ -104,10 +93,10 @@ export default function TerminalPage() {
         }
       }
 
-      // ResizeObserver keeps the terminal sized to its container on all screen changes
+      ws.onopen = () => fit()
+
       const ro = new ResizeObserver(fit)
       ro.observe(termContainerRef.current!)
-      // visualViewport fires when the mobile soft keyboard opens/closes
       window.visualViewport?.addEventListener('resize', fit)
 
       cleanup = () => {
@@ -128,11 +117,36 @@ export default function TerminalPage() {
     }
   }, [cwd, isMobile])
 
-  const selectDir = (path: string) => {
-    localStorage.setItem(LAST_CWD_KEY, path)
+  const handleWorkspaceSelect = (ws: 'home' | 'github') => {
+    setWorkspace(ws)
+    if (ws === 'home') {
+      setRepoName(null)
+      setCwd('/workspace/claude-home')
+      setStep('terminal')
+    } else {
+      setStep('repo')
+    }
+  }
+
+  const handleRepoSelect = (repo: Repo) => {
+    setRepoName(repo.name)
+    setCwd(repo.path)
+    setStep('terminal')
+  }
+
+  const handleCloneSuccess = (repoPath: string, name: string) => {
+    setRepoName(name)
+    setCwd(repoPath)
+    setStep('terminal')
+  }
+
+  const handleChangeDir = () => {
+    setCwd(null)
+    setWorkspace(null)
+    setRepoName(null)
     setError(null)
     setSessionEnded(false)
-    setCwd(path)
+    setStep('workspace')
   }
 
   const reconnect = () => {
@@ -143,51 +157,16 @@ export default function TerminalPage() {
     requestAnimationFrame(() => setCwd(saved))
   }
 
-  const clearAndPick = () => {
-    setError(null)
-    localStorage.removeItem(LAST_CWD_KEY)
-    setCwd(null)
-  }
+  if (step === 'workspace') return <WorkspacePicker onSelect={handleWorkspaceSelect} />
+  if (step === 'repo') return <RepoPicker onSelect={handleRepoSelect} onClone={() => setStep('clone')} onBack={() => setStep('workspace')} />
+  if (step === 'clone') return <CloneDialog onSuccess={handleCloneSuccess} onBack={() => setStep('repo')} />
 
-  // ── Directory picker ──────────────────────────────────────────────────────
-  if (!cwd) {
-    return (
-      <div className="fixed inset-0 bg-[#0d0d0d] flex items-center justify-center p-4 z-50">
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-6 w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <FolderOpen size={18} className="text-[#10b981]" />
-            <h2 className="text-white text-sm font-semibold">Select Working Directory</h2>
-          </div>
-          {dirsLoading ? (
-            <p className="text-[#6b7280] text-xs">Loading directories...</p>
-          ) : dirs.length === 0 ? (
-            <p className="text-[#ef4444] text-xs">No directories configured. Check TERMINAL_DIRS in docker-compose.yml.</p>
-          ) : (
-            <div className="space-y-2">
-              {dirs.map(d => (
-                <button
-                  key={d.path}
-                  onClick={() => selectDir(d.path)}
-                  className="w-full text-left p-3 rounded-md bg-[#111111] border border-[#2a2a2a] hover:border-[#10b981]/50 transition-colors"
-                >
-                  <p className="text-white text-sm font-medium">{d.label}</p>
-                  <p className="text-[#6b7280] text-xs mt-0.5 font-mono">{d.path}</p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Error state ───────────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-[#ef4444] text-sm text-center">{error}</p>
         <button
-          onClick={clearAndPick}
+          onClick={handleChangeDir}
           className="px-4 py-2 text-xs bg-[#2a2a2a] text-[#e5e7eb] rounded hover:bg-[#3a3a3a] transition-colors"
         >
           Change Directory
@@ -196,7 +175,6 @@ export default function TerminalPage() {
     )
   }
 
-  // ── Session ended ─────────────────────────────────────────────────────────
   if (sessionEnded) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -209,7 +187,7 @@ export default function TerminalPage() {
             Reconnect
           </button>
           <button
-            onClick={clearAndPick}
+            onClick={handleChangeDir}
             className="px-4 py-2 text-xs bg-[#2a2a2a] text-[#e5e7eb] rounded hover:bg-[#3a3a3a] transition-colors"
           >
             Change Directory
@@ -219,26 +197,17 @@ export default function TerminalPage() {
     )
   }
 
-  // ── Terminal ──────────────────────────────────────────────────────────────
-  // -mx-6 -mt-6 cancel the AppShell's p-6 so the terminal fills edge-to-edge.
-  // -mb-20 on mobile cancels pb-20 (AppShell bottom padding for BottomNav).
-  // md:-mb-6 cancels md:pb-6 on desktop.
-  // height: 100dvh fills the full dynamic viewport height.
   return (
-    <div
-      className="-mx-6 -mt-6 -mb-20 md:-mb-6 flex flex-col"
-      style={{ height: '100dvh' }}
-    >
+    <div className="-mx-6 -mt-6 -mb-20 md:-mb-6 flex flex-col" style={{ height: '100dvh' }}>
+      <TerminalBreadcrumb workspace={workspace!} repoName={repoName} onChangeDir={handleChangeDir} />
       {isMobile && (
         <div className="h-10 flex gap-1 px-2 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
           {KEY_SEQUENCES.map(k => (
             <button
               key={k.label}
               onPointerDown={e => {
-                e.preventDefault() // keep keyboard open; don't blur the terminal
-                if (wsRef.current?.readyState === WebSocket.OPEN) {
-                  wsRef.current.send(k.seq)
-                }
+                e.preventDefault()
+                if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(k.seq)
               }}
               className="px-3 py-1 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap"
             >
