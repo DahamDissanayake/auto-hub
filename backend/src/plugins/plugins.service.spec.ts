@@ -78,4 +78,70 @@ describe('PluginsService', () => {
     expect(result.config).toEqual({ apiKey: 'abc123' });
     expect(mockPluginRepo.update).toHaveBeenCalledWith('1', { config: { apiKey: 'abc123' } });
   });
+
+  describe('upsertFromManifest', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    it('persists actions and requiresPassword from manifest when plugin is new', async () => {
+      mockPluginRepo.findOne.mockResolvedValueOnce(null);
+      mockPluginRepo.save.mockResolvedValueOnce({});
+
+      const manifest = {
+        slug: 'host-control',
+        name: 'Host Control',
+        entryFile: 'index.js',
+        actions: [{ key: 'reboot', label: 'Reboot', danger: true }],
+        requiresPassword: true,
+      };
+
+      // Access private method via bracket notation for testing
+      await (service as any).upsertFromManifest(manifest);
+
+      expect(mockPluginRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actions: [{ key: 'reboot', label: 'Reboot', danger: true }],
+          requiresPassword: true,
+        }),
+      );
+    });
+
+    it('persists actions and requiresPassword when updating existing plugin', async () => {
+      const existing = { id: 'abc', slug: 'host-control' };
+      mockPluginRepo.findOne.mockResolvedValueOnce(existing);
+      mockPluginRepo.update.mockResolvedValueOnce({});
+
+      const manifest = {
+        slug: 'host-control',
+        name: 'Host Control',
+        entryFile: 'index.js',
+        actions: [{ key: 'shutdown', label: 'Shutdown', danger: true }],
+        requiresPassword: true,
+      };
+
+      await (service as any).upsertFromManifest(manifest);
+
+      expect(mockPluginRepo.update).toHaveBeenCalledWith(
+        'abc',
+        expect.objectContaining({
+          actions: [{ key: 'shutdown', label: 'Shutdown', danger: true }],
+          requiresPassword: true,
+        }),
+      );
+    });
+
+    it('defaults actions to [] and requiresPassword to false when not in manifest', async () => {
+      mockPluginRepo.findOne.mockResolvedValueOnce(null);
+      mockPluginRepo.save.mockResolvedValueOnce({});
+
+      await (service as any).upsertFromManifest({
+        slug: 'simple-plugin',
+        name: 'Simple',
+        entryFile: 'index.js',
+      });
+
+      expect(mockPluginRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ actions: [], requiresPassword: false }),
+      );
+    });
+  });
 });

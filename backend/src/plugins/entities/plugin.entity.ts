@@ -13,6 +13,12 @@ export interface ConfigSchemaItem {
   required?: boolean;
 }
 
+export interface PluginAction {
+  key: string;
+  label: string;
+  danger?: boolean;
+}
+
 @Entity('plugins')
 export class Plugin {
   @PrimaryGeneratedColumn('uuid')
@@ -47,6 +53,12 @@ export class Plugin {
 
   @Column({ type: 'jsonb', default: [] })
   configSchema: ConfigSchemaItem[];
+
+  @Column({ type: 'jsonb', default: [] })
+  actions: PluginAction[];
+
+  @Column({ default: false })
+  requiresPassword: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
   lastRunAt: Date;

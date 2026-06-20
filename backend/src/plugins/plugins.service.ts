@@ -84,6 +84,8 @@ export class PluginsService implements OnModuleInit {
       version: (manifest.version as string) ?? '1.0.0',
       entryFile,
       configSchema: (manifest.configSchema as any[]) ?? [],
+      actions: (manifest.actions as any[]) ?? [],
+      requiresPassword: (manifest.requiresPassword as boolean) ?? false,
     };
     if (existing) {
       await this.pluginRepo.update(existing.id, fields);
