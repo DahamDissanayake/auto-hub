@@ -69,13 +69,17 @@ services:
   terminal:
     build: ./terminal
     user: "1001:1001"
+    group_add:
+      - "984"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      TERMINAL_DIRS: /workspace/data,/workspace/github
+      TERMINAL_DIRS: /workspace/data,/workspace/github,/workspace/auto-hub
       GH_TOKEN: ${GH_TOKEN}
     volumes:
       - /mnt/data:/workspace/data:rw
       - /mnt/data/github:/workspace/github:rw
+      - /home/dama/repo/auto-hub:/workspace/auto-hub:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
 
   nginx:

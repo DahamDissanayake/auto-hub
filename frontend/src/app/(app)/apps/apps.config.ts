@@ -11,7 +11,7 @@ export interface AppEntry {
 export const apps: AppEntry[] = [
   {
     id: 'claude-terminal',
-    name: 'Claude Code Terminal',
+    name: 'Code Terminal',
     description: 'Browser terminal on the Raspberry Pi — run Claude Code and shell commands from any device.',
     url: '/terminal',
     lucideIcon: 'Terminal',
