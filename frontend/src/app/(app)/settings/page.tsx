@@ -1,6 +1,28 @@
 'use client'
-import { Settings, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Settings } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useHealth } from '@/lib/hooks/useHealth'
+import { useSettings, useUpdateSettings } from '@/lib/hooks/useSettings'
+import { useToast } from '@/components/ui/Toast'
+
+const TIMEZONE_OPTIONS = [
+  { value: 'Asia/Colombo',        label: 'Asia/Colombo — UTC+5:30 (Sri Lanka)' },
+  { value: 'Asia/Kolkata',        label: 'Asia/Kolkata — UTC+5:30 (India)' },
+  { value: 'Asia/Dubai',          label: 'Asia/Dubai — UTC+4' },
+  { value: 'Asia/Bangkok',        label: 'Asia/Bangkok — UTC+7' },
+  { value: 'Asia/Singapore',      label: 'Asia/Singapore — UTC+8' },
+  { value: 'Asia/Tokyo',          label: 'Asia/Tokyo — UTC+9' },
+  { value: 'Europe/London',       label: 'Europe/London — UTC+0/+1' },
+  { value: 'Europe/Paris',        label: 'Europe/Paris — UTC+1/+2' },
+  { value: 'Europe/Berlin',       label: 'Europe/Berlin — UTC+1/+2' },
+  { value: 'America/New_York',    label: 'America/New_York — UTC-5/-4' },
+  { value: 'America/Chicago',     label: 'America/Chicago — UTC-6/-5' },
+  { value: 'America/Denver',      label: 'America/Denver — UTC-7/-6' },
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles — UTC-8/-7' },
+  { value: 'America/Sao_Paulo',   label: 'America/Sao_Paulo — UTC-3' },
+  { value: 'UTC',                 label: 'UTC — UTC+0' },
+]
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -36,6 +58,23 @@ function ConfiguredBadge({ configured }: { configured: boolean }) {
 
 export default function SettingsPage() {
   const { data: health, isLoading } = useHealth()
+  const { data: settings } = useSettings()
+  const updateSettings = useUpdateSettings()
+  const toast = useToast()
+  const [selectedTz, setSelectedTz] = useState('Asia/Colombo')
+
+  useEffect(() => {
+    if (settings?.timezone) setSelectedTz(settings.timezone)
+  }, [settings?.timezone])
+
+  const handleSaveTz = async () => {
+    try {
+      await updateSettings.mutateAsync({ timezone: selectedTz })
+      toast.success('Timezone saved')
+    } catch {
+      toast.error('Failed to save timezone')
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -53,6 +92,32 @@ export default function SettingsPage() {
             <Row label="Node.js" value={health?.nodeVersion ?? '—'} />
             <Row label="Timezone" value={health?.timezone ?? '—'} />
             <Row label="Plugin directory" value={health?.pluginDir ?? '—'} />
+          </Section>
+
+          <Section title="Display">
+            <div className="flex items-center justify-between text-sm py-1">
+              <span className="text-[#6b7280]">Timezone</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTz}
+                  onChange={e => setSelectedTz(e.target.value)}
+                  className="bg-[#0a0a0a] border border-[#2a2a2a] text-[#9ca3af] text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-[#3b82f6]"
+                >
+                  {TIMEZONE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleSaveTz}
+                  disabled={updateSettings.isPending}
+                  className="px-3 py-1.5 text-xs bg-[#3b82f6] text-white rounded-md hover:bg-[#2563eb] disabled:opacity-50 transition-colors"
+                >
+                  {updateSettings.isPending ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
           </Section>
 
           <Section title="Notifications">
