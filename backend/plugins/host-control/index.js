@@ -36,7 +36,7 @@ module.exports = async function ({ log, action }) {
   log(`Initiating host ${cmd} via nsenter...`);
 
   const createRes = await dockerRequest('POST', '/containers/create', {
-    Image: 'alpine',
+    Image: 'node:20-alpine',
     Cmd: ['nsenter', '-t', '1', '-m', '-u', '-i', '-n', '--', cmd],
     HostConfig: {
       Privileged: true,
