@@ -111,4 +111,101 @@ describe('TerminalController', () => {
       ).rejects.toThrow(HttpException);
     });
   });
+
+  describe('getSessions', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies to terminal service forwarding auth header', async () => {
+      const mockSessions = [{ name: 'alpha', cwd: '/workspace/data', alive: true }];
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockSessions,
+      } as unknown as Response);
+
+      const result = await controller.getSessions('Bearer test-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/sessions', {
+        headers: { authorization: 'Bearer test-token' },
+      });
+      expect(result).toEqual(mockSessions);
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.getSessions('Bearer token')).rejects.toThrow(HttpException);
+    });
+
+    it('throws with upstream status when terminal service returns error', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: async () => 'Service down',
+      } as unknown as Response);
+      await expect(controller.getSessions('Bearer bad')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('createSession', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies create request forwarding auth and body', async () => {
+      const mockSession = { name: 'alpha', cwd: '/workspace/data', alive: true };
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockSession,
+      } as unknown as Response);
+      const body = { name: 'alpha', cwd: '/workspace/data', workspace: 'home' };
+
+      const result = await controller.createSession(body, 'Bearer test-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/sessions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer test-token' },
+        body: JSON.stringify(body),
+      });
+      expect(result).toEqual(mockSession);
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(
+        controller.createSession({ name: 'x', cwd: '/workspace/data', workspace: 'home' }, 'Bearer t'),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('throws with upstream status when terminal service returns 409', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: 'Session "x" already exists' }),
+      } as unknown as Response);
+      await expect(
+        controller.createSession({ name: 'x', cwd: '/workspace/data', workspace: 'home' }, 'Bearer t'),
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('deleteSession', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies delete request forwarding auth header', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true }),
+      } as unknown as Response);
+
+      const result = await controller.deleteSession('my-sess', 'Bearer test-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/sessions/my-sess', {
+        method: 'DELETE',
+        headers: { authorization: 'Bearer test-token' },
+      });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.deleteSession('s', 'Bearer t')).rejects.toThrow(HttpException);
+    });
+  });
 });
