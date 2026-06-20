@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { Play, Settings2, Clock } from 'lucide-react'
 import ConfigModal from './ConfigModal'
 import ScheduleModal from './ScheduleModal'
+import ActionConfirmModal from './ActionConfirmModal'
 import { useRunPlugin } from '@/lib/hooks/usePlugins'
 import { useToast } from '@/components/ui/Toast'
 import { formatDistanceToNow } from 'date-fns'
-import type { Plugin } from '@/lib/types'
+import type { Plugin, PluginAction } from '@/lib/types'
 import {
   ClipboardList, Server, Wrench, TrendingUp, DollarSign, Puzzle,
   type LucideIcon,
@@ -24,6 +25,7 @@ const defaultMeta = { icon: Puzzle, bg: 'bg-[#6b7280]/10', fg: 'text-[#9ca3af]' 
 export default function PluginCard({ plugin }: { plugin: Plugin }) {
   const [configOpen, setConfigOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<PluginAction | null>(null)
   const runPlugin = useRunPlugin()
   const toast = useToast()
 
@@ -78,15 +80,31 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
         </div>
 
         <div className="flex gap-2 flex-wrap pt-1 border-t border-[#2a2a2a]">
-          <button
-            onClick={handleRun}
-            disabled={runPlugin.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#3b82f6] text-white rounded-md hover:bg-[#2563eb] disabled:opacity-50 transition-colors"
-            data-testid={`run-plugin-${plugin.id}`}
-          >
-            <Play size={12} />
-            {runPlugin.isPending ? 'Running…' : 'Run now'}
-          </button>
+          {plugin.actions.length > 0 ? (
+            plugin.actions.map(action => (
+              <button
+                key={action.key}
+                onClick={() => setPendingAction(action)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs text-white rounded-md transition-colors ${
+                  action.danger
+                    ? 'bg-[#ef4444] hover:bg-[#dc2626]'
+                    : 'bg-[#3b82f6] hover:bg-[#2563eb]'
+                }`}
+              >
+                {action.label}
+              </button>
+            ))
+          ) : (
+            <button
+              onClick={handleRun}
+              disabled={runPlugin.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#3b82f6] text-white rounded-md hover:bg-[#2563eb] disabled:opacity-50 transition-colors"
+              data-testid={`run-plugin-${plugin.id}`}
+            >
+              <Play size={12} />
+              {runPlugin.isPending ? 'Running…' : 'Run now'}
+            </button>
+          )}
 
           {plugin.configSchema.length > 0 && (
             <button
@@ -113,6 +131,13 @@ export default function PluginCard({ plugin }: { plugin: Plugin }) {
       )}
       {scheduleOpen && (
         <ScheduleModal plugin={plugin} isOpen={scheduleOpen} onClose={() => setScheduleOpen(false)} />
+      )}
+      {pendingAction && (
+        <ActionConfirmModal
+          pluginId={plugin.id}
+          action={pendingAction}
+          onClose={() => setPendingAction(null)}
+        />
       )}
     </>
   )
