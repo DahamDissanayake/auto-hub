@@ -2,7 +2,7 @@
 import { ChevronRight } from 'lucide-react'
 
 interface TerminalBreadcrumbProps {
-  workspace: 'home' | 'github'
+  workspace: 'home' | 'github' | 'auto-hub'
   repoName: string | null
   onChangeDir: () => void
 }
@@ -12,7 +12,7 @@ export function TerminalBreadcrumb({ workspace, repoName, onChangeDir }: Termina
     <div className="h-9 flex items-center justify-between px-3 bg-[#111111] border-b border-[#2a2a2a] shrink-0">
       <div className="flex items-center gap-1 text-xs text-[#6b7280] font-mono overflow-hidden">
         <span className="truncate">
-          {workspace === 'home' ? 'Home' : 'GitHub Repos'}
+          {workspace === 'home' ? 'Home' : workspace === 'github' ? 'GitHub Repos' : 'Auto-Hub'}
         </span>
         {repoName && (
           <>

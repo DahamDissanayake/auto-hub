@@ -13,6 +13,7 @@ interface Repo {
 }
 
 type Step = 'workspace' | 'repo' | 'clone' | 'terminal'
+type Workspace = 'home' | 'github' | 'auto-hub'
 
 const KEY_SEQUENCES = [
   { label: 'Tab', seq: '\t' },
@@ -27,7 +28,7 @@ const KEY_SEQUENCES = [
 
 export default function TerminalPage() {
   const [step, setStep] = useState<Step>('workspace')
-  const [workspace, setWorkspace] = useState<'home' | 'github' | null>(null)
+  const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [repoName, setRepoName] = useState<string | null>(null)
   const [cwd, setCwd] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -117,14 +118,18 @@ export default function TerminalPage() {
     }
   }, [cwd, isMobile])
 
-  const handleWorkspaceSelect = (ws: 'home' | 'github') => {
+  const handleWorkspaceSelect = (ws: Workspace) => {
     setWorkspace(ws)
     if (ws === 'home') {
       setRepoName(null)
       setCwd('/workspace/data')
       setStep('terminal')
-    } else {
+    } else if (ws === 'github') {
       setStep('repo')
+    } else if (ws === 'auto-hub') {
+      setRepoName(null)
+      setCwd('/home/dama/repo/auto-hub')
+      setStep('terminal')
     }
   }
 
@@ -157,7 +162,7 @@ export default function TerminalPage() {
     requestAnimationFrame(() => setCwd(saved))
   }
 
-  if (step === 'workspace') return <WorkspacePicker onSelect={handleWorkspaceSelect} />
+  if (step === 'workspace') return <WorkspacePicker onSelect={handleWorkspaceSelect} onBack={() => {}} />
   if (step === 'repo') return <RepoPicker onSelect={handleRepoSelect} onClone={() => setStep('clone')} onBack={() => setStep('workspace')} />
   if (step === 'clone') return <CloneDialog onSuccess={handleCloneSuccess} onBack={() => setStep('repo')} />
 
