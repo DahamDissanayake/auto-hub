@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, ReactNode } from 'react'
 import { ToastProvider } from '@/components/ui/Toast'
+import { TimezoneProvider } from '@/lib/context/TimezoneContext'
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -15,7 +16,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <TimezoneProvider>{children}</TimezoneProvider>
+      </ToastProvider>
     </QueryClientProvider>
   )
 }
