@@ -162,7 +162,7 @@ describe('POST /clone', () => {
 });
 
 describe('GET /sessions', () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => { jest.restoreAllMocks(); jest.resetAllMocks(); });
 
   it('returns sessions with alive=true when tmux reports them', async () => {
     sessions.getSessions.mockReturnValue([
@@ -191,7 +191,7 @@ describe('GET /sessions', () => {
 });
 
 describe('POST /sessions', () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => { jest.restoreAllMocks(); jest.resetAllMocks(); });
 
   it('creates session and returns 201', async () => {
     sessions.getSession.mockReturnValue(null);
@@ -250,7 +250,7 @@ describe('POST /sessions', () => {
 });
 
 describe('DELETE /sessions/:name', () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => { jest.restoreAllMocks(); jest.resetAllMocks(); });
 
   it('kills session and removes from manifest', async () => {
     sessions.removeSession.mockImplementation(() => {});
