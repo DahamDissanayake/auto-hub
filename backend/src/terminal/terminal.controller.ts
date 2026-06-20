@@ -7,7 +7,7 @@ interface DirEntry {
 
 const LABEL_MAP: Record<string, string> = {
   '/workspace/home': 'Home',
-  '/workspace/repo': 'AutoHub Repo',
+  '/workspace/repo': 'Repos',
 };
 
 @Controller('terminal')

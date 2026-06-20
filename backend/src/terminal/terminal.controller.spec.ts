@@ -15,7 +15,7 @@ describe('TerminalController', () => {
     process.env.TERMINAL_DIRS = '/workspace/home,/workspace/repo';
     expect(controller.getDirs()).toEqual([
       { label: 'Home', path: '/workspace/home' },
-      { label: 'AutoHub Repo', path: '/workspace/repo' },
+      { label: 'Repos', path: '/workspace/repo' },
     ]);
   });
 
