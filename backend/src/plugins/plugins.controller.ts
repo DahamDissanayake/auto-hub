@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller, Get, Post, Patch, Param, Body, Query, HttpException, HttpStatus,
+} from '@nestjs/common';
 import { PluginsService } from './plugins.service';
 
 @Controller('plugins')
@@ -31,8 +33,18 @@ export class PluginsController {
   }
 
   @Post(':id/run')
-  run(@Param('id') id: string) {
-    return this.pluginsService.run(id, 'manual');
+  async run(
+    @Param('id') id: string,
+    @Body() body: { action?: string; password?: string } = {},
+  ) {
+    const plugin = await this.pluginsService.findOne(id);
+    if (plugin.requiresPassword) {
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword || body.password !== adminPassword) {
+        throw new HttpException({ error: 'Invalid password' }, HttpStatus.FORBIDDEN);
+      }
+    }
+    return this.pluginsService.run(id, 'manual', body.action);
   }
 
   @Patch(':id/config')

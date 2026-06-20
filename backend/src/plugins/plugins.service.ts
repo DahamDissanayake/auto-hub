@@ -120,6 +120,7 @@ export class PluginsService implements OnModuleInit {
   async run(
     id: string,
     triggeredBy: 'manual' | 'scheduled' = 'manual',
+    action?: string,
   ): Promise<PluginExecution> {
     const plugin = await this.findOne(id);
     const resolvedPath = path.resolve(this.pluginDir, plugin.slug, plugin.entryFile);
@@ -150,7 +151,7 @@ export class PluginsService implements OnModuleInit {
 
       let timeoutHandle: ReturnType<typeof setTimeout>;
       await Promise.race([
-        fn({ config: plugin.config, log }),
+        fn({ config: plugin.config, log, action }),
         new Promise<void>((_, reject) => {
           timeoutHandle = setTimeout(() => reject(new Error('Plugin timeout (60s)')), 60_000);
         }),

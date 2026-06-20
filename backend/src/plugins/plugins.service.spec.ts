@@ -144,4 +144,40 @@ describe('PluginsService', () => {
       );
     });
   });
+
+  describe('run', () => {
+    afterEach(() => jest.clearAllMocks());
+
+    it('passes action to plugin function context', async () => {
+      const plugin = {
+        id: '1', slug: 'host-control', entryFile: 'index.js',
+        status: 'active', config: {}, requiresPassword: false,
+      };
+      mockPluginRepo.findOne.mockResolvedValue(plugin);
+      mockExecutionRepo.save.mockResolvedValue({ id: 'exec-1', status: 'running' });
+      mockExecutionRepo.update.mockResolvedValue({});
+      mockPluginRepo.update.mockResolvedValue({});
+
+      const mockFn = jest.fn().mockResolvedValue(undefined);
+      // Point the service at a temp plugin dir with a real file
+      const tmpDir = require('os').tmpdir();
+      const pluginDir = require('path').join(tmpDir, 'test-plugins-action', 'host-control');
+      require('fs').mkdirSync(pluginDir, { recursive: true });
+      require('fs').writeFileSync(
+        require('path').join(pluginDir, 'index.js'),
+        `module.exports = async function(ctx) { global.__testCtx = ctx; }`,
+      );
+
+      const tmpService = new (require('./plugins.service').PluginsService)(
+        mockPluginRepo,
+        mockExecutionRepo,
+        { get: () => require('path').join(tmpDir, 'test-plugins-action') },
+        mockNotifications,
+      );
+
+      await tmpService.run('1', 'manual', 'reboot');
+      expect((global as any).__testCtx?.action).toBe('reboot');
+      delete (global as any).__testCtx;
+    });
+  });
 });
