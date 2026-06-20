@@ -66,7 +66,6 @@ export default function ActionConfirmModal({ pluginId, action, onClose }: Props)
         <div className="flex gap-2 justify-end">
           <button
             onClick={onClose}
-            disabled={runPlugin.isPending}
             className="px-4 py-2 text-xs border border-[#2a2a2a] text-[#9ca3af] rounded-md hover:border-[#3b82f6] hover:text-[#f1f1f1] transition-colors disabled:opacity-50"
           >
             Cancel
