@@ -39,6 +39,18 @@ export class PluginsService implements OnModuleInit {
     } catch (err) {
       this.logger.error(`Plugin scan failed: ${(err as Error).message}`);
     }
+    await this.checkRebootFlag();
+  }
+
+  private async checkRebootFlag() {
+    const flagPath = path.join(this.pluginDir, '.reboot-pending');
+    if (!fs.existsSync(flagPath)) return;
+    try {
+      fs.unlinkSync(flagPath);
+      await this.notifications.send('✅ <b>AutoHub is back online</b> — host finished rebooting.');
+    } catch (err) {
+      this.logger.error(`Failed to process reboot flag: ${(err as Error).message}`);
+    }
   }
 
   async scanPlugins() {
@@ -149,9 +161,10 @@ export class PluginsService implements OnModuleInit {
       const pluginModule = require(realPath);
       const fn = pluginModule.default ?? pluginModule;
 
+      const notify = (msg: string) => this.notifications.send(msg);
       let timeoutHandle: ReturnType<typeof setTimeout>;
       await Promise.race([
-        fn({ config: plugin.config, log, action }),
+        fn({ config: plugin.config, log, action, notify }),
         new Promise<void>((_, reject) => {
           timeoutHandle = setTimeout(() => reject(new Error('Plugin timeout (60s)')), 60_000);
         }),

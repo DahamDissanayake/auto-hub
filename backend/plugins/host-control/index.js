@@ -1,13 +1,15 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
-function dockerRequest(method, path, body) {
+function dockerRequest(method, reqPath, body) {
   return new Promise((resolve, reject) => {
     const bodyStr = body != null ? JSON.stringify(body) : null;
     const req = http.request(
       {
         socketPath: '/var/run/docker.sock',
         method,
-        path,
+        path: reqPath,
         headers: {
           'Content-Type': 'application/json',
           ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
@@ -31,8 +33,18 @@ function dockerRequest(method, path, body) {
   });
 }
 
-module.exports = async function ({ log, action }) {
+module.exports = async function ({ log, action, notify }) {
   const cmd = action === 'shutdown' ? 'poweroff' : 'reboot';
+
+  if (action === 'reboot') {
+    await notify('🔄 <b>AutoHub host is rebooting…</b> Will notify when back online.');
+    // Flag file persists on the host via the plugins volume mount
+    const flagPath = path.join(__dirname, '..', '.reboot-pending');
+    fs.writeFileSync(flagPath, new Date().toISOString());
+  } else {
+    await notify('⚠️ <b>AutoHub host is shutting down.</b>');
+  }
+
   log(`Initiating host ${cmd} via nsenter...`);
 
   const createRes = await dockerRequest('POST', '/containers/create', {
