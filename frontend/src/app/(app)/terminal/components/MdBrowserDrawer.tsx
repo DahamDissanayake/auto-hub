@@ -298,9 +298,11 @@ export function MdBrowserDrawer({ root, startPath, onClose }: MdBrowserDrawerPro
                     em: ({ children }) => (
                       <em className="italic text-[#d1d5db]">{children}</em>
                     ),
-                    img: ({ src, alt }) => (
-                      <img src={src} alt={alt ?? ''} className="max-w-full rounded my-2" />
-                    ),
+                    img: ({ src, alt }) => {
+                      const safe = typeof src === 'string' && /^(https?:\/\/|\/)/.test(src)
+                      if (!safe) return <span className="text-[#6b7280] text-xs italic">[image]</span>
+                      return <img src={src} alt={alt ?? ''} className="max-w-full rounded my-2" />
+                    },
                   }}
                 >
                   {mdContent}
