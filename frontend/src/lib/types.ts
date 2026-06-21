@@ -117,6 +117,7 @@ export interface NetworkStats {
   rxMbps: number
   txMbps: number
   interfaceName: string
+  interfaces: Array<{ name: string; rxMbps: number; txMbps: number; rxTotalBytes: number; txTotalBytes: number }>
 }
 
 export interface SystemMetrics {

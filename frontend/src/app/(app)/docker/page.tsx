@@ -23,7 +23,7 @@ import {
   ArrowUp,
   type LucideIcon,
 } from 'lucide-react'
-import { useDockerMonitor } from '../../../lib/hooks/useDockerMonitor'
+import { useDockerMonitor, type BandwidthPoint } from '../../../lib/hooks/useDockerMonitor'
 import type { ContainerInfo, DiskStats, NetworkStats, SpeedTestResult } from '../../../lib/types'
 import Modal from '../../../components/ui/Modal'
 
@@ -67,6 +67,25 @@ function MiniBar({ percent, color = '#3b82f6' }: { percent: number; color?: stri
         style={{ width: `${Math.min(100, percent)}%`, backgroundColor: color }}
       />
     </div>
+  )
+}
+
+function Sparkline({ data, color, height = 36 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 2) return <div style={{ height }} className="w-full" />
+  const max = Math.max(...data, 0.001)
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * 100},${height - (v / max) * (height - 2) - 1}`)
+  return (
+    <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
+      <polyline
+        points={pts.join(' ')}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   )
 }
 
@@ -138,31 +157,97 @@ function DiskCard({ disk, label }: { disk: DiskStats; label: string }) {
   )
 }
 
-function NetworkCard({ network }: { network: NetworkStats }) {
+function NetworkCard({
+  network,
+  history,
+}: {
+  network: NetworkStats
+  history: BandwidthPoint[]
+}) {
+  const rxHistory = history.map((p) => p.rx)
+  const txHistory = history.map((p) => p.tx)
+  const rxPeak = rxHistory.length ? Math.max(...rxHistory) : 0
+  const txPeak = txHistory.length ? Math.max(...txHistory) : 0
+
+  const allIfaces = network.interfaces ?? []
+  // Sort: active (has cumulative bytes) first, then by name
+  const sorted = [...allIfaces].sort((a, b) => {
+    const aActive = (a.rxTotalBytes + a.txTotalBytes) > 0
+    const bActive = (b.rxTotalBytes + b.txTotalBytes) > 0
+    if (aActive !== bActive) return aActive ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+
   return (
-    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-[#9ca3af] text-xs">
-        <Activity size={14} />
-        Network · {network.interfaceName}
+    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-3 col-span-2 sm:col-span-1 lg:col-span-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[#9ca3af] text-xs">
+          <Activity size={14} />
+          Network
+        </div>
+        <span className="text-[#4b5563] text-[10px] tabular-nums font-mono">
+          {network.interfaceName}
+        </span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+
+      {/* Primary interface — large stats + sparkline */}
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-0.5">
+          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-1">
             <Download size={9} className="text-emerald-400" />
             Down
           </div>
-          <div className="text-white text-xl font-semibold tabular-nums">{network.rxMbps.toFixed(1)}</div>
+          <div className="text-white text-xl font-semibold tabular-nums">{network.rxMbps.toFixed(2)}</div>
           <div className="text-[#6b7280] text-xs">Mbps</div>
+          <div className="mt-1.5">
+            <Sparkline data={rxHistory} color="#10b981" height={36} />
+          </div>
+          <div className="text-[10px] text-[#4b5563] tabular-nums mt-0.5">peak {rxPeak.toFixed(2)}</div>
         </div>
         <div>
-          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-0.5">
+          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-1">
             <Upload size={9} className="text-purple-400" />
             Up
           </div>
-          <div className="text-white text-xl font-semibold tabular-nums">{network.txMbps.toFixed(1)}</div>
+          <div className="text-white text-xl font-semibold tabular-nums">{network.txMbps.toFixed(2)}</div>
           <div className="text-[#6b7280] text-xs">Mbps</div>
+          <div className="mt-1.5">
+            <Sparkline data={txHistory} color="#a855f7" height={36} />
+          </div>
+          <div className="text-[10px] text-[#4b5563] tabular-nums mt-0.5">peak {txPeak.toFixed(2)}</div>
         </div>
       </div>
+
+      {/* All interfaces — active ones show stats, down ones show "down" badge */}
+      {sorted.length > 0 && (
+        <div className="border-t border-[#2a2a2a] pt-2 flex flex-col gap-1.5">
+          {sorted.map((iface) => {
+            const isDown = iface.rxTotalBytes + iface.txTotalBytes === 0
+            return (
+              <div key={iface.name} className="flex items-center justify-between text-[10px]">
+                <span className={`font-mono ${isDown ? 'text-[#4b5563]' : 'text-[#9ca3af]'}`}>
+                  {iface.name}
+                </span>
+                {isDown ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[#1f1f1f] text-[#4b5563] border border-[#2a2a2a]">
+                    down
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2 tabular-nums text-[#6b7280]">
+                    <span className="flex items-center gap-0.5 text-emerald-500">
+                      <ArrowDown size={9} />{iface.rxMbps.toFixed(2)}
+                    </span>
+                    <span className="flex items-center gap-0.5 text-purple-400">
+                      <ArrowUp size={9} />{iface.txMbps.toFixed(2)}
+                    </span>
+                    <span className="text-[#4b5563]">Mbps</span>
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -402,6 +487,8 @@ export default function DockerMonitorPage() {
     speedTestResult,
     speedTestError,
     runSpeedTest,
+    networkHistory,
+    lastUpdated,
   } = useDockerMonitor()
 
   const [confirmAction, setConfirmAction] = useState<'restart-all' | 'stop-all' | null>(null)
@@ -420,7 +507,7 @@ export default function DockerMonitorPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6 w-full">
       {/* ── Title ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-white text-xl font-semibold flex items-center gap-2">
@@ -457,19 +544,30 @@ export default function DockerMonitorPage() {
 
       {/* ── System Metrics ── */}
       <section className="space-y-3">
-        <h2 className="text-[#9ca3af] text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
-          <Activity size={12} />
-          System Metrics
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-[#9ca3af] text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
+            <Activity size={12} />
+            System Metrics
+            <span className="flex items-center gap-1 text-emerald-400 normal-case font-normal tracking-normal">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              live
+            </span>
+          </h2>
+          {lastUpdated && (
+            <span className="text-[#4b5563] text-[10px] tabular-nums">
+              {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
         {metricsLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl h-28 animate-pulse" />
             ))}
           </div>
         ) : metrics ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <MetricCard
                 icon={Cpu}
                 label="CPU"
@@ -495,7 +593,7 @@ export default function DockerMonitorPage() {
                   <span className="text-[#6b7280] text-xs text-center">/mnt/data not mounted</span>
                 </div>
               )}
-              <NetworkCard network={metrics.network} />
+              <NetworkCard network={metrics.network} history={networkHistory} />
             </div>
 
             {/* ── Speed Test ── */}
@@ -530,7 +628,7 @@ export default function DockerMonitorPage() {
           Containers
         </h2>
         {containersLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl h-48 animate-pulse" />
             ))}
@@ -540,7 +638,7 @@ export default function DockerMonitorPage() {
             No containers found
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
             {containers.map((c) => (
               <ContainerCard
                 key={c.id}

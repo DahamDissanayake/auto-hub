@@ -85,14 +85,50 @@ export async function apiUpload(
   path: string,
   transferId: string,
   files: File[],
-  signal: AbortSignal
+  signal: AbortSignal,
+  onProgress?: (loaded: number, total: number) => void
 ): Promise<void> {
-  const formData = new FormData()
-  files.forEach((f) => formData.append('file', f))
-  const res = await fetch(
-    `${BASE}/upload?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}&transferId=${encodeURIComponent(transferId)}`,
-    { method: 'POST', headers: authHeaders(), body: formData, signal }
-  )
-  handleUnauth(res)
-  if (!res.ok) throw new Error((await res.json()).error ?? res.statusText)
+  return new Promise((resolve, reject) => {
+    const formData = new FormData()
+    files.forEach((f) => formData.append('file', f))
+
+    const xhr = new XMLHttpRequest()
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress) onProgress(e.loaded, e.total)
+    }
+
+    xhr.onload = () => {
+      if (xhr.status === 401) {
+        sessionStorage.removeItem('autohub_token')
+        window.location.href = '/login'
+        return
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        try {
+          const body = JSON.parse(xhr.responseText)
+          reject(new Error(body.error ?? xhr.statusText))
+        } catch {
+          reject(new Error(xhr.statusText))
+        }
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Upload failed'))
+    xhr.ontimeout = () => reject(new Error('Upload timed out'))
+
+    signal.addEventListener('abort', () => {
+      xhr.abort()
+      reject(new DOMException('Aborted', 'AbortError'))
+    })
+
+    xhr.open(
+      'POST',
+      `${BASE}/upload?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}&transferId=${encodeURIComponent(transferId)}`
+    )
+    xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`)
+    xhr.send(formData)
+  })
 }

@@ -4,17 +4,10 @@ import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTransferStore } from '@/lib/transferStore'
 import TransferRow from './TransferRow'
 
-interface SpeedSample {
-  bytes: number
-  time: number
-  smoothed: number
-}
-
 export default function TransferTray() {
   const { transfers, updateTransfer, removeTransfer } = useTransferStore()
   const [open, setOpen] = useState(false)
   const esRef = useRef<EventSource | null>(null)
-  const lastBytes = useRef<Record<string, SpeedSample>>({})
 
   // Auto-open when a new active transfer starts
   useEffect(() => {
@@ -22,7 +15,7 @@ export default function TransferTray() {
     if (active.length > 0) setOpen(true)
   }, [transfers.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // SSE connection for server-pushed upload progress
+  // SSE connection for server-pushed done/error status
   useEffect(() => {
     if (typeof window === 'undefined') return
     const token = sessionStorage.getItem('autohub_token')
@@ -36,45 +29,16 @@ export default function TransferTray() {
         try {
           const event = JSON.parse(e.data) as {
             transferId: string
-            bytesWritten?: number
-            total?: number
             status: string
             message?: string
           }
-
-          const now = Date.now()
-          const prev = lastBytes.current[event.transferId]
-
-          // EMA smoothed speed — only recalculate when at least 500ms have passed
-          let speed = prev?.smoothed ?? 0
-          if (prev && event.bytesWritten !== undefined && event.bytesWritten > prev.bytes) {
-            const dt = (now - prev.time) / 1000
-            if (dt >= 0.5) {
-              const instant = (event.bytesWritten - prev.bytes) / dt
-              // alpha=0.25: heavy smoothing, less jitter
-              speed = prev.smoothed > 0 ? 0.25 * instant + 0.75 * prev.smoothed : instant
-              lastBytes.current[event.transferId] = {
-                bytes: event.bytesWritten,
-                time: now,
-                smoothed: speed,
-              }
-            }
-            // If < 500ms, don't update speed — keep previous smoothed value
-          } else if (event.bytesWritten !== undefined) {
-            lastBytes.current[event.transferId] = { bytes: event.bytesWritten, time: now, smoothed: speed }
-          }
-
-          updateTransfer(event.transferId, {
-            ...(event.bytesWritten !== undefined && { bytesWritten: event.bytesWritten }),
-            ...(event.total !== undefined && { total: event.total }),
-            ...(event.status === 'done' && { status: 'done', completedAt: Date.now() }),
-            ...(event.status === 'error' && { status: 'error', message: event.message }),
-            speed,
-          })
-
+          // Progress (bytesWritten/total/speed) comes from XHR upload.onprogress.
+          // SSE is only used here for server-confirmed done/error status.
           if (event.status === 'done') {
-            delete lastBytes.current[event.transferId]
+            updateTransfer(event.transferId, { status: 'done', completedAt: Date.now() })
             setTimeout(() => removeTransfer(event.transferId), 5000)
+          } else if (event.status === 'error') {
+            updateTransfer(event.transferId, { status: 'error', message: event.message })
           }
         } catch {}
       }

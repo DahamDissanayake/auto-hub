@@ -3,6 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import api from '../api'
 import type { SystemMetrics, ContainerInfo, SpeedTestResult } from '../types'
 
+export interface BandwidthPoint { rx: number; tx: number }
+
+const HISTORY_SIZE = 60  // ~2 minutes at 2s polling
+
 export function useDockerMonitor() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
   const [containers, setContainers] = useState<ContainerInfo[]>([])
@@ -13,11 +17,14 @@ export function useDockerMonitor() {
   const [speedTestLoading, setSpeedTestLoading] = useState(false)
   const [speedTestResult, setSpeedTestResult] = useState<SpeedTestResult | null>(null)
   const [speedTestError, setSpeedTestError] = useState<string | null>(null)
+  const [networkHistory, setNetworkHistory] = useState<BandwidthPoint[]>([])
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const metricsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containersTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const metricsFetchingRef = useRef(false)
   const containersFetchingRef = useRef(false)
+  const networkHistoryRef = useRef<BandwidthPoint[]>([])
 
   const fetchMetrics = useCallback(async () => {
     if (metricsFetchingRef.current) return
@@ -26,6 +33,10 @@ export function useDockerMonitor() {
       const { data } = await api.get<SystemMetrics>('/api/docker/metrics')
       setMetrics(data)
       setError(null)
+      setLastUpdated(new Date())
+      const point: BandwidthPoint = { rx: data.network.rxMbps, tx: data.network.txMbps }
+      networkHistoryRef.current = [...networkHistoryRef.current, point].slice(-HISTORY_SIZE)
+      setNetworkHistory([...networkHistoryRef.current])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load metrics')
     } finally {
@@ -129,6 +140,8 @@ export function useDockerMonitor() {
     speedTestLoading,
     speedTestResult,
     speedTestError,
+    networkHistory,
+    lastUpdated,
     refetchContainers: fetchContainers,
     containerAction,
     systemAction,

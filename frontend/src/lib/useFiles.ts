@@ -62,7 +62,21 @@ export function useFiles() {
         abort: () => controller.abort(),
       })
 
-      apiUpload(root, path, id, files, controller.signal).then(() => {
+      let lastLoaded = 0
+      let lastTime = Date.now()
+      let smoothedSpeed = 0
+
+      apiUpload(root, path, id, files, controller.signal, (loaded, total) => {
+        const now = Date.now()
+        const dt = (now - lastTime) / 1000
+        if (dt >= 0.5 && loaded > lastLoaded) {
+          const instant = (loaded - lastLoaded) / dt
+          smoothedSpeed = smoothedSpeed > 0 ? 0.25 * instant + 0.75 * smoothedSpeed : instant
+          lastLoaded = loaded
+          lastTime = now
+        }
+        updateTransfer(id, { bytesWritten: loaded, total, speed: smoothedSpeed })
+      }).then(() => {
         updateTransfer(id, { status: 'done', completedAt: Date.now() })
         setTimeout(() => removeTransfer(id), 5000)
       }).catch((e: any) => {

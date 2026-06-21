@@ -21,6 +21,7 @@ export interface NetworkStats {
   rxMbps: number
   txMbps: number
   interfaceName: string
+  interfaces: Array<{ name: string; rxMbps: number; txMbps: number; rxTotalBytes: number; txTotalBytes: number }>
 }
 
 export interface SystemMetrics {
@@ -239,34 +240,71 @@ export class DockerService {
   }
 
   private async getNetworkStats(): Promise<NetworkStats> {
+    // Try host PID 1's network namespace first (shows Pi's physical eth0/wlan0),
+    // then the host proc symlink, then the container's own interfaces as fallback.
     const readDev = (): string => {
-      try {
-        return fs.readFileSync('/host/proc/net/dev', 'utf-8')
-      } catch {
-        return ''
+      for (const path of [
+        '/host/proc/1/net/dev',
+        '/host/proc/net/dev',
+        '/proc/net/dev',
+      ]) {
+        try {
+          const content = fs.readFileSync(path, 'utf-8')
+          if (content.trim().split('\n').length > 2) return content
+        } catch { /* try next */ }
       }
+      return ''
     }
+
     const s1 = this.parseNetDev(readDev())
     await new Promise<void>((r) => setTimeout(r, 500))
     const s2 = this.parseNetDev(readDev())
 
-    const preferred = ['eth0', 'wlan0']
-    const iface =
-      preferred.find((p) => s2[p] !== undefined) ??
-      Object.keys(s2).find((k) => k !== 'lo') ??
-      null
+    // Physical interfaces only (no Docker virtuals)
+    const physicalIfaces = Object.keys(s2).filter(
+      (k) =>
+        k !== 'lo' &&
+        s1[k] !== undefined &&
+        s2[k] !== undefined &&
+        !k.startsWith('veth') &&
+        !k.startsWith('docker') &&
+        !k.startsWith('br-'),
+    )
 
-    if (!iface || !s1[iface] || !s2[iface]) {
-      return { rxMbps: 0, txMbps: 0, interfaceName: 'unknown' }
+    if (physicalIfaces.length === 0) {
+      return { rxMbps: 0, txMbps: 0, interfaceName: 'unknown', interfaces: [] }
     }
 
-    const rxDelta = s2[iface].rxBytes - s1[iface].rxBytes
-    const txDelta = s2[iface].txBytes - s1[iface].txBytes
+    const makeIfaceStats = (iface: string) => {
+      const rxDelta = (s2[iface]?.rxBytes ?? 0) - (s1[iface]?.rxBytes ?? 0)
+      const txDelta = (s2[iface]?.txBytes ?? 0) - (s1[iface]?.txBytes ?? 0)
+      return {
+        name: iface,
+        rxMbps: parseFloat(Math.max(0, (rxDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
+        txMbps: parseFloat(Math.max(0, (txDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
+        // Cumulative totals — 0 means interface has never carried traffic (down/unused)
+        rxTotalBytes: s2[iface]?.rxBytes ?? 0,
+        txTotalBytes: s2[iface]?.txBytes ?? 0,
+      }
+    }
+
+    const interfaces = physicalIfaces.map(makeIfaceStats)
+
+    // Primary = interface with the most cumulative traffic (active one wins over idle eth0)
+    const primaryIface = physicalIfaces.reduce((best, cur) =>
+      (s2[cur]?.rxBytes ?? 0) + (s2[cur]?.txBytes ?? 0) >
+      (s2[best]?.rxBytes ?? 0) + (s2[best]?.txBytes ?? 0)
+        ? cur
+        : best,
+    )
+
+    const primary = makeIfaceStats(primaryIface)
 
     return {
-      rxMbps: parseFloat(Math.max(0, (rxDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
-      txMbps: parseFloat(Math.max(0, (txDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
-      interfaceName: iface,
+      rxMbps: primary.rxMbps,
+      txMbps: primary.txMbps,
+      interfaceName: primaryIface,
+      interfaces,
     }
   }
 
@@ -323,14 +361,18 @@ export class DockerService {
       const sysDelta =
         ((cpuStats?.['system_cpu_usage'] as number) ?? 0) -
         ((preCpuStats?.['system_cpu_usage'] as number) ?? 0);
-      const numCpus = (cpuStats?.['online_cpus'] as number) ?? 1;
+      // online_cpus may be absent; fall back to percpu_usage array length
+      const numCpus =
+        (cpuStats?.['online_cpus'] as number) ||
+        ((cpuUsage['percpu_usage'] as unknown as number[] | undefined)?.length ?? 1);
       const cpuPercent =
         sysDelta > 0 ? Math.min(100, (cpuDelta / sysDelta) * numCpus * 100) : 0;
 
       const memUsage = (memStats?.['usage'] as number) ?? 0;
       const memLimit = (memStats?.['limit'] as number) ?? 0;
-      const memCache =
-        ((memStats?.['stats'] as Record<string, number> | undefined)?.['cache'] ?? 0);
+      const memStatsMap = memStats?.['stats'] as Record<string, number> | undefined;
+      // cgroups v2 uses inactive_file; cgroups v1 uses cache
+      const memCache = memStatsMap?.['inactive_file'] ?? memStatsMap?.['cache'] ?? 0;
       const realMem = Math.max(0, memUsage - memCache);
 
       return {
