@@ -199,7 +199,7 @@ app.post('/claude-profiles/login/start', (req, res) => {
   let urlSent = false;
   let buf = '';
 
-  const child = cp.spawn('claude', ['/login'], {
+  const child = cp.spawn('claude', ['auth', 'login'], {
     env: { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -297,6 +297,10 @@ app.post('/claude-profiles/:name/activate', (req, res) => {
   }
   try {
     profiles.activateProfile(name);
+    // Kill running claude processes so they restart with the new credentials on next invocation
+    try {
+      cp.execFileSync('pkill', ['-x', 'claude'], { stdio: 'ignore' });
+    } catch { /* no claude processes running — not an error */ }
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
