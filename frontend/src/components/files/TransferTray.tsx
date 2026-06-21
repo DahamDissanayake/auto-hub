@@ -4,11 +4,17 @@ import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTransferStore } from '@/lib/transferStore'
 import TransferRow from './TransferRow'
 
+interface SpeedSample {
+  bytes: number
+  time: number
+  smoothed: number
+}
+
 export default function TransferTray() {
   const { transfers, updateTransfer, removeTransfer } = useTransferStore()
   const [open, setOpen] = useState(false)
   const esRef = useRef<EventSource | null>(null)
-  const lastBytes = useRef<Record<string, { bytes: number; time: number }>>({})
+  const lastBytes = useRef<Record<string, SpeedSample>>({})
 
   // Auto-open when a new active transfer starts
   useEffect(() => {
@@ -35,16 +41,29 @@ export default function TransferTray() {
             status: string
             message?: string
           }
+
           const now = Date.now()
           const prev = lastBytes.current[event.transferId]
-          let speed = 0
-          if (prev && event.bytesWritten !== undefined) {
+
+          // EMA smoothed speed — only recalculate when at least 500ms have passed
+          let speed = prev?.smoothed ?? 0
+          if (prev && event.bytesWritten !== undefined && event.bytesWritten > prev.bytes) {
             const dt = (now - prev.time) / 1000
-            speed = dt > 0 ? (event.bytesWritten - prev.bytes) / dt : 0
+            if (dt >= 0.5) {
+              const instant = (event.bytesWritten - prev.bytes) / dt
+              // alpha=0.25: heavy smoothing, less jitter
+              speed = prev.smoothed > 0 ? 0.25 * instant + 0.75 * prev.smoothed : instant
+              lastBytes.current[event.transferId] = {
+                bytes: event.bytesWritten,
+                time: now,
+                smoothed: speed,
+              }
+            }
+            // If < 500ms, don't update speed — keep previous smoothed value
+          } else if (event.bytesWritten !== undefined) {
+            lastBytes.current[event.transferId] = { bytes: event.bytesWritten, time: now, smoothed: speed }
           }
-          if (event.bytesWritten !== undefined) {
-            lastBytes.current[event.transferId] = { bytes: event.bytesWritten, time: now }
-          }
+
           updateTransfer(event.transferId, {
             ...(event.bytesWritten !== undefined && { bytesWritten: event.bytesWritten }),
             ...(event.total !== undefined && { total: event.total }),
@@ -52,7 +71,9 @@ export default function TransferTray() {
             ...(event.status === 'error' && { status: 'error', message: event.message }),
             speed,
           })
+
           if (event.status === 'done') {
+            delete lastBytes.current[event.transferId]
             setTimeout(() => removeTransfer(event.transferId), 5000)
           }
         } catch {}
@@ -77,31 +98,32 @@ export default function TransferTray() {
   ).length
 
   return (
-    <div
-      className="fixed bottom-4 right-4 z-50 w-72 shadow-2xl rounded-xl overflow-hidden border border-[#2a2a2a]"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => {
-        const active = transfers.filter(t => t.status === 'uploading' || t.status === 'downloading')
-        if (active.length === 0) setOpen(false)
-      }}
-    >
-      {/* Header chip */}
+    <div className="fixed bottom-4 right-4 z-50 w-72 shadow-2xl rounded-xl overflow-hidden border border-[#2a2a2a] bg-[#141414]">
+      {/* Header */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-between w-full px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] transition-colors"
+        className="flex items-center justify-between w-full px-3.5 py-2.5 hover:bg-[#1c1c1c] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ArrowUpDown size={14} className="text-[#3b82f6]" />
-          <span className="text-[#d1d5db] text-sm font-medium">
+          <div className="w-5 h-5 rounded-md bg-[#3b82f6]/15 flex items-center justify-center">
+            <ArrowUpDown size={11} className="text-[#3b82f6]" />
+          </div>
+          <span className="text-[#d1d5db] text-xs font-medium">
             {activeCount > 0 ? `${activeCount} transferring…` : 'Transfers'}
           </span>
+          {activeCount > 0 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" />
+          )}
         </div>
-        {open ? <ChevronUp size={14} className="text-[#6b7280]" /> : <ChevronDown size={14} className="text-[#6b7280]" />}
+        {open
+          ? <ChevronUp size={13} className="text-[#4b5563]" />
+          : <ChevronDown size={13} className="text-[#4b5563]" />
+        }
       </button>
 
       {/* Transfer list */}
       {open && (
-        <div className="bg-[#111111] px-3 divide-y divide-[#1a1a1a] max-h-72 overflow-y-auto">
+        <div className="border-t border-[#222] divide-y divide-[#1f1f1f] max-h-64 overflow-y-auto px-3">
           {transfers.map((t) => (
             <TransferRow
               key={t.id}
