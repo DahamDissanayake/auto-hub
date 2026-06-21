@@ -326,7 +326,13 @@ describe('POST /claude-profiles/login/start', () => {
     jest.spyOn(cp, 'spawn').mockReturnValue(mockChild);
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+    for (const session of pendingLogins.values()) {
+      clearTimeout(session.expireTimer);
+    }
+    pendingLogins.clear();
+  });
 
   it('returns 401 without auth', async () => {
     await request(app).post('/claude-profiles/login/start').send({ name: 'work' }).expect(401);
@@ -399,7 +405,13 @@ describe('POST /claude-profiles/login/start', () => {
 });
 
 describe('POST /claude-profiles/login/complete', () => {
-  afterEach(() => { jest.resetAllMocks(); pendingLogins.clear(); });
+  afterEach(() => {
+    jest.resetAllMocks();
+    for (const session of pendingLogins.values()) {
+      clearTimeout(session.expireTimer);
+    }
+    pendingLogins.clear();
+  });
 
   it('returns 401 without auth', async () => {
     await request(app)
