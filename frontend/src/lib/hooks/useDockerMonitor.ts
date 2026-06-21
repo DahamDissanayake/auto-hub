@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import api from '../api'
-import type { SystemMetrics, ContainerInfo } from '../types'
+import type { SystemMetrics, ContainerInfo, SpeedTestResult } from '../types'
 
 export function useDockerMonitor() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
@@ -10,6 +10,9 @@ export function useDockerMonitor() {
   const [containersLoading, setContainersLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [speedTestLoading, setSpeedTestLoading] = useState(false)
+  const [speedTestResult, setSpeedTestResult] = useState<SpeedTestResult | null>(null)
+  const [speedTestError, setSpeedTestError] = useState<string | null>(null)
 
   const metricsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const containersTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -79,6 +82,21 @@ export function useDockerMonitor() {
     [fetchContainers],
   )
 
+  const runSpeedTest = useCallback(async () => {
+    setSpeedTestLoading(true)
+    setSpeedTestError(null)
+    try {
+      const { data } = await api.post<SpeedTestResult>('/api/docker/speed-test', undefined, {
+        timeout: 95_000,
+      })
+      setSpeedTestResult(data)
+    } catch (e) {
+      setSpeedTestError(e instanceof Error ? e.message : 'Speed test failed')
+    } finally {
+      setSpeedTestLoading(false)
+    }
+  }, [])
+
   return {
     metrics,
     containers,
@@ -86,8 +104,12 @@ export function useDockerMonitor() {
     containersLoading,
     error,
     actionLoading,
+    speedTestLoading,
+    speedTestResult,
+    speedTestError,
     refetchContainers: fetchContainers,
     containerAction,
     systemAction,
+    runSpeedTest,
   }
 }
