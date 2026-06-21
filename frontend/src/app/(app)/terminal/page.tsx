@@ -24,15 +24,24 @@ const LAST_SESSION_KEY = 'autohub_last_terminal_session'
 type Workspace = 'home' | 'github' | 'auto-hub'
 type PasteFeedback = 'idle' | 'ok' | 'denied'
 
-const KEY_SEQUENCES = [
-  { label: 'Tab', seq: '\t' },
-  { label: 'Ctrl+C', seq: '\x03' },
-  { label: 'Ctrl+D', seq: '\x04' },
-  { label: 'Esc', seq: '\x1b' },
-  { label: '↑', seq: '\x1b[A' },
-  { label: '↓', seq: '\x1b[B' },
-  { label: '←', seq: '\x1b[D' },
-  { label: '→', seq: '\x1b[C' },
+interface KeyDef {
+  label: string
+  key: string
+  code: string
+  keyCode: number
+  ctrlKey?: boolean
+}
+
+const KEY_DEFS: KeyDef[] = [
+  { label: 'Esc',    key: 'Escape',     code: 'Escape',     keyCode: 27 },
+  { label: 'Tab',    key: 'Tab',        code: 'Tab',        keyCode: 9  },
+  { label: 'Enter',  key: 'Enter',      code: 'Enter',      keyCode: 13 },
+  { label: 'Ctrl+C', key: 'c',          code: 'KeyC',       keyCode: 67, ctrlKey: true },
+  { label: 'Ctrl+D', key: 'd',          code: 'KeyD',       keyCode: 68, ctrlKey: true },
+  { label: '↑',      key: 'ArrowUp',    code: 'ArrowUp',    keyCode: 38 },
+  { label: '↓',      key: 'ArrowDown',  code: 'ArrowDown',  keyCode: 40 },
+  { label: '←',      key: 'ArrowLeft',  code: 'ArrowLeft',  keyCode: 37 },
+  { label: '→',      key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
 ]
 
 // Hide xterm's native scrollbar — we render a custom React scrollbar instead,
@@ -53,7 +62,7 @@ export default function TerminalPage() {
   const [sessionEnded, setSessionEnded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showSessionOverlay, setShowSessionOverlay] = useState(false)
-  const [touchMode, setTouchMode] = useState<'scroll' | 'select'>('scroll')
+  const [selectMode, setSelectMode] = useState(false)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
   const [gridView, setGridView] = useState(false)
@@ -67,9 +76,9 @@ export default function TerminalPage() {
   const sbDragRef = useRef({ active: false, startY: 0, startST: 0 })
   const wsRef = useRef<WebSocket | null>(null)
   const termRef = useRef<Terminal | null>(null)
-  const touchModeRef = useRef<'scroll' | 'select'>('scroll')
+  const selectModeRef = useRef(false)
 
-  useEffect(() => { touchModeRef.current = touchMode }, [touchMode])
+  useEffect(() => { selectModeRef.current = selectMode }, [selectMode])
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 768 || navigator.maxTouchPoints > 0)
@@ -114,7 +123,7 @@ export default function TerminalPage() {
       if (destroyed || !termContainerRef.current) return
 
       const term = new Terminal({
-        fontSize: isMobile ? 15 : 13,
+        fontSize: isMobile ? 11 : 13,
         fontFamily: 'Menlo, "DejaVu Sans Mono", "Cascadia Code", monospace',
         theme: { background: '#0d0d0d', foreground: '#e5e7eb', cursor: '#3b82f6' },
         cursorBlink: true,
@@ -210,13 +219,13 @@ export default function TerminalPage() {
       let touchY = 0
       let touchAccum = 0
       const onTouchStart = (e: TouchEvent) => {
-        if (touchModeRef.current === 'scroll') {
+        if (!selectModeRef.current) {
           touchY = e.touches[0].clientY
           touchAccum = 0
         }
       }
       const onTouchMove = (e: TouchEvent) => {
-        if (touchModeRef.current !== 'scroll') return
+        if (selectModeRef.current) return
         e.preventDefault()
         const dy = touchY - e.touches[0].clientY   // positive = swipe up = scroll to older
         touchY = e.touches[0].clientY
@@ -232,46 +241,32 @@ export default function TerminalPage() {
       el.addEventListener('touchstart', onTouchStart, { passive: true })
       el.addEventListener('touchmove', onTouchMove, { passive: false })
 
-      // tmux 'mouse on' puts xterm into mouse-tracking mode, which forwards every
-      // mouse event to the PTY instead of building a text selection. xterm.js v6
-      // honours Shift to bypass mouse tracking for selection. We intercept drag
-      // gestures (mousedown + move > threshold) and re-dispatch with shiftKey=true
-      // so selection works naturally. Single clicks pass through unchanged so tmux
-      // still receives cursor-positioning events.
-      const DRAG_PX = 4
-      let mdX = 0, mdY = 0, mdTarget: EventTarget | null = null
-      let dragSelecting = false
+      // When selectMode is on, re-dispatch every mouse event with shiftKey=true so
+      // xterm.js bypasses tmux mouse-tracking and performs text selection instead.
+      // Single clicks still reach xterm (anchoring selection); drags extend it.
       let reinjecting = false
 
-      const shiftClone = (type: string, src: MouseEvent, extra: Partial<MouseEventInit> = {}) =>
+      const shiftClone = (type: string, src: MouseEvent) =>
         new MouseEvent(type, {
           bubbles: true, cancelable: true, view: window,
           clientX: src.clientX, clientY: src.clientY,
           screenX: src.screenX, screenY: src.screenY,
           ctrlKey: src.ctrlKey, altKey: src.altKey, metaKey: src.metaKey,
           shiftKey: true, button: src.button, buttons: src.buttons,
-          ...extra,
         })
 
       const onCaptureMD = (e: MouseEvent) => {
         if (reinjecting || e.shiftKey || e.button !== 0) return
-        mdX = e.clientX; mdY = e.clientY; mdTarget = e.target
-        dragSelecting = false
+        if (!selectModeRef.current) return
+        e.stopPropagation(); e.preventDefault()
+        reinjecting = true
+        ;(e.target as Element).dispatchEvent(shiftClone('mousedown', e))
+        reinjecting = false
       }
 
       const onCaptureMM = (e: MouseEvent) => {
         if (reinjecting || e.shiftKey || !(e.buttons & 1)) return
-        if (!dragSelecting) {
-          if (Math.abs(e.clientX - mdX) < DRAG_PX && Math.abs(e.clientY - mdY) < DRAG_PX) return
-          dragSelecting = true
-          // Retroactively anchor selection at the original click position
-          e.stopPropagation(); e.preventDefault()
-          reinjecting = true
-          ;(mdTarget as Element | null)?.dispatchEvent(
-            shiftClone('mousedown', e, { clientX: mdX, clientY: mdY, buttons: 1 })
-          )
-          reinjecting = false
-        }
+        if (!selectModeRef.current) return
         e.stopPropagation(); e.preventDefault()
         reinjecting = true
         ;(e.target as Element).dispatchEvent(shiftClone('mousemove', e))
@@ -279,15 +274,19 @@ export default function TerminalPage() {
       }
 
       const onCaptureMU = (e: MouseEvent) => {
-        if (reinjecting || e.shiftKey || e.button !== 0 || !dragSelecting) return
-        dragSelecting = false
+        if (reinjecting || e.shiftKey || e.button !== 0) return
+        if (!selectModeRef.current) return
         e.stopPropagation(); e.preventDefault()
         reinjecting = true
         ;(e.target as Element).dispatchEvent(shiftClone('mouseup', e))
         reinjecting = false
-        // Copy immediately — term.write() from incoming PTY data clears selection within ms
+        // Auto-copy selection immediately — incoming PTY data clears it within ms
         const sel = termRef.current?.getSelection()
-        if (sel) navigator.clipboard.writeText(sel).catch(() => {})
+        if (sel) {
+          navigator.clipboard.writeText(sel).catch(() => {})
+          setCopyFeedback(true)
+          setTimeout(() => setCopyFeedback(false), 1200)
+        }
       }
 
       el.addEventListener('mousedown', onCaptureMD, { capture: true })
@@ -643,12 +642,18 @@ export default function TerminalPage() {
 
         {isMobile && (
           <div className="flex gap-1 px-2 py-1 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
-            {KEY_SEQUENCES.map(k => (
+            {KEY_DEFS.map(k => (
               <button
                 key={k.label}
                 onPointerDown={e => {
                   e.preventDefault()
-                  if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(k.seq)
+                  const textarea = termContainerRef.current?.querySelector<HTMLElement>('.xterm-helper-textarea')
+                  if (textarea) {
+                    textarea.dispatchEvent(new KeyboardEvent('keydown', {
+                      key: k.key, code: k.code, keyCode: k.keyCode, which: k.keyCode,
+                      ctrlKey: k.ctrlKey ?? false, bubbles: true, cancelable: true,
+                    }))
+                  }
                 }}
                 className="px-3 py-1.5 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap shrink-0"
               >
@@ -661,18 +666,18 @@ export default function TerminalPage() {
             <button
               onPointerDown={e => {
                 e.preventDefault()
-                setTouchMode(m => m === 'scroll' ? 'select' : 'scroll')
+                setSelectMode(m => !m)
               }}
-              title={touchMode === 'scroll' ? 'Switch to select mode' : 'Switch to scroll mode'}
+              title={selectMode ? 'Switch to scroll mode' : 'Switch to select mode'}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
-                touchMode === 'select'
+                selectMode
                   ? 'bg-[#3b82f6] text-white'
                   : 'bg-[#2a2a2a] text-[#9ca3af]'
               }`}
             >
-              {touchMode === 'scroll'
-                ? <><MoveVertical size={11} /> Scroll</>
-                : <><MousePointer size={11} /> Select</>
+              {selectMode
+                ? <><MousePointer size={11} /> Select</>
+                : <><MoveVertical size={11} /> Scroll</>
               }
             </button>
 
@@ -704,6 +709,44 @@ export default function TerminalPage() {
                 : pasteFeedback === 'denied'
                   ? 'Tap Allow ↑'
                   : 'Paste'}
+            </button>
+          </div>
+        )}
+
+        {!isMobile && (
+          <div className="flex gap-1 px-2 py-1 items-center justify-end bg-[#1a1a1a] border-b border-[#2a2a2a] shrink-0">
+            <button
+              onClick={() => setSelectMode(m => !m)}
+              title={selectMode ? 'Switch to normal mode (clicks go to tmux)' : 'Switch to select mode (click-drag to select text)'}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
+                selectMode
+                  ? 'bg-[#3b82f6] text-white'
+                  : 'bg-[#2a2a2a] text-[#9ca3af] hover:text-[#e5e7eb]'
+              }`}
+            >
+              <MousePointer size={11} /> {selectMode ? 'Select' : 'Normal'}
+            </button>
+            <button
+              onClick={() => { void copySelection() }}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
+                copyFeedback
+                  ? 'bg-[#10b981] text-white'
+                  : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
+              }`}
+            >
+              <Clipboard size={11} /> {copyFeedback ? 'Copied!' : 'Copy'}
+            </button>
+            <button
+              onClick={() => { void pasteFromClipboard() }}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
+                pasteFeedback === 'ok'
+                  ? 'bg-[#10b981] text-white'
+                  : pasteFeedback === 'denied'
+                    ? 'bg-[#b45309] text-white'
+                    : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
+              }`}
+            >
+              <ClipboardPaste size={11} /> {pasteFeedback === 'ok' ? 'Pasted!' : pasteFeedback === 'denied' ? 'Allow paste ↑' : 'Paste'}
             </button>
           </div>
         )}
