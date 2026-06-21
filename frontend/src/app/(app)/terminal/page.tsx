@@ -204,12 +204,74 @@ export default function TerminalPage() {
       el.addEventListener('touchstart', onTouchStart, { passive: true })
       el.addEventListener('touchmove', onTouchMove, { passive: false })
 
+      // tmux 'mouse on' puts xterm into mouse-tracking mode, which forwards every
+      // mouse event to the PTY instead of building a text selection. xterm.js v6
+      // honours Shift to bypass mouse tracking for selection. We intercept drag
+      // gestures (mousedown + move > threshold) and re-dispatch with shiftKey=true
+      // so selection works naturally. Single clicks pass through unchanged so tmux
+      // still receives cursor-positioning events.
+      const DRAG_PX = 4
+      let mdX = 0, mdY = 0, mdTarget: EventTarget | null = null
+      let dragSelecting = false
+      let reinjecting = false
+
+      const shiftClone = (type: string, src: MouseEvent, extra: Partial<MouseEventInit> = {}) =>
+        new MouseEvent(type, {
+          bubbles: true, cancelable: true, view: window,
+          clientX: src.clientX, clientY: src.clientY,
+          screenX: src.screenX, screenY: src.screenY,
+          ctrlKey: src.ctrlKey, altKey: src.altKey, metaKey: src.metaKey,
+          shiftKey: true, button: src.button, buttons: src.buttons,
+          ...extra,
+        })
+
+      const onCaptureMD = (e: MouseEvent) => {
+        if (reinjecting || e.shiftKey || e.button !== 0) return
+        mdX = e.clientX; mdY = e.clientY; mdTarget = e.target
+        dragSelecting = false
+      }
+
+      const onCaptureMM = (e: MouseEvent) => {
+        if (reinjecting || e.shiftKey || !(e.buttons & 1)) return
+        if (!dragSelecting) {
+          if (Math.abs(e.clientX - mdX) < DRAG_PX && Math.abs(e.clientY - mdY) < DRAG_PX) return
+          dragSelecting = true
+          // Retroactively anchor selection at the original click position
+          e.stopPropagation(); e.preventDefault()
+          reinjecting = true
+          ;(mdTarget as Element | null)?.dispatchEvent(
+            shiftClone('mousedown', e, { clientX: mdX, clientY: mdY, buttons: 1 })
+          )
+          reinjecting = false
+        }
+        e.stopPropagation(); e.preventDefault()
+        reinjecting = true
+        ;(e.target as Element).dispatchEvent(shiftClone('mousemove', e))
+        reinjecting = false
+      }
+
+      const onCaptureMU = (e: MouseEvent) => {
+        if (reinjecting || e.shiftKey || e.button !== 0 || !dragSelecting) return
+        dragSelecting = false
+        e.stopPropagation(); e.preventDefault()
+        reinjecting = true
+        ;(e.target as Element).dispatchEvent(shiftClone('mouseup', e))
+        reinjecting = false
+      }
+
+      el.addEventListener('mousedown', onCaptureMD, { capture: true })
+      el.addEventListener('mousemove', onCaptureMM, { capture: true })
+      el.addEventListener('mouseup', onCaptureMU, { capture: true })
+
       cleanup = () => {
         ro.disconnect()
         window.visualViewport?.removeEventListener('resize', fit)
         el.removeEventListener('wheel', onWheel, { capture: true })
         el.removeEventListener('touchstart', onTouchStart)
         el.removeEventListener('touchmove', onTouchMove)
+        el.removeEventListener('mousedown', onCaptureMD, { capture: true })
+        el.removeEventListener('mousemove', onCaptureMM, { capture: true })
+        el.removeEventListener('mouseup', onCaptureMU, { capture: true })
         scrollDisp.dispose()
         ws.close()
         term.dispose()
