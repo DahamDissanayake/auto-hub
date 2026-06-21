@@ -1,0 +1,18 @@
+import express from 'express'
+import { authMiddleware } from './lib/auth'
+import lsRouter from './routes/ls'
+
+const app = express()
+app.use(express.json())
+
+app.get('/health', (_req, res) => res.json({ ok: true }))
+
+app.use(authMiddleware)
+app.use('/ls', lsRouter)
+
+const PORT = parseInt(process.env.PORT ?? '5050', 10)
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Files service :${PORT}`))
+}
+
+export default app
