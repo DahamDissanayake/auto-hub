@@ -53,7 +53,7 @@ module.exports = async function ({ log, action, notify }) {
     HostConfig: {
       Privileged: true,
       PidMode: 'host',
-      AutoRemove: false,
+      AutoRemove: true,
     },
   });
 
@@ -68,11 +68,5 @@ module.exports = async function ({ log, action, notify }) {
   if (startRes.status !== 204) {
     throw new Error(`Failed to start container: ${JSON.stringify(startRes.body)}`);
   }
-  log('Container started, waiting for nsenter to complete...');
-
-  await dockerRequest('POST', `/containers/${containerId}/wait`, null);
-  log('nsenter completed');
-
-  await dockerRequest('DELETE', `/containers/${containerId}?force=true`, null);
-  log(`Container removed. Host ${cmd} initiated.`);
+  log(`Host ${cmd} initiated.`);
 };
