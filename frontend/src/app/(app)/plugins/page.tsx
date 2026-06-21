@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { Puzzle, ScrollText } from 'lucide-react'
+import { ListTodo, ScrollText } from 'lucide-react'
 import PluginCard from '@/components/plugins/PluginCard'
 import ExecutionLog from '@/components/plugins/ExecutionLog'
 import { usePlugins, useAllExecutions } from '@/lib/hooks/usePlugins'
@@ -36,8 +36,8 @@ export default function PluginsPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <h1 className="text-white text-xl font-semibold flex items-center gap-2">
-          <Puzzle size={20} className="text-[#3b82f6]" />
-          Plugins
+          <ListTodo size={20} className="text-[#3b82f6]" />
+          Tasks
         </h1>
         {plugins && (
           <span className="text-xs bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/30 px-2 py-0.5 rounded-full">
@@ -56,8 +56,8 @@ export default function PluginsPage() {
               : 'border-transparent text-[#6b7280] hover:text-[#9ca3af]'
           }`}
         >
-          <Puzzle size={14} />
-          Plugins
+          <ListTodo size={14} />
+          Tasks
         </button>
         <button
           onClick={() => setTab('output')}
@@ -89,7 +89,7 @@ export default function PluginsPage() {
             <>
               {!plugins || plugins.length === 0 ? (
                 <div className="text-[#6b7280] text-sm p-8 text-center border border-[#2a2a2a] rounded-lg">
-                  No plugins installed. Drop a plugin folder into the PLUGIN_DIR volume and restart the backend.
+                  No tasks installed. Drop a task folder into the plugin directory and restart the backend.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -113,7 +113,7 @@ export default function PluginsPage() {
               onChange={e => setFilterPluginId(e.target.value)}
               className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#9ca3af] text-xs rounded-md px-3 py-1.5 focus:outline-none focus:border-[#3b82f6]"
             >
-              <option value="">All plugins</option>
+              <option value="">All tasks</option>
               {plugins?.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}

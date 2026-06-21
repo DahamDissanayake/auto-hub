@@ -1,11 +1,11 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Puzzle, LayoutGrid, Calendar, GitBranch } from 'lucide-react'
+import { LayoutDashboard, ListTodo, LayoutGrid, Calendar, GitBranch } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/plugins', label: 'Plugins', icon: Puzzle },
+  { href: '/plugins', label: 'Tasks', icon: ListTodo },
   { href: '/apps', label: 'Apps', icon: LayoutGrid },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/n8n-workflows', label: 'n8n', icon: GitBranch },
