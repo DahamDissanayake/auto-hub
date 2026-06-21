@@ -208,4 +208,128 @@ describe('TerminalController', () => {
       await expect(controller.deleteSession('s', 'Bearer t')).rejects.toThrow(HttpException);
     });
   });
+
+  describe('getClaudeProfiles', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies to terminal service forwarding auth header', async () => {
+      const mockData = { active: 'work', profiles: [{ name: 'work', addedAt: '2026-01-01' }] };
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockData,
+      } as unknown as Response);
+
+      const result = await controller.getClaudeProfiles('Bearer test-token');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/claude-profiles', {
+        headers: { authorization: 'Bearer test-token' },
+      });
+      expect(result).toEqual(mockData);
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.getClaudeProfiles('Bearer t')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('startClaudeLogin', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies POST with body and auth', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ sessionId: 'abc', url: 'https://claude.ai/oauth' }),
+      } as unknown as Response);
+
+      const result = await controller.startClaudeLogin({ name: 'work' }, 'Bearer t');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/claude-profiles/login/start', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer t' },
+        body: JSON.stringify({ name: 'work' }),
+      });
+      expect(result).toEqual({ sessionId: 'abc', url: 'https://claude.ai/oauth' });
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.startClaudeLogin({ name: 'x' }, 'Bearer t')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('completeClaudeLogin', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies POST with body and auth', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true }),
+      } as unknown as Response);
+
+      const result = await controller.completeClaudeLogin({ sessionId: 'abc', code: '123' }, 'Bearer t');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/claude-profiles/login/complete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer t' },
+        body: JSON.stringify({ sessionId: 'abc', code: '123' }),
+      });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(
+        controller.completeClaudeLogin({ sessionId: 'x', code: 'y' }, 'Bearer t'),
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('activateClaudeProfile', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies POST to activate endpoint with auth', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true }),
+      } as unknown as Response);
+
+      const result = await controller.activateClaudeProfile('work', 'Bearer t');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/claude-profiles/work/activate', {
+        method: 'POST',
+        headers: { authorization: 'Bearer t' },
+      });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.activateClaudeProfile('work', 'Bearer t')).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('deleteClaudeProfile', () => {
+    afterEach(() => jest.resetAllMocks());
+
+    it('proxies DELETE with auth header', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true }),
+      } as unknown as Response);
+
+      const result = await controller.deleteClaudeProfile('work', 'Bearer t');
+
+      expect(global.fetch).toHaveBeenCalledWith('http://terminal:7681/claude-profiles/work', {
+        method: 'DELETE',
+        headers: { authorization: 'Bearer t' },
+      });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('throws 503 when terminal service is unreachable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+      await expect(controller.deleteClaudeProfile('work', 'Bearer t')).rejects.toThrow(HttpException);
+    });
+  });
 });

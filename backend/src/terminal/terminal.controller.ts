@@ -16,6 +16,20 @@ interface CloneBody {
   name?: string;
 }
 
+interface ClaudeProfilesMeta {
+  active: string | null;
+  profiles: { name: string; addedAt: string }[];
+}
+
+interface StartLoginBody {
+  name: string;
+}
+
+interface CompleteLoginBody {
+  sessionId: string;
+  code: string;
+}
+
 interface SessionEntry {
   name: string;
   cwd: string;
@@ -88,6 +102,94 @@ export class TerminalController {
     }
     if (!res.ok) throw new HttpException(await res.json() as object, res.status);
     return res.json() as Promise<{ path: string }>;
+  }
+
+  @Get('claude-profiles')
+  async getClaudeProfiles(@Headers('authorization') auth: string): Promise<ClaudeProfilesMeta> {
+    let res: Response;
+    try {
+      res = await fetch(`${TERMINAL_SERVICE}/claude-profiles`, {
+        headers: { authorization: auth ?? '' },
+      });
+    } catch {
+      throw new HttpException('Terminal service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) throw new HttpException(await res.text(), res.status);
+    return res.json() as Promise<ClaudeProfilesMeta>;
+  }
+
+  @Post('claude-profiles/login/start')
+  async startClaudeLogin(
+    @Body() body: StartLoginBody,
+    @Headers('authorization') auth: string,
+  ): Promise<{ sessionId: string; url: string }> {
+    let res: Response;
+    try {
+      res = await fetch(`${TERMINAL_SERVICE}/claude-profiles/login/start`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: auth ?? '' },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new HttpException('Terminal service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) throw new HttpException(await res.json() as object, res.status);
+    return res.json() as Promise<{ sessionId: string; url: string }>;
+  }
+
+  @Post('claude-profiles/login/complete')
+  async completeClaudeLogin(
+    @Body() body: CompleteLoginBody,
+    @Headers('authorization') auth: string,
+  ): Promise<{ ok: boolean }> {
+    let res: Response;
+    try {
+      res = await fetch(`${TERMINAL_SERVICE}/claude-profiles/login/complete`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: auth ?? '' },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new HttpException('Terminal service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) throw new HttpException(await res.json() as object, res.status);
+    return res.json() as Promise<{ ok: boolean }>;
+  }
+
+  @Post('claude-profiles/:name/activate')
+  async activateClaudeProfile(
+    @Param('name') name: string,
+    @Headers('authorization') auth: string,
+  ): Promise<{ ok: boolean }> {
+    let res: Response;
+    try {
+      res = await fetch(`${TERMINAL_SERVICE}/claude-profiles/${encodeURIComponent(name)}/activate`, {
+        method: 'POST',
+        headers: { authorization: auth ?? '' },
+      });
+    } catch {
+      throw new HttpException('Terminal service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) throw new HttpException(await res.json() as object, res.status);
+    return res.json() as Promise<{ ok: boolean }>;
+  }
+
+  @Delete('claude-profiles/:name')
+  async deleteClaudeProfile(
+    @Param('name') name: string,
+    @Headers('authorization') auth: string,
+  ): Promise<{ ok: boolean }> {
+    let res: Response;
+    try {
+      res = await fetch(`${TERMINAL_SERVICE}/claude-profiles/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { authorization: auth ?? '' },
+      });
+    } catch {
+      throw new HttpException('Terminal service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) throw new HttpException(await res.text(), res.status);
+    return res.json() as Promise<{ ok: boolean }>;
   }
 
   @Get('sessions')
