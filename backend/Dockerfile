@@ -12,6 +12,7 @@ RUN apk add --no-cache dumb-init python3 py3-pip && \
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/plugins ./plugins
 ENV NODE_ENV=production
 EXPOSE 4000
 ENTRYPOINT ["dumb-init", "--"]
