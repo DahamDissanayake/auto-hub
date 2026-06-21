@@ -360,15 +360,19 @@ describe('POST /claude-profiles/login/start', () => {
   it('returns sessionId and url when claude emits auth URL on stdout', async () => {
     profiles.profileExists.mockReturnValue(false);
 
-    const reqPromise = request(app)
+    let resolveRes;
+    const responsePromise = new Promise(resolve => { resolveRes = resolve; });
+    request(app)
       .post('/claude-profiles/login/start')
       .set('Authorization', auth)
-      .send({ name: 'work' });
+      .send({ name: 'work' })
+      .end((err, res) => resolveRes(res));
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 100));
     mockChild.stdout.emit('data', 'Open this URL:\nhttps://claude.ai/oauth/authorize?code=xyz\n');
 
-    const res = await reqPromise.expect(200);
+    const res = await responsePromise;
+    expect(res.status).toBe(200);
     expect(res.body.sessionId).toBeTruthy();
     expect(res.body.url).toBe('https://claude.ai/oauth/authorize?code=xyz');
   });
@@ -376,30 +380,38 @@ describe('POST /claude-profiles/login/start', () => {
   it('returns sessionId and url when claude emits auth URL on stderr', async () => {
     profiles.profileExists.mockReturnValue(false);
 
-    const reqPromise = request(app)
+    let resolveRes;
+    const responsePromise = new Promise(resolve => { resolveRes = resolve; });
+    request(app)
       .post('/claude-profiles/login/start')
       .set('Authorization', auth)
-      .send({ name: 'work' });
+      .send({ name: 'work' })
+      .end((err, res) => resolveRes(res));
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 100));
     mockChild.stderr.emit('data', 'https://claude.ai/oauth/authorize?code=abc\n');
 
-    const res = await reqPromise.expect(200);
+    const res = await responsePromise;
+    expect(res.status).toBe(200);
     expect(res.body.url).toBe('https://claude.ai/oauth/authorize?code=abc');
   });
 
   it('returns 500 when claude exits before emitting URL', async () => {
     profiles.profileExists.mockReturnValue(false);
 
-    const reqPromise = request(app)
+    let resolveRes;
+    const responsePromise = new Promise(resolve => { resolveRes = resolve; });
+    request(app)
       .post('/claude-profiles/login/start')
       .set('Authorization', auth)
-      .send({ name: 'work' });
+      .send({ name: 'work' })
+      .end((err, res) => resolveRes(res));
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 100));
     mockChild.emit('exit', 1);
 
-    const res = await reqPromise.expect(500);
+    const res = await responsePromise;
+    expect(res.status).toBe(500);
     expect(res.body.error).toMatch(/exited/);
   });
 });
@@ -441,23 +453,29 @@ describe('POST /claude-profiles/login/complete', () => {
     const mockChild = new EventEmitter();
     mockChild.stdin = { write: jest.fn() };
     mockChild.kill = jest.fn();
+    const expireTimer = setTimeout(() => {}, 99999);
     pendingLogins.set('test-id', {
       child: mockChild,
       name: 'work',
-      expireTimer: setTimeout(() => {}, 99999),
+      expireTimer,
     });
     profiles.saveProfile.mockImplementation(() => {});
 
-    const reqPromise = request(app)
+    let resolveRes;
+    const responsePromise = new Promise(resolve => { resolveRes = resolve; });
+    request(app)
       .post('/claude-profiles/login/complete')
       .set('Authorization', auth)
-      .send({ sessionId: 'test-id', code: 'mycode' });
+      .send({ sessionId: 'test-id', code: 'mycode' })
+      .end((err, res) => resolveRes(res));
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    clearTimeout(expireTimer);
     expect(mockChild.stdin.write).toHaveBeenCalledWith('mycode\n');
     mockChild.emit('exit', 0);
 
-    const res = await reqPromise.expect(200);
+    const res = await responsePromise;
+    expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
     expect(profiles.saveProfile).toHaveBeenCalledWith('work');
   });
