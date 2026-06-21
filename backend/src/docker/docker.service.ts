@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as fs from 'fs';
 import { statfs } from 'fs/promises';
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 export interface DiskStats {
   path: string;
@@ -25,6 +29,13 @@ export interface SystemMetrics {
   rootDisk: DiskStats;
   dataDisk: DiskStats | null;
   network: NetworkStats;
+}
+
+export interface SpeedTestResult {
+  downloadMbps: number
+  uploadMbps: number
+  pingMs: number
+  server: string
 }
 
 export interface ContainerInfo {
@@ -360,5 +371,33 @@ export class DockerService {
         .filter((c) => c.State === 'running')
         .map((c) => this.dockerRequest('POST', `/containers/${c.Id}/stop`)),
     );
+  }
+
+  async runSpeedTest(): Promise<SpeedTestResult> {
+    let stdout: string
+    try {
+      const result = await execAsync('speedtest-cli --json', { timeout: 90_000 })
+      stdout = result.stdout
+    } catch (err) {
+      const msg = String(err)
+      if (msg.includes('not found') || msg.includes('ENOENT') || msg.includes('No such file')) {
+        throw new Error('speedtest-cli not installed — run: sudo apt install speedtest-cli')
+      }
+      throw new Error(`Speed test failed: ${msg}`)
+    }
+
+    const data = JSON.parse(stdout) as {
+      download: number
+      upload: number
+      ping: number
+      server: { sponsor: string; country: string }
+    }
+
+    return {
+      downloadMbps: parseFloat((data.download / 1_000_000).toFixed(2)),
+      uploadMbps: parseFloat((data.upload / 1_000_000).toFixed(2)),
+      pingMs: Math.round(data.ping),
+      server: `${data.server.sponsor}, ${data.server.country}`,
+    }
   }
 }

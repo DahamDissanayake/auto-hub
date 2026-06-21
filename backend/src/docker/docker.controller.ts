@@ -100,4 +100,16 @@ export class DockerController {
       );
     }
   }
+
+  @Post('speed-test')
+  async speedTest() {
+    try {
+      return await this.dockerService.runSpeedTest()
+    } catch (err) {
+      throw new HttpException(
+        err instanceof Error ? err.message : String(err),
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
+    }
+  }
 }
