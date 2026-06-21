@@ -30,13 +30,13 @@ describe('PluginCard', () => {
     } as any)
   })
 
-  it('shows "Run now" button when plugin has no actions', () => {
+  it('shows "Run" button when plugin has no actions', () => {
     render(<Wrapper><PluginCard plugin={basePlugin} /></Wrapper>)
-    expect(screen.getByRole('button', { name: /run now/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^run$/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /reboot/i })).not.toBeInTheDocument()
   })
 
-  it('hides "Run now" and shows action buttons when plugin.actions is non-empty', () => {
+  it('hides "Run" and shows action buttons when plugin.actions is non-empty', () => {
     const plugin: Plugin = {
       ...basePlugin,
       actions: [
@@ -46,7 +46,7 @@ describe('PluginCard', () => {
       requiresPassword: true,
     }
     render(<Wrapper><PluginCard plugin={plugin} /></Wrapper>)
-    expect(screen.queryByRole('button', { name: /run now/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^run$/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Reboot$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Shutdown$/i })).toBeInTheDocument()
   })

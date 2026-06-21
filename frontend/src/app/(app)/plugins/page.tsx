@@ -1,11 +1,11 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { ListTodo, ScrollText } from 'lucide-react'
+import { Zap, ScrollText } from 'lucide-react'
 import PluginCard from '@/components/plugins/PluginCard'
 import ExecutionLog from '@/components/plugins/ExecutionLog'
 import { usePlugins, useAllExecutions } from '@/lib/hooks/usePlugins'
 
-type Tab = 'plugins' | 'output'
+type Tab = 'shortcuts' | 'output'
 
 const TIME_RANGES = [
   { label: '1h',  hours: 1 },
@@ -14,8 +14,8 @@ const TIME_RANGES = [
   { label: 'All', hours: null },
 ] as const
 
-export default function PluginsPage() {
-  const [tab, setTab] = useState<Tab>('plugins')
+export default function ShortcutsPage() {
+  const [tab, setTab] = useState<Tab>('shortcuts')
   const [filterPluginId, setFilterPluginId] = useState<string>('')
   const [timeRange, setTimeRange] = useState<number | null>(24)
 
@@ -36,8 +36,8 @@ export default function PluginsPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <h1 className="text-white text-xl font-semibold flex items-center gap-2">
-          <ListTodo size={20} className="text-[#3b82f6]" />
-          Tasks
+          <Zap size={20} className="text-[#3b82f6]" />
+          Shortcuts
         </h1>
         {plugins && (
           <span className="text-xs bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/30 px-2 py-0.5 rounded-full">
@@ -49,15 +49,15 @@ export default function PluginsPage() {
       {/* Tabs */}
       <div className="flex border-b border-[#2a2a2a] gap-1">
         <button
-          onClick={() => setTab('plugins')}
+          onClick={() => setTab('shortcuts')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'plugins'
+            tab === 'shortcuts'
               ? 'border-[#3b82f6] text-[#3b82f6]'
               : 'border-transparent text-[#6b7280] hover:text-[#9ca3af]'
           }`}
         >
-          <ListTodo size={14} />
-          Tasks
+          <Zap size={14} />
+          Shortcuts
         </button>
         <button
           onClick={() => setTab('output')}
@@ -72,27 +72,27 @@ export default function PluginsPage() {
         </button>
       </div>
 
-      {/* Plugins tab */}
-      {tab === 'plugins' && (
+      {/* Shortcuts tab */}
+      {tab === 'shortcuts' && (
         <>
           {pluginsLoading && (
             <div className="flex items-center justify-center h-64">
-              <div className="text-[#6b7280] text-sm">Loading plugins…</div>
+              <div className="text-[#6b7280] text-sm">Loading shortcuts…</div>
             </div>
           )}
           {pluginsError && (
             <div className="text-[#ef4444] text-sm p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
-              Failed to load plugins.
+              Failed to load shortcuts.
             </div>
           )}
           {!pluginsLoading && !pluginsError && (
             <>
               {!plugins || plugins.length === 0 ? (
                 <div className="text-[#6b7280] text-sm p-8 text-center border border-[#2a2a2a] rounded-lg">
-                  No tasks installed. Drop a task folder into the plugin directory and restart the backend.
+                  No shortcuts installed. Drop a plugin folder into the plugin directory and restart the backend.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {plugins.map(plugin => (
                     <PluginCard key={plugin.id} plugin={plugin} />
                   ))}
@@ -113,7 +113,7 @@ export default function PluginsPage() {
               onChange={e => setFilterPluginId(e.target.value)}
               className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#9ca3af] text-xs rounded-md px-3 py-1.5 focus:outline-none focus:border-[#3b82f6]"
             >
-              <option value="">All tasks</option>
+              <option value="">All shortcuts</option>
               {plugins?.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}

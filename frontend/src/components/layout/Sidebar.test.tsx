@@ -45,7 +45,7 @@ describe('Sidebar', () => {
   it('renders all navigation items', () => {
     render(<Sidebar />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Plugins')).toBeInTheDocument()
+    expect(screen.getByText('Shortcuts')).toBeInTheDocument()
     expect(screen.getByText('Apps')).toBeInTheDocument()
     expect(screen.getByText('Calendar')).toBeInTheDocument()
     expect(screen.getByText('n8n Workflows')).toBeInTheDocument()
@@ -56,7 +56,7 @@ describe('Sidebar', () => {
   it('applies active style to current path link', () => {
     vi.mocked(usePathname).mockReturnValue('/plugins')
     render(<Sidebar />)
-    const pluginsLink = screen.getByText('Plugins').closest('a')
+    const pluginsLink = screen.getByText('Shortcuts').closest('a')
     expect(pluginsLink).toHaveClass('text-[#3b82f6]')
   })
 

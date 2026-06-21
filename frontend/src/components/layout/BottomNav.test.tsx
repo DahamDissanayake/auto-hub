@@ -22,7 +22,7 @@ describe('BottomNav', () => {
   it('renders all 5 nav items', () => {
     render(<BottomNav />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Plugins')).toBeInTheDocument()
+    expect(screen.getByText('Shortcuts')).toBeInTheDocument()
     expect(screen.getByText('Apps')).toBeInTheDocument()
     expect(screen.getByText('Calendar')).toBeInTheDocument()
     expect(screen.getByText('n8n')).toBeInTheDocument()
@@ -32,7 +32,7 @@ describe('BottomNav', () => {
   it('applies active colour to current path item', () => {
     vi.mocked(usePathname).mockReturnValue('/plugins')
     render(<BottomNav />)
-    const pluginsLink = screen.getByText('Plugins').closest('a')
+    const pluginsLink = screen.getByText('Shortcuts').closest('a')
     expect(pluginsLink?.className).toContain('text-[#3b82f6]')
   })
 

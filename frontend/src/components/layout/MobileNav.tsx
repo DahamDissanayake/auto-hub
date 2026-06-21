@@ -4,13 +4,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, ListTodo, LayoutGrid, Calendar,
+  LayoutDashboard, Zap, LayoutGrid, Calendar,
   GitBranch, Settings, LogOut, X,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/plugins', label: 'Tasks', icon: ListTodo },
+  { href: '/plugins', label: 'Shortcuts', icon: Zap },
   { href: '/apps', label: 'Apps', icon: LayoutGrid },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/n8n-workflows', label: 'n8n Workflows', icon: GitBranch },

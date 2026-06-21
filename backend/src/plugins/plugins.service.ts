@@ -39,18 +39,35 @@ export class PluginsService implements OnModuleInit {
     } catch (err) {
       this.logger.error(`Plugin scan failed: ${(err as Error).message}`);
     }
-    await this.checkRebootFlag();
+    // Fire and forget — don't block startup; network may not be ready yet
+    this.checkRebootFlag().catch(err =>
+      this.logger.error(`Reboot flag check failed: ${(err as Error).message}`),
+    );
   }
 
   private async checkRebootFlag() {
     const flagPath = path.join(this.pluginDir, '.reboot-pending');
     if (!fs.existsSync(flagPath)) return;
-    try {
-      fs.unlinkSync(flagPath);
-      await this.notifications.send('✅ <b>AutoHub is back online</b> — host finished rebooting.');
-    } catch (err) {
-      this.logger.error(`Failed to process reboot flag: ${(err as Error).message}`);
+
+    // Retry sending for up to ~60 s to handle slow network after reboot.
+    // Flag is deleted only after a successful send so a crash-loop can retry.
+    const RETRIES = 4;
+    const DELAY_MS = 12_000;
+    for (let attempt = 0; attempt < RETRIES; attempt++) {
+      if (attempt > 0) {
+        await new Promise(r => setTimeout(r, DELAY_MS));
+      }
+      try {
+        await this.notifications.send('✅ <b>AutoHub is back online</b> — host finished rebooting.');
+        fs.unlinkSync(flagPath);
+        return;
+      } catch (err) {
+        this.logger.warn(
+          `Reboot notification attempt ${attempt + 1}/${RETRIES} failed: ${(err as Error).message}`,
+        );
+      }
     }
+    this.logger.error('All reboot notification attempts failed; flag retained for next restart.');
   }
 
   async scanPlugins() {
