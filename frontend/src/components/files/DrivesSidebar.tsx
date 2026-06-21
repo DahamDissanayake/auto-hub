@@ -1,5 +1,5 @@
 'use client'
-import { HardDrive, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { HardDrive, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export const DRIVES = [
   { id: 'internal',  label: 'Internal',   sublabel: '/home/dama' },
@@ -36,7 +36,7 @@ export default function DrivesSidebar({
           className="w-7 h-7 flex items-center justify-center rounded-md text-[#4b5563] hover:text-white hover:bg-[#1a1a1a] transition-colors shrink-0"
           title={collapsed ? 'Expand drives' : 'Collapse drives'}
         >
-          {collapsed ? <PanelLeftOpen size={13} /> : <PanelLeftClose size={13} />}
+          {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
         </button>
       </div>
 
