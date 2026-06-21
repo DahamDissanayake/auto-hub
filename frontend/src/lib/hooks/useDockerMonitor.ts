@@ -85,6 +85,7 @@ export function useDockerMonitor() {
   const runSpeedTest = useCallback(async () => {
     setSpeedTestLoading(true)
     setSpeedTestError(null)
+    setSpeedTestResult(null)
     try {
       const { data } = await api.post<SpeedTestResult>('/api/docker/speed-test', undefined, {
         timeout: 95_000,
