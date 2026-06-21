@@ -27,6 +27,7 @@ export function SlideToConfirm({
   const draggingRef = useRef(false)
   const startClientXRef = useRef(0)
   const startThumbXRef = useRef(0)
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const disarm = useCallback(() => {
     setArmed(false)
@@ -38,14 +39,21 @@ export function SlideToConfirm({
   // Outside-click reset
   useEffect(() => {
     if (!armed) return
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (trackRef.current && !trackRef.current.contains(e.target as Node)) {
         disarm()
       }
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [armed, disarm])
+
+  // Cleanup confirm timer on unmount
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current)
+    }
+  }, [])
 
   // Auto-reset after 4 seconds
   useEffect(() => {
@@ -85,7 +93,7 @@ export function SlideToConfirm({
 
     if (finalDragPct >= 0.95) {
       setConfirmed(true)
-      setTimeout(() => {
+      confirmTimerRef.current = setTimeout(() => {
         disarm()
         onConfirm()
       }, 150)
@@ -119,6 +127,7 @@ export function SlideToConfirm({
       onClick={e => e.stopPropagation()}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={() => disarm()}
       style={{ width: TRACK_W }}
       className="relative h-6 rounded-full bg-[#2a2a2a] flex items-center shrink-0"
     >
@@ -127,7 +136,7 @@ export function SlideToConfirm({
       </span>
       <div
         role="slider"
-        aria-label={`Slide to confirm ${label}`}
+        aria-label={`slide to ${label} →`}
         aria-valuenow={Math.round(dragPct * 100)}
         aria-valuemin={0}
         aria-valuemax={100}

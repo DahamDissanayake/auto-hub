@@ -12,7 +12,7 @@ const defaultProps = {
 }
 
 describe('SlideToConfirm', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders the trigger button in idle state', () => {
     render(<SlideToConfirm {...defaultProps} />)
@@ -36,7 +36,7 @@ describe('SlideToConfirm', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'End session' }))
     expect(screen.getByText('slide to end →')).toBeInTheDocument()
-    fireEvent.mouseDown(screen.getByRole('button', { name: 'outside' }))
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'outside' }))
     expect(screen.queryByText(/slide to/i)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'End session' })).toBeInTheDocument()
   })
