@@ -11,7 +11,7 @@ const { getSessions, getSession, addSession, removeSession, updateLastActive } =
 const { randomUUID } = require('crypto');
 const profiles = require('./profiles');
 
-function getClaudeEmail() {
+function getClaudeAuthStatus() {
   try {
     const out = cp.execFileSync('claude', ['auth', 'status'], {
       env: { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' },
@@ -19,10 +19,36 @@ function getClaudeEmail() {
       timeout: 10_000,
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return JSON.parse(out).email ?? null;
+    return JSON.parse(out);
   } catch {
     return null;
   }
+}
+
+function getClaudeEmail() {
+  return getClaudeAuthStatus()?.email ?? null;
+}
+
+// claude auth login may not update .claude.json before exiting; write it ourselves
+// so saveProfile always captures the correct _oauthAccount.
+function ensureClaudeJsonAccount(authStatus) {
+  if (!authStatus?.loggedIn || !authStatus?.email) return;
+  try {
+    const data = JSON.parse(fs.existsSync(profiles.CLAUDE_JSON_PATH)
+      ? fs.readFileSync(profiles.CLAUDE_JSON_PATH, 'utf8')
+      : '{}');
+    const current = data.oauthAccount ?? {};
+    if (current.emailAddress === authStatus.email) return;
+    data.oauthAccount = {
+      ...current,
+      emailAddress: authStatus.email,
+      organizationUuid: authStatus.orgId ?? current.organizationUuid,
+      organizationName: authStatus.orgName ?? current.organizationName,
+    };
+    const tmp = profiles.CLAUDE_JSON_PATH + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(data), 'utf8');
+    fs.renameSync(tmp, profiles.CLAUDE_JSON_PATH);
+  } catch { /* ignore */ }
 }
 
 function migrateProfileEmails() {
@@ -317,7 +343,9 @@ app.post('/claude-profiles/login/complete', (req, res) => {
         return res.status(500).json({ error: `claude login exited with code ${exitCode}` });
       }
       try {
-        const email = getClaudeEmail();
+        const authStatus = getClaudeAuthStatus();
+        const email = authStatus?.email ?? null;
+        ensureClaudeJsonAccount(authStatus);
         let warning = null;
         if (email) {
           const existingMeta = profiles.readMeta();
