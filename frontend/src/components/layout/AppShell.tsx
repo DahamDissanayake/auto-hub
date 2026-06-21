@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { MobileNav } from './MobileNav'
+import TransferTray from '@/components/files/TransferTray'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -51,6 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <MobileNav open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <TransferTray />
     </div>
   )
 }
