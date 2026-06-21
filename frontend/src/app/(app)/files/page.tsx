@@ -272,7 +272,7 @@ export default function FilesPage() {
               </button>
             </div>
             <p className="text-[#9ca3af] text-sm">
-              Delete <span className="text-white font-medium">"{deleteTarget.name}"</span>? This cannot be undone.
+              Delete <span className="text-white font-medium">&ldquo;{deleteTarget.name}&rdquo;</span>? This cannot be undone.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <button
