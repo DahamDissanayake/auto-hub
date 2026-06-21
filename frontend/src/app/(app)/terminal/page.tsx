@@ -9,7 +9,7 @@ import { RepoPicker } from './components/RepoPicker'
 import { CloneDialog } from './components/CloneDialog'
 import { SessionTabs, TabSession } from './components/SessionTabs'
 import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
-import { Clipboard, MousePointer, MoveVertical } from 'lucide-react'
+import { Clipboard, ClipboardPaste, MousePointer, MoveVertical } from 'lucide-react'
 
 interface Repo {
   name: string
@@ -19,6 +19,7 @@ interface Repo {
 
 type Step = 'session' | 'workspace' | 'repo' | 'clone' | 'terminal'
 type Workspace = 'home' | 'github' | 'auto-hub'
+type PasteFeedback = 'idle' | 'ok' | 'denied'
 
 const KEY_SEQUENCES = [
   { label: 'Tab', seq: '\t' },
@@ -31,6 +32,23 @@ const KEY_SEQUENCES = [
   { label: '→', seq: '\x1b[C' },
 ]
 
+// Styles xterm's built-in .xterm-viewport scrollbar: always visible, 10px wide,
+// dark track, draggable thumb. overflow-y:scroll forces the track to always render
+// (even when content fits) so the user always has a grabbable bar on the right.
+const SCROLLBAR_CSS = `
+  .xterm .xterm-viewport { overflow-y: scroll !important; scrollbar-width: thin; scrollbar-color: #4b5563 #1a1a1a; }
+  .xterm .xterm-viewport::-webkit-scrollbar { width: 10px; display: block; }
+  .xterm .xterm-viewport::-webkit-scrollbar-track { background: #1a1a1a; border-left: 1px solid #2a2a2a; }
+  .xterm .xterm-viewport::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 5px;
+    border: 2px solid #1a1a1a;
+    min-height: 40px;
+  }
+  .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+  .xterm .xterm-viewport::-webkit-scrollbar-thumb:active { background: #3b82f6; }
+`
+
 export default function TerminalPage() {
   const [step, setStep] = useState<Step>('session')
   const [sessionName, setSessionName] = useState<string | null>(null)
@@ -42,9 +60,9 @@ export default function TerminalPage() {
   const [sessionEnded, setSessionEnded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showSessionOverlay, setShowSessionOverlay] = useState(false)
-  // scroll = touch scrolls the buffer; select = touch selects text for copying
   const [touchMode, setTouchMode] = useState<'scroll' | 'select'>('scroll')
   const [copyFeedback, setCopyFeedback] = useState(false)
+  const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
 
   const termContainerRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
@@ -72,11 +90,13 @@ export default function TerminalPage() {
       if (destroyed || !termContainerRef.current) return
 
       const term = new Terminal({
-        fontSize: isMobile ? 15 : 12,
-        fontFamily: 'Menlo, "DejaVu Sans Mono", monospace',
+        fontSize: isMobile ? 15 : 13,
+        fontFamily: 'Menlo, "DejaVu Sans Mono", "Cascadia Code", monospace',
         theme: { background: '#0d0d0d', foreground: '#e5e7eb', cursor: '#3b82f6' },
         cursorBlink: true,
         scrollback: 5000,
+        // Let xterm handle all mouse wheel events natively via .xterm-viewport scroll
+        scrollOnUserInput: true,
       })
 
       termRef.current = term
@@ -120,54 +140,56 @@ export default function TerminalPage() {
 
       const el = termContainerRef.current!
 
-      // Desktop: capture wheel in the capture phase (fires before xterm's own
-      // listener on its canvas) then stopPropagation so xterm never sees it.
-      // Without capture:true, xterm processes first and may send ↑/↓ cursor keys
-      // to the pty (shell history navigation) before our handler even runs.
+      // Desktop: capture-phase wheel so our handler fires BEFORE xterm's handlers
+      // on child elements (.xterm-viewport, canvas). Without capture, xterm sees the
+      // wheel event first and converts it to ↑/↓ arrow key sequences sent to the PTY
+      // (cycling command history instead of scrolling). stopPropagation() ensures
+      // xterm never receives the event; we drive viewport.scrollTop directly instead.
+      const getViewport = () => el.querySelector('.xterm-viewport') as HTMLElement | null
       const onWheel = (e: WheelEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        let delta = e.deltaY
-        if (e.deltaMode === 1) delta *= 15       // DOM_DELTA_LINE → pixels
-        else if (e.deltaMode === 2) delta *= 300  // DOM_DELTA_PAGE → pixels
-        const lineH = (term.options.fontSize ?? 12) * 1.2
-        const lines = Math.sign(delta) * Math.max(1, Math.round(Math.abs(delta) / lineH))
-        term.scrollLines(lines)
+        const viewport = getViewport()
+        if (viewport) viewport.scrollTop += e.deltaY
       }
       el.addEventListener('wheel', onWheel, { passive: false, capture: true })
 
-      // Mobile touch scroll: accumulate sub-pixel movement for smooth scrolling.
-      // Direction: swipe UP (dy > 0) → scrollLines(-N) = scroll up = older content.
+      // Mobile touch — same root cause as wheel: xterm's canvas touchmove handler
+      // fires in the target/bubble phase and converts movement to selection or PTY
+      // input. We use capture on touchmove to intercept before xterm and drive
+      // viewport.scrollTop directly.
+      //
+      // touchstart stays in bubble (NOT capture) so xterm's target-phase handler
+      // still fires and calls textarea.focus() — that's what shows the keyboard.
+      // stopPropagation() in bubble phase prevents <main> from seeing the tap.
+      //
+      // Direction: swipe UP (finger goes up → clientY decreases → dy > 0) →
+      // scrollTop decreases → older output visible. Matches wheel-up behaviour.
       let touchY = 0
-      let scrollRemainder = 0
       const onTouchStart = (e: TouchEvent) => {
         if (touchModeRef.current === 'scroll') {
+          e.stopPropagation()
           touchY = e.touches[0].clientY
-          scrollRemainder = 0
         }
       }
       const onTouchMove = (e: TouchEvent) => {
         if (touchModeRef.current !== 'scroll') return
         e.preventDefault()
+        e.stopPropagation()
         const dy = touchY - e.touches[0].clientY
         touchY = e.touches[0].clientY
-        scrollRemainder += dy
-        const lineH = (term.options.fontSize ?? 15) * 1.2
-        const lines = Math.trunc(scrollRemainder / lineH)
-        if (lines !== 0) {
-          scrollRemainder -= lines * lineH
-          term.scrollLines(-lines)
-        }
+        const viewport = getViewport()
+        if (viewport) viewport.scrollTop -= dy
       }
       el.addEventListener('touchstart', onTouchStart, { passive: true })
-      el.addEventListener('touchmove', onTouchMove, { passive: false })
+      el.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
 
       cleanup = () => {
         ro.disconnect()
         window.visualViewport?.removeEventListener('resize', fit)
         el.removeEventListener('wheel', onWheel, { capture: true })
         el.removeEventListener('touchstart', onTouchStart)
-        el.removeEventListener('touchmove', onTouchMove)
+        el.removeEventListener('touchmove', onTouchMove, { capture: true })
         ws.close()
         term.dispose()
         termRef.current = null
@@ -184,12 +206,26 @@ export default function TerminalPage() {
     }
   }, [sessionName, isMobile])
 
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(text)
+        setPasteFeedback('ok')
+        setTimeout(() => setPasteFeedback('idle'), 1200)
+      }
+    } catch {
+      // On iOS: browser shows "Allow Paste" system prompt — if denied, ends up here
+      setPasteFeedback('denied')
+      setTimeout(() => setPasteFeedback('idle'), 2500)
+    }
+  }, [])
+
   const copySelection = useCallback(async () => {
     const term = termRef.current
     if (!term) return
     const text = term.getSelection()
     if (!text) {
-      // Nothing selected — select all and copy
       term.selectAll()
       const all = term.getSelection()
       term.clearSelection()
@@ -373,82 +409,118 @@ export default function TerminalPage() {
   }
 
   return (
-    <div className="-mx-6 -mt-6 -mb-6 flex flex-col" style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}>
-      <SessionTabs
-        tabs={openTabs}
-        activeTab={sessionName ?? ''}
-        onSwitch={handleSwitchTab}
-        onEnd={name => { void handleEndTab(name) }}
-        onNew={() => setShowSessionOverlay(true)}
-      />
-      <TerminalBreadcrumb
-        sessionName={sessionName ?? ''}
-        workspace={workspace!}
-        repoName={repoName}
-        onChangeDir={handleChangeDir}
-      />
-      {isMobile && (
-        <div className="flex gap-1 px-2 py-1 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
-          {KEY_SEQUENCES.map(k => (
+    <>
+      {/* PowerShell-style scrollbar: always visible, 12px, dark-themed */}
+      <style>{SCROLLBAR_CSS}</style>
+
+      <div
+        className="-mx-6 -mt-6 -mb-6 flex flex-col"
+        style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}
+      >
+        <SessionTabs
+          tabs={openTabs}
+          activeTab={sessionName ?? ''}
+          onSwitch={handleSwitchTab}
+          onEnd={name => { void handleEndTab(name) }}
+          onNew={() => setShowSessionOverlay(true)}
+        />
+        <TerminalBreadcrumb
+          sessionName={sessionName ?? ''}
+          workspace={workspace!}
+          repoName={repoName}
+          onChangeDir={handleChangeDir}
+        />
+
+        {isMobile && (
+          <div className="flex gap-1 px-2 py-1 items-center bg-[#1a1a1a] border-b border-[#2a2a2a] overflow-x-auto shrink-0">
+            {KEY_SEQUENCES.map(k => (
+              <button
+                key={k.label}
+                onPointerDown={e => {
+                  e.preventDefault()
+                  if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(k.seq)
+                }}
+                className="px-3 py-1.5 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap shrink-0"
+              >
+                {k.label}
+              </button>
+            ))}
+
+            <div className="w-px h-5 bg-[#3a3a3a] shrink-0 mx-1" />
+
+            {/* scroll / select mode toggle */}
             <button
-              key={k.label}
               onPointerDown={e => {
                 e.preventDefault()
-                if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(k.seq)
+                setTouchMode(m => m === 'scroll' ? 'select' : 'scroll')
               }}
-              className="px-3 py-1.5 rounded text-xs font-mono bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6] select-none whitespace-nowrap shrink-0"
+              title={touchMode === 'scroll' ? 'Switch to select mode' : 'Switch to scroll mode'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
+                touchMode === 'select'
+                  ? 'bg-[#3b82f6] text-white'
+                  : 'bg-[#2a2a2a] text-[#9ca3af]'
+              }`}
             >
-              {k.label}
+              {touchMode === 'scroll'
+                ? <><MoveVertical size={11} /> Scroll</>
+                : <><MousePointer size={11} /> Select</>
+              }
             </button>
-          ))}
-          {/* divider */}
-          <div className="w-px h-5 bg-[#3a3a3a] shrink-0 mx-1" />
-          {/* scroll/select mode toggle */}
-          <button
-            onPointerDown={e => {
-              e.preventDefault()
-              setTouchMode(m => m === 'scroll' ? 'select' : 'scroll')
-            }}
-            title={touchMode === 'scroll' ? 'Switch to select mode' : 'Switch to scroll mode'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
-              touchMode === 'select'
-                ? 'bg-[#3b82f6] text-white'
-                : 'bg-[#2a2a2a] text-[#9ca3af]'
-            }`}
-          >
-            {touchMode === 'scroll'
-              ? <><MoveVertical size={11} /> Scroll</>
-              : <><MousePointer size={11} /> Select</>
-            }
-          </button>
-          {/* copy button */}
-          <button
-            onPointerDown={e => { e.preventDefault(); void copySelection() }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
-              copyFeedback
-                ? 'bg-[#10b981] text-white'
-                : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#10b981]'
-            }`}
-          >
-            <Clipboard size={11} />
-            {copyFeedback ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
-      )}
-      <div ref={termContainerRef} className="flex-1 overflow-hidden" />
-      {showSessionOverlay && (
-        <div
-          className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center"
-          onClick={() => setShowSessionOverlay(false)}
-        >
-          <div onClick={e => e.stopPropagation()}>
-            <SessionManager
-              onOpen={session => { setShowSessionOverlay(false); handleSessionOpen(session) }}
-              onNew={name => { setPendingName(name); setShowSessionOverlay(false); setStep('workspace') }}
-            />
+
+            {/* copy — onClick so clipboard.writeText gets a clean user-gesture context */}
+            <button
+              onClick={() => { void copySelection() }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
+                copyFeedback
+                  ? 'bg-[#10b981] text-white'
+                  : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#10b981]'
+              }`}
+            >
+              <Clipboard size={11} />
+              {copyFeedback ? 'Copied!' : 'Copy'}
+            </button>
+
+            {/* paste — onClick (not pointerDown) so iOS permission prompt can appear;
+                shows "Pasted!" on success, "Tap Allow ↑" if permission was denied */}
+            <button
+              onClick={() => { void pasteFromClipboard() }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
+                pasteFeedback === 'ok'
+                  ? 'bg-[#10b981] text-white'
+                  : pasteFeedback === 'denied'
+                    ? 'bg-[#b45309] text-white'
+                    : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6]'
+              }`}
+            >
+              <ClipboardPaste size={11} />
+              {pasteFeedback === 'ok'
+                ? 'Pasted!'
+                : pasteFeedback === 'denied'
+                  ? 'Tap Allow ↑'
+                  : 'Paste'}
+            </button>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* overflow-hidden is the standard xterm.js container setup (used by VS Code,
+            Hyper, etc). It does NOT clip the scrollbar — the scrollbar lives inside
+            .xterm-viewport which is inside .xterm which fills this container. */}
+        <div ref={termContainerRef} className="flex-1 overflow-hidden" />
+
+        {showSessionOverlay && (
+          <div
+            className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center"
+            onClick={() => setShowSessionOverlay(false)}
+          >
+            <div onClick={e => e.stopPropagation()}>
+              <SessionManager
+                onOpen={session => { setShowSessionOverlay(false); handleSessionOpen(session) }}
+                onNew={name => { setPendingName(name); setShowSessionOverlay(false); setStep('workspace') }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

@@ -111,7 +111,7 @@ services:
     network_mode: host
     depends_on:
       - nginx
-    restart: unless-stopped
+    restart: always
 
 volumes:
   postgres_data:

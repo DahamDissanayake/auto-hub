@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ScheduledJob } from './entities/scheduled-job.entity';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class SchedulerService implements OnModuleInit {
@@ -14,6 +15,7 @@ export class SchedulerService implements OnModuleInit {
     private jobRepo: Repository<ScheduledJob>,
     @InjectQueue('plugin-jobs')
     private queue: Queue,
+    private settingsService: SettingsService,
   ) {}
 
   async onModuleInit() {
@@ -25,7 +27,7 @@ export class SchedulerService implements OnModuleInit {
   }
 
   private async addToQueue(job: ScheduledJob) {
-    // Remove any existing repeatable job for this schedule (idempotent)
+    const tz = (await this.settingsService.get('timezone')) ?? 'UTC';
     const existing = await this.queue.getRepeatableJobs();
     for (const rj of existing) {
       if (rj.id === `schedule-${job.id}`) {
@@ -36,7 +38,7 @@ export class SchedulerService implements OnModuleInit {
       `plugin-${job.id}`,
       { pluginId: job.pluginId },
       {
-        repeat: { pattern: job.cron },
+        repeat: { pattern: job.cron, tz },
         jobId: `schedule-${job.id}`,
         removeOnComplete: 10,
         removeOnFail: 5,
