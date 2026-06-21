@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Zap, LayoutGrid, Calendar,
-  GitBranch, Settings, LogOut,
+  GitBranch, Settings, LogOut, FolderOpen,
 } from 'lucide-react'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/plugins', label: 'Shortcuts', icon: Zap },
   { href: '/apps', label: 'Apps', icon: LayoutGrid },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/files', label: 'Files', icon: FolderOpen },
   { href: '/n8n-workflows', label: 'n8n Workflows', icon: GitBranch },
 ]
 

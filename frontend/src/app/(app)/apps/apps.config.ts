@@ -25,4 +25,12 @@ export const apps: AppEntry[] = [
     lucideIcon: 'Container',
     color: '#3b82f6',
   },
+  {
+    id: 'files',
+    name: 'Files',
+    description: 'Browse, upload, and download files across internal storage and the data drive.',
+    url: '/files',
+    lucideIcon: 'FolderOpen',
+    color: '#f59e0b',
+  },
 ]

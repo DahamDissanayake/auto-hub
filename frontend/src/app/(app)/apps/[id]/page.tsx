@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation'
 import { apps } from '../apps.config'
 import TerminalPage from '../../terminal/page'
 import DockerMonitorPage from '../../docker/page'
+import FilesPage from '../../files/page'
 
 const INTERNAL_PAGES: Record<string, React.ComponentType> = {
   'claude-terminal': TerminalPage as React.ComponentType,
   'docker-monitor': DockerMonitorPage as React.ComponentType,
+  'files': FilesPage as React.ComponentType,
 }
 
 export default function AppPage({ params }: { params: { id: string } }) {
