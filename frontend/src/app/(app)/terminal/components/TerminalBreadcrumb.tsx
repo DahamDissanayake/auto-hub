@@ -1,5 +1,6 @@
 'use client'
 import { ChevronRight } from 'lucide-react'
+import { ProfileButton } from './ProfileButton'
 
 const WORKSPACE_LABELS: Record<string, string> = {
   home: 'Home',
@@ -28,12 +29,15 @@ export function TerminalBreadcrumb({ sessionName, workspace, repoName, onChangeD
           </>
         )}
       </div>
-      <button
-        onClick={onChangeDir}
-        className="text-xs text-[#6b7280] hover:text-[#10b981] active:text-[#10b981] transition-colors shrink-0 ml-3 px-2 py-1.5"
-      >
-        Change
-      </button>
+      <div className="flex items-center gap-1 shrink-0 ml-2">
+        <ProfileButton />
+        <button
+          onClick={onChangeDir}
+          className="text-xs text-[#6b7280] hover:text-[#10b981] active:text-[#10b981] transition-colors px-2 py-1.5"
+        >
+          Change
+        </button>
+      </div>
     </div>
   )
 }

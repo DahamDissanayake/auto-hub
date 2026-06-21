@@ -5,6 +5,19 @@ import api from '@/lib/api'
 
 vi.mock('@/lib/api')
 
+vi.mock('@/lib/hooks/useClaudeProfiles', () => ({
+  useClaudeProfiles: () => ({
+    state: { active: null, profiles: [] },
+    loading: false,
+    error: null,
+    activate: vi.fn(),
+    startLogin: vi.fn(),
+    completeLogin: vi.fn(),
+    removeProfile: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}))
+
 const mockApi = api as unknown as {
   get: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>

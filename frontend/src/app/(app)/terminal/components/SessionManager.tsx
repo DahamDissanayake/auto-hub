@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Circle, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 import { CreateSessionDialog } from './CreateSessionDialog'
+import { ProfileButton } from './ProfileButton'
 
 export interface Session {
   name: string
@@ -62,13 +63,16 @@ export function SessionManager({ onOpen, onNew }: SessionManagerProps) {
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg w-full max-w-md">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a]">
           <h2 className="text-white text-sm font-semibold">Code Terminal</h2>
-          <button
-            onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#10b981]/10 text-[#10b981] text-xs font-medium hover:bg-[#10b981]/20 transition-colors"
-          >
-            <Plus size={13} />
-            New Session
-          </button>
+          <div className="flex items-center gap-2">
+            <ProfileButton />
+            <button
+              onClick={() => setCreating(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#10b981]/10 text-[#10b981] text-xs font-medium hover:bg-[#10b981]/20 transition-colors"
+            >
+              <Plus size={13} />
+              New Session
+            </button>
+          </div>
         </div>
 
         <div className="divide-y divide-[#2a2a2a] max-h-80 overflow-y-auto">
