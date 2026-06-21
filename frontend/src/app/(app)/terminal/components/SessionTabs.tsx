@@ -1,5 +1,5 @@
 'use client'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, LayoutGrid } from 'lucide-react'
 import { SlideToConfirm } from './SlideToConfirm'
 
 export interface TabSession {
@@ -14,9 +14,11 @@ interface SessionTabsProps {
   onSwitch: (name: string) => void
   onEnd: (name: string) => void
   onNew: () => void
+  onGrid?: () => void
+  gridActive?: boolean
 }
 
-export function SessionTabs({ tabs, activeTab, onSwitch, onEnd, onNew }: SessionTabsProps) {
+export function SessionTabs({ tabs, activeTab, onSwitch, onEnd, onNew, onGrid, gridActive }: SessionTabsProps) {
   return (
     <div className="flex items-center gap-0.5 px-2 h-10 bg-[#0d0d0d] border-b border-[#2a2a2a] overflow-x-auto shrink-0 touch-pan-x">
       {tabs.map(tab => (
@@ -46,6 +48,20 @@ export function SessionTabs({ tabs, activeTab, onSwitch, onEnd, onNew }: Session
       >
         <Plus size={15} />
       </button>
+      {tabs.length > 0 && onGrid && (
+        <button
+          onClick={onGrid}
+          aria-label="Grid view"
+          title="Grid view"
+          className={`flex items-center justify-center w-8 h-8 rounded transition-colors shrink-0 ml-0.5 ${
+            gridActive
+              ? 'text-[#10b981] bg-[#10b981]/10'
+              : 'text-[#6b7280] hover:text-[#10b981] hover:bg-[#1a1a1a]'
+          }`}
+        >
+          <LayoutGrid size={14} />
+        </button>
+      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { RepoPicker } from './components/RepoPicker'
 import { CloneDialog } from './components/CloneDialog'
 import { SessionTabs, TabSession } from './components/SessionTabs'
 import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
+import { GridView } from './components/GridView'
 import { Clipboard, ClipboardPaste, MousePointer, MoveVertical } from 'lucide-react'
 
 interface Repo {
@@ -53,6 +54,7 @@ export default function TerminalPage() {
   const [touchMode, setTouchMode] = useState<'scroll' | 'select'>('scroll')
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
+  const [gridView, setGridView] = useState(false)
 
   // Custom scrollbar state: shown only when xterm has its own scrollback (non-tmux mode)
   const [sbVisible, setSbVisible] = useState(false)
@@ -485,6 +487,20 @@ export default function TerminalPage() {
     requestAnimationFrame(() => setSessionName(saved))
   }
 
+  const handleExitGrid = (focusName?: string) => {
+    setGridView(false)
+    const target = focusName ?? sessionName
+    const tab = openTabs.find(t => t.name === target)
+    if (tab) {
+      setSessionName(null)
+      setWorkspace(tab.workspace)
+      setRepoName(tab.repoName)
+      setError(null)
+      setSessionEnded(false)
+      requestAnimationFrame(() => setSessionName(target))
+    }
+  }
+
   if (step === 'session') {
     return <SessionManager onOpen={handleSessionOpen} onNew={handleNewSessionName} />
   }
@@ -559,12 +575,22 @@ export default function TerminalPage() {
         className="-mx-4 -mt-4 -mb-4 md:-mx-6 md:-mt-6 md:-mb-6 flex flex-col"
         style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}
       >
+        {gridView ? (
+          <GridView
+            tabs={openTabs}
+            onBack={() => handleExitGrid()}
+            onFocus={name => handleExitGrid(name)}
+          />
+        ) : (
+        <>
         <SessionTabs
           tabs={openTabs}
           activeTab={sessionName ?? ''}
           onSwitch={handleSwitchTab}
           onEnd={name => { void handleEndTab(name) }}
           onNew={() => setShowSessionOverlay(true)}
+          onGrid={() => setGridView(true)}
+          gridActive={gridView}
         />
         <TerminalBreadcrumb
           sessionName={sessionName ?? ''}
@@ -678,6 +704,8 @@ export default function TerminalPage() {
               />
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </>
