@@ -28,6 +28,15 @@ describe('readMeta', () => {
     expect(readMeta().active).toBe('work');
     expect(readMeta().profiles).toHaveLength(1);
   });
+
+  it('logs error and returns default when file is corrupted (non-ENOENT)', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    fs.readFileSync.mockReturnValue('not-valid-json');
+    const { readMeta } = require('./profiles');
+    expect(readMeta()).toEqual({ active: null, profiles: [] });
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to read meta.json'));
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('bootstrapActiveProfile', () => {

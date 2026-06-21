@@ -15,7 +15,10 @@ function ensureProfilesDir() {
 function readMeta() {
   try {
     return JSON.parse(fs.readFileSync(META_PATH, 'utf8'));
-  } catch {
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error(`[profiles] Failed to read meta.json: ${err.message}`);
+    }
     return { active: null, profiles: [] };
   }
 }
