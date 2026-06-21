@@ -13,6 +13,8 @@ export interface DiskStats {
   totalGb: number;
   freeGb: number;
   percent: number;
+  readMbps: number;
+  writeMbps: number;
 }
 
 export interface NetworkStats {
@@ -130,7 +132,7 @@ export class DockerService {
     }
   }
 
-  private async getDiskStats(path: string): Promise<DiskStats | null> {
+  private async getDiskStats(path: string): Promise<Omit<DiskStats, 'readMbps' | 'writeMbps'> | null> {
     try {
       const s = await statfs(path);
       const totalBytes = s.bsize * s.blocks;
@@ -145,6 +147,77 @@ export class DockerService {
       };
     } catch {
       return null;
+    }
+  }
+
+  private parseDiskstats(raw: string): Record<string, { sectorsRead: number; sectorsWritten: number }> {
+    const result: Record<string, { sectorsRead: number; sectorsWritten: number }> = {}
+    for (const line of raw.split('\n')) {
+      const parts = line.trim().split(/\s+/)
+      if (parts.length < 10) continue
+      const name = parts[2]
+      result[name] = {
+        sectorsRead: parseInt(parts[5] ?? '0', 10) || 0,
+        sectorsWritten: parseInt(parts[9] ?? '0', 10) || 0,
+      }
+    }
+    return result
+  }
+
+  private findDeviceForPath(mountPath: string): string | null {
+    try {
+      const mounts = fs.readFileSync('/proc/mounts', 'utf-8')
+      let bestMatch = ''
+      let bestDevice = ''
+      for (const line of mounts.split('\n')) {
+        const parts = line.split(' ')
+        if (parts.length < 2) continue
+        const device = parts[0]
+        const mountPoint = parts[1]
+        if (
+          mountPath === mountPoint || mountPath.startsWith(mountPoint + '/') || mountPoint === '/'
+        ) {
+          if (mountPoint.length > bestMatch.length) {
+            bestMatch = mountPoint
+            bestDevice = device
+          }
+        }
+      }
+      if (!bestDevice || !bestDevice.startsWith('/dev/')) return null
+      const devName = bestDevice.replace('/dev/', '')
+      // mmc/nvme partition: mmcblk0p2 → mmcblk0, nvme0n1p1 → nvme0n1
+      if (/p\d+$/.test(devName)) return devName.replace(/p\d+$/, '')
+      // sd/vd partition: sda1 → sda
+      return devName.replace(/\d+$/, '') || devName
+    } catch {
+      return null
+    }
+  }
+
+  private async getDiskIOStats(mountPath: string): Promise<{ readMbps: number; writeMbps: number }> {
+    const device = this.findDeviceForPath(mountPath)
+    if (!device) return { readMbps: 0, writeMbps: 0 }
+
+    const readStats = (): Record<string, { sectorsRead: number; sectorsWritten: number }> => {
+      try { return this.parseDiskstats(fs.readFileSync('/proc/diskstats', 'utf-8')) }
+      catch { return {} }
+    }
+
+    const s1 = readStats()
+    await new Promise<void>((r) => setTimeout(r, 500))
+    const s2 = readStats()
+
+    const d1 = s1[device]
+    const d2 = s2[device]
+    if (!d1 || !d2) return { readMbps: 0, writeMbps: 0 }
+
+    const readSectors = d2.sectorsRead - d1.sectorsRead
+    const writeSectors = d2.sectorsWritten - d1.sectorsWritten
+    const SECTOR = 512
+
+    return {
+      readMbps: parseFloat(Math.max(0, (readSectors * SECTOR) / (1024 * 1024) / 0.5).toFixed(2)),
+      writeMbps: parseFloat(Math.max(0, (writeSectors * SECTOR) / (1024 * 1024) / 0.5).toFixed(2)),
     }
   }
 
@@ -168,7 +241,7 @@ export class DockerService {
   private async getNetworkStats(): Promise<NetworkStats> {
     const readDev = (): string => {
       try {
-        return fs.readFileSync('/proc/net/dev', 'utf-8')
+        return fs.readFileSync('/host/proc/net/dev', 'utf-8')
       } catch {
         return ''
       }
@@ -198,11 +271,13 @@ export class DockerService {
   }
 
   async getSystemMetrics(): Promise<SystemMetrics> {
-    const [cpuPercent, rootDisk, dataDisk, network] = await Promise.all([
+    const [cpuPercent, rootDisk, dataDisk, network, rootIO, dataIO] = await Promise.all([
       this.getCpuPercent(),
       this.getDiskStats('/host'),
       this.getDiskStats('/mnt/data'),
       this.getNetworkStats(),
+      this.getDiskIOStats('/host'),
+      this.getDiskIOStats('/mnt/data'),
     ])
     const mem = this.getMemInfo();
 
@@ -211,8 +286,12 @@ export class DockerService {
       memUsedMb: mem.usedMb,
       memTotalMb: mem.totalMb,
       memPercent: mem.totalMb > 0 ? Math.round((mem.usedMb / mem.totalMb) * 100) : 0,
-      rootDisk: rootDisk ?? { path: '/', usedGb: 0, totalGb: 0, freeGb: 0, percent: 0 },
-      dataDisk,
+      rootDisk: rootDisk
+        ? { ...rootDisk, readMbps: rootIO.readMbps, writeMbps: rootIO.writeMbps }
+        : { path: '/', usedGb: 0, totalGb: 0, freeGb: 0, percent: 0, readMbps: 0, writeMbps: 0 },
+      dataDisk: dataDisk
+        ? { ...dataDisk, readMbps: dataIO.readMbps, writeMbps: dataIO.writeMbps }
+        : null,
       network,
     };
   }
@@ -381,7 +460,7 @@ export class DockerService {
     } catch (err) {
       const msg = String(err)
       if (msg.includes('not found') || msg.includes('ENOENT') || msg.includes('No such file')) {
-        throw new Error('speedtest-cli not installed — run: sudo apt install speedtest-cli')
+        throw new Error('speedtest-cli failed — check network connectivity')
       }
       throw new Error(`Speed test failed: ${msg}`)
     }

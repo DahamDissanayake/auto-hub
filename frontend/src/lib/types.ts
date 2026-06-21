@@ -109,6 +109,8 @@ export interface DiskStats {
   totalGb: number
   freeGb: number
   percent: number
+  readMbps: number
+  writeMbps: number
 }
 
 export interface NetworkStats {

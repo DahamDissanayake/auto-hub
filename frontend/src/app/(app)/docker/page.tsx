@@ -19,10 +19,12 @@ import {
   Download,
   Upload,
   Wifi,
+  ArrowDown,
+  ArrowUp,
   type LucideIcon,
 } from 'lucide-react'
 import { useDockerMonitor } from '../../../lib/hooks/useDockerMonitor'
-import type { ContainerInfo, DiskStats, SpeedTestResult } from '../../../lib/types'
+import type { ContainerInfo, DiskStats, NetworkStats, SpeedTestResult } from '../../../lib/types'
 import Modal from '../../../components/ui/Modal'
 
 // ─── Utility ────────────────────────────────────────────────────────────────
@@ -113,15 +115,62 @@ function MetricCard({
 function DiskCard({ disk, label }: { disk: DiskStats; label: string }) {
   const color = disk.percent > 85 ? '#ef4444' : disk.percent > 65 ? '#f59e0b' : '#3b82f6'
   return (
-    <MetricCard
-      icon={HardDrive}
-      label={label}
-      value={`${disk.usedGb} GB`}
-      sub={`of ${disk.totalGb} GB · ${disk.freeGb} GB free`}
-      percent={disk.percent}
-      color={color}
-    />
+    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-[#9ca3af] text-xs">
+        <HardDrive size={14} />
+        {label}
+      </div>
+      <div className="text-white text-xl font-semibold tabular-nums">{disk.usedGb} GB</div>
+      <div className="text-[#6b7280] text-xs">of {disk.totalGb} GB · {disk.freeGb} GB free</div>
+      <MiniBar percent={disk.percent} color={color} />
+      <div className="text-[10px] text-[#6b7280] text-right tabular-nums">{disk.percent}%</div>
+      <div className="flex justify-between text-[10px] text-[#4b5563] border-t border-[#2a2a2a] pt-1.5">
+        <span className="flex items-center gap-0.5">
+          <ArrowDown size={9} className="text-emerald-500" />
+          {disk.readMbps.toFixed(1)} MB/s
+        </span>
+        <span className="flex items-center gap-0.5">
+          <ArrowUp size={9} className="text-blue-500" />
+          {disk.writeMbps.toFixed(1)} MB/s
+        </span>
+      </div>
+    </div>
   )
+}
+
+function NetworkCard({ network }: { network: NetworkStats }) {
+  return (
+    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-[#9ca3af] text-xs">
+        <Activity size={14} />
+        Network · {network.interfaceName}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-0.5">
+            <Download size={9} className="text-emerald-400" />
+            Down
+          </div>
+          <div className="text-white text-xl font-semibold tabular-nums">{network.rxMbps.toFixed(1)}</div>
+          <div className="text-[#6b7280] text-xs">Mbps</div>
+        </div>
+        <div>
+          <div className="flex items-center gap-1 text-[#9ca3af] text-[10px] mb-0.5">
+            <Upload size={9} className="text-purple-400" />
+            Up
+          </div>
+          <div className="text-white text-xl font-semibold tabular-nums">{network.txMbps.toFixed(1)}</div>
+          <div className="text-[#6b7280] text-xs">Mbps</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function fmtPing(ms: number): string {
+  if (ms > 30000) return 'timeout'
+  if (ms > 999) return `${(ms / 1000).toFixed(1)}s`
+  return `${ms} ms`
 }
 
 function SpeedTestResultBar({ result }: { result: SpeedTestResult }) {
@@ -137,7 +186,7 @@ function SpeedTestResultBar({ result }: { result: SpeedTestResult }) {
       </span>
       <span className="flex items-center gap-1">
         <RefreshCw size={11} />
-        <span className="text-white font-medium tabular-nums">{result.pingMs}</span> ms
+        <span className="text-white font-medium tabular-nums">{fmtPing(result.pingMs)}</span>
       </span>
       <span className="text-[#6b7280]">via {result.server}</span>
     </div>
@@ -413,14 +462,14 @@ export default function DockerMonitorPage() {
           System Metrics
         </h2>
         {metricsLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[...Array(6)].map((_, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[...Array(5)].map((_, i) => (
               <div key={i} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl h-28 animate-pulse" />
             ))}
           </div>
         ) : metrics ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <MetricCard
                 icon={Cpu}
                 label="CPU"
@@ -446,20 +495,7 @@ export default function DockerMonitorPage() {
                   <span className="text-[#6b7280] text-xs text-center">/mnt/data not mounted</span>
                 </div>
               )}
-              <MetricCard
-                icon={Download}
-                label="Net ↓"
-                value={`${metrics.network.rxMbps.toFixed(1)} Mbps`}
-                sub={metrics.network.interfaceName}
-                color="#8b5cf6"
-              />
-              <MetricCard
-                icon={Upload}
-                label="Net ↑"
-                value={`${metrics.network.txMbps.toFixed(1)} Mbps`}
-                sub={metrics.network.interfaceName}
-                color="#8b5cf6"
-              />
+              <NetworkCard network={metrics.network} />
             </div>
 
             {/* ── Speed Test ── */}

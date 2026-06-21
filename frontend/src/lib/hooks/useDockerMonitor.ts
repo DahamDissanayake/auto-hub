@@ -14,10 +14,14 @@ export function useDockerMonitor() {
   const [speedTestResult, setSpeedTestResult] = useState<SpeedTestResult | null>(null)
   const [speedTestError, setSpeedTestError] = useState<string | null>(null)
 
-  const metricsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const containersTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const metricsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containersTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const metricsFetchingRef = useRef(false)
+  const containersFetchingRef = useRef(false)
 
   const fetchMetrics = useCallback(async () => {
+    if (metricsFetchingRef.current) return
+    metricsFetchingRef.current = true
     try {
       const { data } = await api.get<SystemMetrics>('/api/docker/metrics')
       setMetrics(data)
@@ -26,10 +30,13 @@ export function useDockerMonitor() {
       setError(e instanceof Error ? e.message : 'Failed to load metrics')
     } finally {
       setMetricsLoading(false)
+      metricsFetchingRef.current = false
     }
   }, [])
 
   const fetchContainers = useCallback(async () => {
+    if (containersFetchingRef.current) return
+    containersFetchingRef.current = true
     try {
       const { data } = await api.get<ContainerInfo[]>('/api/docker/containers')
       setContainers(data)
@@ -38,19 +45,32 @@ export function useDockerMonitor() {
       setError(e instanceof Error ? e.message : 'Failed to load containers')
     } finally {
       setContainersLoading(false)
+      containersFetchingRef.current = false
     }
   }, [])
 
   useEffect(() => {
-    void fetchMetrics()
-    void fetchContainers()
+    let cancelled = false
 
-    metricsTimerRef.current = setInterval(() => void fetchMetrics(), 8000)
-    containersTimerRef.current = setInterval(() => void fetchContainers(), 10000)
+    const pollMetrics = async () => {
+      if (cancelled) return
+      await fetchMetrics()
+      if (!cancelled) metricsTimerRef.current = setTimeout(pollMetrics, 2000)
+    }
+
+    const pollContainers = async () => {
+      if (cancelled) return
+      await fetchContainers()
+      if (!cancelled) containersTimerRef.current = setTimeout(pollContainers, 5000)
+    }
+
+    void pollMetrics()
+    void pollContainers()
 
     return () => {
-      if (metricsTimerRef.current) clearInterval(metricsTimerRef.current)
-      if (containersTimerRef.current) clearInterval(containersTimerRef.current)
+      cancelled = true
+      if (metricsTimerRef.current) clearTimeout(metricsTimerRef.current)
+      if (containersTimerRef.current) clearTimeout(containersTimerRef.current)
     }
   }, [fetchMetrics, fetchContainers])
 
@@ -92,7 +112,8 @@ export function useDockerMonitor() {
       })
       setSpeedTestResult(data)
     } catch (e) {
-      setSpeedTestError(e instanceof Error ? e.message : 'Speed test failed')
+      const axiosMsg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setSpeedTestError(axiosMsg ?? (e instanceof Error ? e.message : 'Speed test failed'))
     } finally {
       setSpeedTestLoading(false)
     }
