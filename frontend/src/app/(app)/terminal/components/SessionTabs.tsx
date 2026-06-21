@@ -1,5 +1,6 @@
 'use client'
 import { Plus, X } from 'lucide-react'
+import { SlideToConfirm } from './SlideToConfirm'
 
 export interface TabSession {
   name: string
@@ -29,13 +30,13 @@ export function SessionTabs({ tabs, activeTab, onSwitch, onEnd, onNew }: Session
           onClick={() => onSwitch(tab.name)}
         >
           <span className="max-w-[140px] truncate">{tab.name}</span>
-          <button
-            onClick={e => { e.stopPropagation(); onEnd(tab.name) }}
-            aria-label={`Close ${tab.name}`}
-            className="text-[#4b5563] hover:text-[#ef4444] active:text-[#ef4444] transition-colors ml-0.5 p-1 -mr-1"
-          >
-            <X size={13} />
-          </button>
+          <SlideToConfirm
+            onConfirm={() => onEnd(tab.name)}
+            label="close"
+            triggerAriaLabel={`Close ${tab.name}`}
+            triggerContent={<X size={13} />}
+            triggerClassName="text-[#4b5563] hover:text-[#ef4444] active:text-[#ef4444] transition-colors ml-0.5 p-1 -mr-1"
+          />
         </div>
       ))}
       <button

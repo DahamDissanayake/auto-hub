@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Circle, Trash2 } from 'lucide-react'
+import { SlideToConfirm } from './SlideToConfirm'
 import api from '@/lib/api'
 import { CreateSessionDialog } from './CreateSessionDialog'
 import { ProfileButton } from './ProfileButton'
@@ -108,13 +109,13 @@ export function SessionManager({ onOpen, onNew }: SessionManagerProps) {
               >
                 Open
               </button>
-              <button
-                onClick={() => handleEnd(s.name)}
-                aria-label={`End ${s.name}`}
-                className="p-1 rounded text-[#6b7280] hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors"
-              >
-                <Trash2 size={13} />
-              </button>
+              <SlideToConfirm
+                onConfirm={() => handleEnd(s.name)}
+                label="end"
+                triggerAriaLabel={`End ${s.name}`}
+                triggerContent={<Trash2 size={13} />}
+                triggerClassName="p-1 rounded text-[#6b7280] hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors"
+              />
             </div>
           ))}
         </div>

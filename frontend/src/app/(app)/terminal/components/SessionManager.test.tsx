@@ -18,6 +18,12 @@ vi.mock('@/lib/hooks/useClaudeProfiles', () => ({
   }),
 }))
 
+vi.mock('./SlideToConfirm', () => ({
+  SlideToConfirm: ({ onConfirm, triggerAriaLabel }: { onConfirm: () => void; triggerAriaLabel: string }) => (
+    <button aria-label={triggerAriaLabel} onClick={onConfirm} />
+  ),
+}))
+
 const mockApi = api as unknown as {
   get: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>

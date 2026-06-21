@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { SessionTabs } from './SessionTabs'
 
+vi.mock('./SlideToConfirm', () => ({
+  SlideToConfirm: ({ onConfirm, triggerAriaLabel }: { onConfirm: () => void; triggerAriaLabel: string }) => (
+    <button aria-label={triggerAriaLabel} onClick={e => { e.stopPropagation(); onConfirm() }} />
+  ),
+}))
+
 const tabs = [
   { name: 'alpha', workspace: 'home' as const, repoName: null },
   { name: 'beta', workspace: 'github' as const, repoName: 'my-repo' },
