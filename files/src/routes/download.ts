@@ -21,6 +21,7 @@ router.get('/', async (req: Request, res: Response) => {
     const filename = path.basename(absPath)
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.setHeader('Content-Length', stat.size)
+    res.setHeader('Content-Type', 'application/octet-stream')
     const stream = fs.createReadStream(absPath)
     stream.on('error', (e: any) => {
       if (!res.headersSent) {

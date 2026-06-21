@@ -30,10 +30,12 @@ describe('GET /download', () => {
     const res = await request(app)
       .get('/download?root=data&path=/report.txt')
       .set('Authorization', auth)
+      .buffer(true)
     expect(res.status).toBe(200)
     expect(res.headers['content-disposition']).toContain('report.txt')
     expect(res.headers['content-length']).toBe('11')
-    expect(res.text).toBe('hello world')
+    expect(res.headers['content-type']).toContain('application/octet-stream')
+    expect(res.body.toString()).toBe('hello world')
   })
 
   it('returns 404 for missing file', async () => {
