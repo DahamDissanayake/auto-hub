@@ -49,10 +49,11 @@ export function GridView({ tabs, onBack, onFocus }: GridViewProps) {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-hidden p-1"
+          className="flex-1 overflow-hidden p-1 min-h-0"
           style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridAutoRows: '1fr',
             gap: '4px',
           }}
         >

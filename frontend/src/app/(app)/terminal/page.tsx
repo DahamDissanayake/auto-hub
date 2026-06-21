@@ -18,7 +18,9 @@ interface Repo {
   isGitRepo: boolean
 }
 
-type Step = 'session' | 'workspace' | 'repo' | 'clone' | 'terminal'
+type Step = 'loading' | 'session' | 'workspace' | 'repo' | 'clone' | 'terminal'
+
+const LAST_SESSION_KEY = 'autohub_last_terminal_session'
 type Workspace = 'home' | 'github' | 'auto-hub'
 type PasteFeedback = 'idle' | 'ok' | 'denied'
 
@@ -41,7 +43,7 @@ const HIDE_NATIVE_SCROLLBAR_CSS = `
 `
 
 export default function TerminalPage() {
-  const [step, setStep] = useState<Step>('session')
+  const [step, setStep] = useState<Step>('loading')
   const [sessionName, setSessionName] = useState<string | null>(null)
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [repoName, setRepoName] = useState<string | null>(null)
@@ -71,6 +73,30 @@ export default function TerminalPage() {
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 768 || navigator.maxTouchPoints > 0)
+  }, [])
+
+  // On mount: fetch all existing sessions, pre-populate tabs, restore last active
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const res = await api.get<Session[]>('/api/terminal/sessions')
+        const sessions = res.data
+        if (sessions.length === 0) { setStep('session'); return }
+        const tabs: TabSession[] = sessions.map(s => ({
+          name: s.name, workspace: s.workspace, repoName: s.repoName,
+        }))
+        setOpenTabs(tabs)
+        const lastName = localStorage.getItem(LAST_SESSION_KEY)
+        const target = sessions.find(s => s.name === lastName) ?? sessions[sessions.length - 1]
+        setWorkspace(target.workspace)
+        setRepoName(target.repoName)
+        setSessionName(target.name)
+        setStep('terminal')
+      } catch {
+        setStep('session')
+      }
+    }
+    void init()
   }, [])
 
   useEffect(() => {
@@ -401,6 +427,7 @@ export default function TerminalPage() {
     setError(null)
     setSessionEnded(false)
     setStep('terminal')
+    localStorage.setItem(LAST_SESSION_KEY, name)
   }
 
   const handleSessionOpen = (session: Session) => {
@@ -417,6 +444,7 @@ export default function TerminalPage() {
     setSessionEnded(false)
     setSessionName(session.name)
     setStep('terminal')
+    localStorage.setItem(LAST_SESSION_KEY, session.name)
   }
 
   const handleNewSessionName = (name: string) => {
@@ -455,18 +483,30 @@ export default function TerminalPage() {
     setError(null)
     setSessionEnded(false)
     requestAnimationFrame(() => setSessionName(name))
+    localStorage.setItem(LAST_SESSION_KEY, name)
   }
 
   const handleEndTab = async (name: string) => {
     try {
       await api.delete(`/api/terminal/sessions/${encodeURIComponent(name)}`)
-    } catch {
-      // session may already be dead
-    }
-    setOpenTabs(tabs => tabs.filter(t => t.name !== name))
+    } catch { /* session may already be dead */ }
+    const remaining = openTabs.filter(t => t.name !== name)
+    setOpenTabs(remaining)
     if (sessionName === name) {
-      setSessionName(null)
-      setStep('session')
+      if (remaining.length > 0) {
+        const next = remaining[remaining.length - 1]
+        setWorkspace(next.workspace)
+        setRepoName(next.repoName)
+        setError(null)
+        setSessionEnded(false)
+        setSessionName(null)
+        localStorage.setItem(LAST_SESSION_KEY, next.name)
+        requestAnimationFrame(() => setSessionName(next.name))
+      } else {
+        setSessionName(null)
+        setStep('session')
+        localStorage.removeItem(LAST_SESSION_KEY)
+      }
     }
   }
 
@@ -500,6 +540,8 @@ export default function TerminalPage() {
       requestAnimationFrame(() => setSessionName(target))
     }
   }
+
+  if (step === 'loading') return null
 
   if (step === 'session') {
     return <SessionManager onOpen={handleSessionOpen} onNew={handleNewSessionName} />
