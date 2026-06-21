@@ -5,11 +5,16 @@ import mkdirRouter from './routes/mkdir'
 import renameRouter from './routes/rename'
 import deleteRouter from './routes/delete'
 import downloadRouter from './routes/download'
+import eventsRouter from './routes/events'
+import uploadRouter from './routes/upload'
 
 const app = express()
 app.use(express.json())
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
+
+// /events handles its own JWT auth (EventSource can't send headers)
+app.use('/events', eventsRouter)
 
 app.use(authMiddleware)
 app.use('/ls', lsRouter)
@@ -17,6 +22,7 @@ app.use('/mkdir', mkdirRouter)
 app.use('/rename', renameRouter)
 app.use('/delete', deleteRouter)
 app.use('/download', downloadRouter)
+app.use('/upload', uploadRouter)
 
 const PORT = parseInt(process.env.PORT ?? '5050', 10)
 if (require.main === module) {
