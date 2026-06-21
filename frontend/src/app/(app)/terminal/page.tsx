@@ -491,7 +491,7 @@ export default function TerminalPage() {
       <style>{HIDE_NATIVE_SCROLLBAR_CSS}</style>
 
       <div
-        className="-mx-6 -mt-6 -mb-6 flex flex-col"
+        className="-mx-4 -mt-4 -mb-4 md:-mx-6 md:-mt-6 md:-mb-6 flex flex-col"
         style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}
       >
         <SessionTabs
