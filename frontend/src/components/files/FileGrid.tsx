@@ -60,12 +60,20 @@ export default function FileGrid({
         return (
           <button
             key={entry.name}
-            onClick={() => {
-              if (!longFiredRef.current && entry.type === 'dir') onOpenFolder(entry.name)
-            }}
+            // Desktop: double-click opens folder — avoids double-navigation
+            // that onClick causes (each click of a double-click fires separately)
+            onDoubleClick={() => { if (entry.type === 'dir') onOpenFolder(entry.name) }}
             onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, entry) }}
             onTouchStart={(e) => startLongPress(e, entry)}
-            onTouchEnd={cancelLongPress}
+            onTouchEnd={(e) => {
+              cancelLongPress()
+              // Mobile: single tap opens folder; preventDefault stops the
+              // synthetic click/dblclick that fires after touch events
+              if (!longFiredRef.current && entry.type === 'dir') {
+                e.preventDefault()
+                onOpenFolder(entry.name)
+              }
+            }}
             onTouchMove={cancelLongPress}
             className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[#1a1a1a] active:bg-[#222] transition-colors group text-center select-none"
           >

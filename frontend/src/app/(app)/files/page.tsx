@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { LayoutGrid, List, FolderPlus, Upload, RefreshCw, X, AlertCircle, HardDrive } from 'lucide-react'
+import { LayoutGrid, List, FolderPlus, Upload, RefreshCw, X, AlertCircle, HardDrive, Server } from 'lucide-react'
 import DrivesSidebar, { DRIVES } from '@/components/files/DrivesSidebar'
 import FileBreadcrumb from '@/components/files/FileBreadcrumb'
 import FileGrid from '@/components/files/FileGrid'
@@ -120,13 +120,13 @@ export default function FilesPage() {
         {/* Toolbar */}
         <div className="h-10 flex items-center gap-1.5 px-2.5 border-b border-[#2a2a2a] shrink-0">
 
-          {/* Mobile: drive selector button */}
+          {/* Mobile: drive selector button — Server icon = stacked drives */}
           <button
             onClick={() => setDrivesSheetOpen(true)}
             className="md:hidden w-7 h-7 flex items-center justify-center rounded-md text-[#f59e0b] hover:bg-[#1a1a1a] active:bg-[#222] transition-colors shrink-0"
             title="Select drive"
           >
-            <HardDrive size={13} />
+            <Server size={14} />
           </button>
 
           {/* Breadcrumb */}
