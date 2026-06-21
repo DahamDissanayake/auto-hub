@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { Trash2 } from 'lucide-react'
 import { SlideToConfirm } from './SlideToConfirm'
@@ -66,9 +66,15 @@ describe('SlideToConfirm', () => {
     })
 
     const thumb = screen.getByRole('slider') as HTMLElement
+    const track = thumb.parentElement as HTMLElement
+
+    // Mock track.getBoundingClientRect
+    Object.defineProperty(track, 'getBoundingClientRect', {
+      value: () => ({ left: 0, width: 140 }),
+      configurable: true,
+    })
 
     // Simulate drag: start at 14px, drag to 140px (exceeds 95% threshold)
-    // fireEvent doesn't properly set clientX for pointer events, so we manually set them
     act(() => {
       const evt = new MouseEvent('pointerdown', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 14, enumerable: true })
@@ -81,7 +87,7 @@ describe('SlideToConfirm', () => {
       const evt = new MouseEvent('pointermove', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 70, enumerable: true })
       Object.defineProperty(evt, 'pointerId', { value: 1, enumerable: true })
-      thumb.dispatchEvent(evt)
+      track.dispatchEvent(evt)
     })
 
     // Move to end
@@ -89,14 +95,14 @@ describe('SlideToConfirm', () => {
       const evt = new MouseEvent('pointermove', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 140, enumerable: true })
       Object.defineProperty(evt, 'pointerId', { value: 1, enumerable: true })
-      thumb.dispatchEvent(evt)
+      track.dispatchEvent(evt)
     })
 
     act(() => {
       const evt = new MouseEvent('pointerup', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 140, enumerable: true })
       Object.defineProperty(evt, 'pointerId', { value: 1, enumerable: true })
-      thumb.dispatchEvent(evt)
+      track.dispatchEvent(evt)
     })
 
     // Wait for the confirmation timeout
@@ -111,6 +117,13 @@ describe('SlideToConfirm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'End session' }))
 
     const thumb = screen.getByRole('slider') as HTMLElement
+    const track = thumb.parentElement as HTMLElement
+
+    // Mock track.getBoundingClientRect
+    Object.defineProperty(track, 'getBoundingClientRect', {
+      value: () => ({ left: 0, width: 140 }),
+      configurable: true,
+    })
 
     act(() => {
       const evt = new MouseEvent('pointerdown', { bubbles: true })
@@ -123,14 +136,14 @@ describe('SlideToConfirm', () => {
       const evt = new MouseEvent('pointermove', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 80, enumerable: true })
       Object.defineProperty(evt, 'pointerId', { value: 1, enumerable: true })
-      thumb.dispatchEvent(evt)
+      track.dispatchEvent(evt)
     })
 
     act(() => {
       const evt = new MouseEvent('pointerup', { bubbles: true })
       Object.defineProperty(evt, 'clientX', { value: 80, enumerable: true })
       Object.defineProperty(evt, 'pointerId', { value: 1, enumerable: true })
-      thumb.dispatchEvent(evt)
+      track.dispatchEvent(evt)
     })
 
     expect(defaultProps.onConfirm).not.toHaveBeenCalled()

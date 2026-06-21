@@ -1,6 +1,10 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
+const TRACK_W = 140
+const THUMB_W = 28
+const MAX_DRAG = TRACK_W - THUMB_W - 4 // 4px padding (2px each side)
+
 interface SlideToConfirmProps {
   onConfirm: () => void
   label: string
@@ -23,10 +27,6 @@ export function SlideToConfirm({
   const draggingRef = useRef(false)
   const startClientXRef = useRef(0)
   const startThumbXRef = useRef(0)
-
-  const TRACK_W = 140
-  const THUMB_W = 28
-  const MAX_DRAG = TRACK_W - THUMB_W - 4 // 4px padding (2px each side)
 
   const disarm = useCallback(() => {
     setArmed(false)
@@ -117,6 +117,8 @@ export function SlideToConfirm({
     <div
       ref={trackRef}
       onClick={e => e.stopPropagation()}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       style={{ width: TRACK_W }}
       className="relative h-6 rounded-full bg-[#2a2a2a] flex items-center shrink-0"
     >
@@ -130,8 +132,6 @@ export function SlideToConfirm({
         aria-valuemin={0}
         aria-valuemax={100}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
         style={{ transform: `translateX(${thumbX}px)` }}
         className={`absolute left-[2px] top-[2px] w-7 h-5 rounded-full cursor-grab active:cursor-grabbing ${thumbColor} transition-colors duration-100 touch-none`}
       />
