@@ -257,6 +257,9 @@ export default function TerminalPage() {
         reinjecting = true
         ;(e.target as Element).dispatchEvent(shiftClone('mouseup', e))
         reinjecting = false
+        // Copy immediately — term.write() from incoming PTY data clears selection within ms
+        const sel = termRef.current?.getSelection()
+        if (sel) navigator.clipboard.writeText(sel).catch(() => {})
       }
 
       el.addEventListener('mousedown', onCaptureMD, { capture: true })
