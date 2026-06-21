@@ -38,7 +38,7 @@ export default function TransferTray() {
           const now = Date.now()
           const prev = lastBytes.current[event.transferId]
           let speed = 0
-          if (prev && event.bytesWritten) {
+          if (prev && event.bytesWritten !== undefined) {
             const dt = (now - prev.time) / 1000
             speed = dt > 0 ? (event.bytesWritten - prev.bytes) / dt : 0
           }
@@ -77,7 +77,14 @@ export default function TransferTray() {
   ).length
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-72 shadow-2xl rounded-xl overflow-hidden border border-[#2a2a2a]">
+    <div
+      className="fixed bottom-4 right-4 z-50 w-72 shadow-2xl rounded-xl overflow-hidden border border-[#2a2a2a]"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => {
+        const active = transfers.filter(t => t.status === 'uploading' || t.status === 'downloading')
+        if (active.length === 0) setOpen(false)
+      }}
+    >
       {/* Header chip */}
       <button
         onClick={() => setOpen((o) => !o)}
@@ -89,7 +96,7 @@ export default function TransferTray() {
             {activeCount > 0 ? `${activeCount} transferring…` : 'Transfers'}
           </span>
         </div>
-        {open ? <ChevronDown size={14} className="text-[#6b7280]" /> : <ChevronUp size={14} className="text-[#6b7280]" />}
+        {open ? <ChevronUp size={14} className="text-[#6b7280]" /> : <ChevronDown size={14} className="text-[#6b7280]" />}
       </button>
 
       {/* Transfer list */}
