@@ -27,7 +27,7 @@ export default function FileBreadcrumb({
         onClick={() => onNavigate('/')}
         className="flex items-center gap-1 hover:text-white transition-colors shrink-0"
       >
-        <HardDrive size={14} />
+        <HardDrive size={13} className="text-[#f59e0b]" />
         <span>{rootLabel[root] ?? root}</span>
       </button>
       {segments.map((seg, i) => (

@@ -1,10 +1,10 @@
 'use client'
-import { HardDrive, Briefcase, Database } from 'lucide-react'
+import { HardDrive } from 'lucide-react'
 
 const DRIVES = [
-  { id: 'internal', label: 'Internal', sublabel: '/home/dama', icon: HardDrive, color: '#10b981' },
-  { id: 'workspace', label: 'Workspace', sublabel: '/workspace', icon: Briefcase, color: '#8b5cf6' },
-  { id: 'data', label: 'Data Drive', sublabel: '/mnt/data', icon: Database, color: '#f59e0b' },
+  { id: 'internal',   label: 'Internal',    sublabel: '/home/dama' },
+  { id: 'workspace',  label: 'Workspace',   sublabel: '/workspace'  },
+  { id: 'data',       label: 'Data Drive',  sublabel: '/mnt/data'   },
 ]
 
 export default function DrivesSidebar({
@@ -15,34 +15,42 @@ export default function DrivesSidebar({
   onSelect: (root: string) => void
 }) {
   return (
-    <aside className="w-44 shrink-0 bg-[#111111] border-r border-[#2a2a2a] flex flex-col p-2 overflow-y-auto">
-      <p className="text-[#4b5563] text-[10px] font-semibold px-2 pt-1 pb-2 uppercase tracking-widest">
-        Drives
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {DRIVES.map(({ id, label, sublabel, icon: Icon, color }) => {
+    <aside className="w-40 shrink-0 border-r border-[#2a2a2a] flex flex-col">
+      {/* Header row — same h-10 as the toolbar so they align */}
+      <div className="h-10 flex items-center px-3 border-b border-[#2a2a2a] shrink-0">
+        <span className="text-[#4b5563] text-[10px] font-semibold uppercase tracking-widest select-none">
+          Drives
+        </span>
+      </div>
+
+      {/* Drive list */}
+      <nav className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+        {DRIVES.map(({ id, label, sublabel }) => {
           const active = activeRoot === id
           return (
             <button
               key={id}
               onClick={() => onSelect(id)}
-              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors w-full ${
+              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md text-left transition-colors ${
                 active
-                  ? 'bg-[#1e1e1e] border border-[#333]'
-                  : 'border border-transparent hover:bg-[#181818]'
+                  ? 'bg-[#f59e0b]/10 text-white'
+                  : 'text-[#9ca3af] hover:bg-[#1a1a1a] hover:text-white'
               }`}
             >
-              <div className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center" style={{ backgroundColor: `${color}18` }}>
-                <Icon size={15} style={{ color }} />
-              </div>
-              <div className="min-w-0 flex flex-col">
-                <span className="text-[#e5e7eb] text-xs font-medium leading-snug truncate">{label}</span>
-                <span className="text-[#4b5563] text-[10px] leading-snug truncate">{sublabel}</span>
+              <HardDrive
+                size={14}
+                className={`shrink-0 ${active ? 'text-[#f59e0b]' : 'text-[#6b7280]'}`}
+              />
+              <div className="min-w-0">
+                <p className={`text-xs font-medium leading-snug truncate ${active ? 'text-white' : 'text-[#d1d5db]'}`}>
+                  {label}
+                </p>
+                <p className="text-[10px] text-[#4b5563] leading-snug truncate">{sublabel}</p>
               </div>
             </button>
           )
         })}
-      </div>
+      </nav>
     </aside>
   )
 }
