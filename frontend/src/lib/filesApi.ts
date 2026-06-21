@@ -69,21 +69,15 @@ export async function apiDelete(root: string, path: string): Promise<void> {
 }
 
 export async function apiDownload(root: string, path: string, filename: string): Promise<void> {
-  const res = await fetch(
-    `${BASE}/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}`,
-    { headers: authHeaders() }
-  )
-  handleUnauth(res)
-  if (!res.ok) throw new Error((await res.json()).error ?? res.statusText)
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
+  const token = getToken()
+  // Use a direct URL with token as query param — avoids buffering the file in RAM
+  const url = `${BASE}/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`
   const a = document.createElement('a')
   a.href = url
   a.download = filename
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  URL.revokeObjectURL(url)
 }
 
 export async function apiUpload(

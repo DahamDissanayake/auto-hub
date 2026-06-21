@@ -26,8 +26,10 @@ router.post('/', (req: Request, res: Response) => {
   const total = parseInt(req.headers['content-length'] ?? '0', 10)
   let bytesWritten = 0
   let writeStream: fs.WriteStream | null = null
+  let writeStreamDone: Promise<void> | null = null
   let filePath: string | null = null
   let finished = false
+  let busboyFinished = false
 
   const cleanup = () => {
     writeStream?.destroy()
@@ -35,12 +37,20 @@ router.post('/', (req: Request, res: Response) => {
   }
 
   try {
-    const bb = busboy({ headers: req.headers })
+    const bb = busboy({ headers: req.headers, limits: { files: 50, fileSize: 10 * 1024 * 1024 * 1024 } })
 
     bb.on('file', (_field, file, info) => {
       const safe = path.basename(info.filename)
+      if (!safe) {
+        file.resume() // drain the stream
+        return
+      }
       filePath = path.join(dirPath, safe)
       writeStream = fs.createWriteStream(filePath)
+      writeStreamDone = new Promise<void>((resolve, reject) => {
+        writeStream!.on('finish', resolve)
+        writeStream!.on('error', reject)
+      })
 
       file.on('data', (chunk: Buffer) => {
         bytesWritten += chunk.length
@@ -69,9 +79,25 @@ router.post('/', (req: Request, res: Response) => {
     })
 
     bb.on('finish', () => {
-      if (!res.headersSent) {
+      busboyFinished = true
+      if (writeStreamDone) {
+        writeStreamDone.then(() => {
+          if (!res.headersSent) {
+            finished = true
+            transferStore.emit('transfer', { transferId, status: 'done' })
+            res.json({ success: true, transferId })
+          }
+        }).catch((e: any) => {
+          cleanup()
+          if (!res.headersSent) {
+            const code = e.code === 'ENOSPC' ? 507 : 500
+            const message = e.code === 'ENOSPC' ? 'Not enough space' : 'Write error'
+            transferStore.emit('transfer', { transferId, status: 'error', message })
+            res.status(code).json({ error: message })
+          }
+        })
+      } else if (!res.headersSent) {
         finished = true
-        transferStore.emit('transfer', { transferId, status: 'done' })
         res.json({ success: true, transferId })
       }
     })
@@ -87,7 +113,10 @@ router.post('/', (req: Request, res: Response) => {
     })
 
     req.on('close', () => {
-      if (!finished) cleanup()
+      // Only clean up (delete partial file) if upload was aborted before busboy
+      // finished parsing. If busboyFinished is true, we're just waiting for
+      // the writeStream to flush — don't destroy it.
+      if (!finished && !busboyFinished) cleanup()
     })
 
     req.pipe(bb)

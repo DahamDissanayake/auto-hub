@@ -6,7 +6,6 @@ const router = Router()
 
 router.get('/', (req: Request, res: Response) => {
   // SSE handles its own JWT auth since EventSource can't send headers
-  const secret = process.env.JWT_SECRET ?? 'changeme'
   const authHeader = req.headers.authorization
   const tokenFromQuery = req.query.token as string | undefined
 
@@ -23,7 +22,7 @@ router.get('/', (req: Request, res: Response) => {
   }
 
   try {
-    jwt.verify(token, secret)
+    jwt.verify(token, process.env.JWT_SECRET!)
   } catch {
     res.status(401).json({ error: 'Invalid token' })
     return

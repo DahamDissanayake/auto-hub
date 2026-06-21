@@ -20,13 +20,14 @@ app.get('/health', (_req, res) => res.json({ ok: true }))
 
 // /events handles its own JWT auth (EventSource can't send headers)
 app.use('/events', eventsRouter)
+// /download handles its own JWT auth to support anchor-tag downloads with token query param
+app.use('/download', downloadRouter)
 
 app.use(authMiddleware)
 app.use('/ls', lsRouter)
 app.use('/mkdir', mkdirRouter)
 app.use('/rename', renameRouter)
 app.use('/delete', deleteRouter)
-app.use('/download', downloadRouter)
 app.use('/upload', uploadRouter)
 
 const PORT = parseInt(process.env.PORT ?? '5050', 10)

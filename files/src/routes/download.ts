@@ -2,11 +2,23 @@ import { Router, Request, Response } from 'express'
 import fs from 'fs'
 import fsp from 'fs/promises'
 import path from 'path'
+import jwt from 'jsonwebtoken'
 import { resolveSafePath } from '../lib/resolvePath'
 
 const router = Router()
 
 router.get('/', async (req: Request, res: Response) => {
+  // Accept token via query param for browser anchor-tag downloads
+  const authHeader = req.headers.authorization
+  const tokenFromQuery = req.query.token as string | undefined
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : tokenFromQuery ?? ''
+  try {
+    jwt.verify(token, process.env.JWT_SECRET!)
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+
   const { root, path: relPath } = req.query as { root?: string; path?: string }
   if (!root || !relPath) { res.status(400).json({ error: 'root and path are required' }); return }
   let absPath: string
