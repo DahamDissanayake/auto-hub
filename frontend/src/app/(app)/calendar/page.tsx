@@ -45,7 +45,7 @@ function DayPopover({
     <div className="absolute top-full left-0 mt-1 z-20 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 w-56 shadow-xl">
       {daySchedules.length > 0 && (
         <div className="mb-2">
-          <p className="text-xs text-[#6b7280] uppercase tracking-wide mb-1">Plugins</p>
+          <p className="text-xs text-[#6b7280] uppercase tracking-wide mb-1">Shortcuts</p>
           {daySchedules.map(s => (
             <p key={s.id} className="text-xs text-[#f1f1f1] flex items-start gap-1.5 min-w-0">
               <svg width="4" height="4" viewBox="0 0 4 4" fill="currentColor" className="shrink-0 mt-1 text-[#3b82f6]"><circle cx="2" cy="2" r="2" /></svg>
@@ -177,7 +177,7 @@ function CalendarTab() {
         <div className="flex gap-4 text-xs text-[#6b7280]">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />
-            Plugin schedules
+            Shortcut schedules
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#a78bfa]" />
@@ -365,7 +365,7 @@ function SchedulesTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a2a]">
-                  {['Name', 'Plugin', 'Cron', 'Human readable', 'Status', 'Last run', 'Actions'].map(h => (
+                  {['Name', 'Shortcut', 'Cron', 'Human readable', 'Status', 'Last run', 'Actions'].map(h => (
                     <th key={h} className="text-left text-[#6b7280] font-medium px-4 py-3 text-xs uppercase tracking-wide">
                       {h}
                     </th>
