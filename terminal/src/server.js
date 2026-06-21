@@ -8,6 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 const { getSessions, getSession, addSession, removeSession, updateLastActive } = require('./sessions');
+const { randomUUID } = require('crypto');
+const profiles = require('./profiles');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -22,6 +24,7 @@ const TERMINAL_DIRS = (process.env.TERMINAL_DIRS ?? '')
 
 const GITHUB_DIR = '/workspace/github';
 const DATA_HOME = '/home/dama';
+const pendingLogins = new Map();
 
 function isValidCwd(cwd) {
   return TERMINAL_DIRS.some(dir => cwd === dir || cwd.startsWith(dir + '/'));
@@ -176,6 +179,145 @@ app.delete('/sessions/:name', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/claude-profiles', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  res.json(profiles.readMeta());
+});
+
+app.post('/claude-profiles/login/start', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { name } = req.body ?? {};
+
+  if (!name || !/^[a-zA-Z0-9_-]{1,20}$/.test(name)) {
+    return res.status(400).json({ error: 'name must be 1–20 alphanumeric/dash/underscore characters' });
+  }
+  if (profiles.profileExists(name)) {
+    return res.status(409).json({ error: `Profile "${name}" already exists` });
+  }
+
+  const sessionId = randomUUID();
+  let urlSent = false;
+  let buf = '';
+
+  const child = cp.spawn('claude', ['/login'], {
+    env: { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  const urlTimer = setTimeout(() => {
+    if (!urlSent) {
+      child.kill();
+      pendingLogins.delete(sessionId);
+      if (!res.headersSent) res.status(500).json({ error: 'Timed out waiting for auth URL from claude' });
+    }
+  }, 30_000);
+
+  const onData = (chunk) => {
+    buf += chunk.toString();
+    const match = buf.match(/https:\/\/\S+/);
+    if (match && !urlSent) {
+      urlSent = true;
+      clearTimeout(urlTimer);
+      const url = match[0].replace(/['")\].,]+$/, '');
+      const expireTimer = setTimeout(() => {
+        child.kill();
+        pendingLogins.delete(sessionId);
+      }, 5 * 60_000);
+      pendingLogins.set(sessionId, { child, name, expireTimer });
+      if (!res.headersSent) res.json({ sessionId, url });
+    }
+  };
+
+  child.stdout.on('data', onData);
+  child.stderr.on('data', onData);
+
+  child.on('error', (err) => {
+    clearTimeout(urlTimer);
+    pendingLogins.delete(sessionId);
+    if (!res.headersSent) res.status(500).json({ error: `Failed to start claude: ${err.message}` });
+  });
+
+  child.on('exit', () => {
+    if (!urlSent) {
+      clearTimeout(urlTimer);
+      pendingLogins.delete(sessionId);
+      if (!res.headersSent) res.status(500).json({ error: 'claude exited before providing auth URL' });
+    }
+  });
+});
+
+app.post('/claude-profiles/login/complete', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { sessionId, code } = req.body ?? {};
+
+  if (!sessionId || !code) {
+    return res.status(400).json({ error: 'sessionId and code are required' });
+  }
+
+  const pending = pendingLogins.get(sessionId);
+  if (!pending) {
+    return res.status(404).json({ error: 'Login session not found or expired' });
+  }
+
+  const { child, name, expireTimer } = pending;
+  clearTimeout(expireTimer);
+  pendingLogins.delete(sessionId);
+  child.stdin.write(code + '\n');
+
+  const completeTimer = setTimeout(() => {
+    child.kill();
+    if (!res.headersSent) res.status(500).json({ error: 'Timed out waiting for login to complete' });
+  }, 2 * 60_000);
+
+  child.on('exit', (exitCode) => {
+    clearTimeout(completeTimer);
+    if (!res.headersSent) {
+      if (exitCode !== 0) {
+        return res.status(500).json({ error: `claude login exited with code ${exitCode}` });
+      }
+      try {
+        profiles.saveProfile(name);
+        res.json({ ok: true });
+      } catch (err) {
+        res.status(500).json({ error: `Failed to save profile: ${err.message}` });
+      }
+    }
+  });
+});
+
+app.post('/claude-profiles/:name/activate', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { name } = req.params;
+
+  if (!/^[a-zA-Z0-9_-]{1,20}$/.test(name)) {
+    return res.status(400).json({ error: 'Invalid profile name' });
+  }
+  if (!profiles.profileExists(name)) {
+    return res.status(404).json({ error: `Profile "${name}" not found` });
+  }
+  try {
+    profiles.activateProfile(name);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/claude-profiles/:name', (req, res) => {
+  if (!requireAuth(req, res)) return;
+  const { name } = req.params;
+
+  if (!/^[a-zA-Z0-9_-]{1,20}$/.test(name)) {
+    return res.status(400).json({ error: 'Invalid profile name' });
+  }
+  try {
+    profiles.deleteProfile(name);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 wss.on('connection', (ws, req) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
   const token = params.get('token') ?? '';
@@ -241,9 +383,13 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => { if (!ptyDead) pty.kill(); });
 });
 
+if (require.main === module) {
+  profiles.bootstrapActiveProfile();
+}
+
 const PORT = 7681;
 if (require.main === module) {
   server.listen(PORT, () => console.log(`Terminal service listening on :${PORT}`));
 }
 
-module.exports = { app, server, isValidCwd };
+module.exports = { app, server, isValidCwd, pendingLogins };

@@ -1,4 +1,5 @@
 jest.mock('./sessions');
+jest.mock('./profiles');
 process.env.JWT_SECRET = 'test-secret';
 process.env.TERMINAL_DIRS = '/workspace/data,/workspace/github';
 
@@ -7,8 +8,10 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const cp = require('child_process');
 
-const { app, isValidCwd } = require('./server');
+const { app, isValidCwd, pendingLogins } = require('./server');
 const sessions = require('./sessions');
+const profiles = require('./profiles');
+const { EventEmitter } = require('events');
 
 const token = jwt.sign({ sub: 1 }, 'test-secret');
 const auth = `Bearer ${token}`;
@@ -286,5 +289,224 @@ describe('DELETE /sessions/:name', () => {
 
   it('returns 401 without auth', async () => {
     await request(app).delete('/sessions/test').expect(401);
+  });
+});
+
+describe('GET /claude-profiles', () => {
+  afterEach(() => jest.resetAllMocks());
+
+  it('returns 401 without auth', async () => {
+    await request(app).get('/claude-profiles').expect(401);
+  });
+
+  it('returns profile list from readMeta', async () => {
+    profiles.readMeta.mockReturnValue({
+      active: 'work',
+      profiles: [{ name: 'work', addedAt: '2026-01-01T00:00:00.000Z' }],
+    });
+    const res = await request(app)
+      .get('/claude-profiles')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(res.body.active).toBe('work');
+    expect(res.body.profiles).toHaveLength(1);
+  });
+});
+
+describe('POST /claude-profiles/login/start', () => {
+  let mockChild;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockChild = new EventEmitter();
+    mockChild.stdout = new EventEmitter();
+    mockChild.stderr = new EventEmitter();
+    mockChild.stdin = { write: jest.fn() };
+    mockChild.kill = jest.fn();
+    jest.spyOn(cp, 'spawn').mockReturnValue(mockChild);
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('returns 401 without auth', async () => {
+    await request(app).post('/claude-profiles/login/start').send({ name: 'work' }).expect(401);
+  });
+
+  it('returns 400 for invalid name', async () => {
+    const res = await request(app)
+      .post('/claude-profiles/login/start')
+      .set('Authorization', auth)
+      .send({ name: 'bad name!' })
+      .expect(400);
+    expect(res.body.error).toMatch(/name/);
+  });
+
+  it('returns 409 when profile already exists', async () => {
+    profiles.profileExists.mockReturnValue(true);
+    const res = await request(app)
+      .post('/claude-profiles/login/start')
+      .set('Authorization', auth)
+      .send({ name: 'work' })
+      .expect(409);
+    expect(res.body.error).toMatch(/already exists/);
+  });
+
+  it('returns sessionId and url when claude emits auth URL on stdout', async () => {
+    profiles.profileExists.mockReturnValue(false);
+
+    const reqPromise = request(app)
+      .post('/claude-profiles/login/start')
+      .set('Authorization', auth)
+      .send({ name: 'work' });
+
+    await new Promise(resolve => setImmediate(resolve));
+    mockChild.stdout.emit('data', 'Open this URL:\nhttps://claude.ai/oauth/authorize?code=xyz\n');
+
+    const res = await reqPromise.expect(200);
+    expect(res.body.sessionId).toBeTruthy();
+    expect(res.body.url).toBe('https://claude.ai/oauth/authorize?code=xyz');
+  });
+
+  it('returns sessionId and url when claude emits auth URL on stderr', async () => {
+    profiles.profileExists.mockReturnValue(false);
+
+    const reqPromise = request(app)
+      .post('/claude-profiles/login/start')
+      .set('Authorization', auth)
+      .send({ name: 'work' });
+
+    await new Promise(resolve => setImmediate(resolve));
+    mockChild.stderr.emit('data', 'https://claude.ai/oauth/authorize?code=abc\n');
+
+    const res = await reqPromise.expect(200);
+    expect(res.body.url).toBe('https://claude.ai/oauth/authorize?code=abc');
+  });
+
+  it('returns 500 when claude exits before emitting URL', async () => {
+    profiles.profileExists.mockReturnValue(false);
+
+    const reqPromise = request(app)
+      .post('/claude-profiles/login/start')
+      .set('Authorization', auth)
+      .send({ name: 'work' });
+
+    await new Promise(resolve => setImmediate(resolve));
+    mockChild.emit('exit', 1);
+
+    const res = await reqPromise.expect(500);
+    expect(res.body.error).toMatch(/exited/);
+  });
+});
+
+describe('POST /claude-profiles/login/complete', () => {
+  afterEach(() => { jest.resetAllMocks(); pendingLogins.clear(); });
+
+  it('returns 401 without auth', async () => {
+    await request(app)
+      .post('/claude-profiles/login/complete')
+      .send({ sessionId: 'abc', code: '123' })
+      .expect(401);
+  });
+
+  it('returns 400 when sessionId or code is missing', async () => {
+    await request(app)
+      .post('/claude-profiles/login/complete')
+      .set('Authorization', auth)
+      .send({ sessionId: 'abc' })
+      .expect(400);
+  });
+
+  it('returns 404 when sessionId not found', async () => {
+    const res = await request(app)
+      .post('/claude-profiles/login/complete')
+      .set('Authorization', auth)
+      .send({ sessionId: 'unknown', code: '123' })
+      .expect(404);
+    expect(res.body.error).toMatch(/not found/);
+  });
+
+  it('writes code to stdin, saves profile, and returns ok on exit 0', async () => {
+    const mockChild = new EventEmitter();
+    mockChild.stdin = { write: jest.fn() };
+    mockChild.kill = jest.fn();
+    pendingLogins.set('test-id', {
+      child: mockChild,
+      name: 'work',
+      expireTimer: setTimeout(() => {}, 99999),
+    });
+    profiles.saveProfile.mockImplementation(() => {});
+
+    const reqPromise = request(app)
+      .post('/claude-profiles/login/complete')
+      .set('Authorization', auth)
+      .send({ sessionId: 'test-id', code: 'mycode' });
+
+    await new Promise(resolve => setImmediate(resolve));
+    expect(mockChild.stdin.write).toHaveBeenCalledWith('mycode\n');
+    mockChild.emit('exit', 0);
+
+    const res = await reqPromise.expect(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(profiles.saveProfile).toHaveBeenCalledWith('work');
+  });
+});
+
+describe('POST /claude-profiles/:name/activate', () => {
+  afterEach(() => jest.resetAllMocks());
+
+  it('returns 401 without auth', async () => {
+    await request(app).post('/claude-profiles/work/activate').expect(401);
+  });
+
+  it('returns 400 for invalid name', async () => {
+    await request(app)
+      .post('/claude-profiles/bad..name/activate')
+      .set('Authorization', auth)
+      .expect(400);
+  });
+
+  it('returns 404 when profile does not exist', async () => {
+    profiles.profileExists.mockReturnValue(false);
+    const res = await request(app)
+      .post('/claude-profiles/work/activate')
+      .set('Authorization', auth)
+      .expect(404);
+    expect(res.body.error).toMatch(/not found/);
+  });
+
+  it('activates profile and returns ok', async () => {
+    profiles.profileExists.mockReturnValue(true);
+    profiles.activateProfile.mockImplementation(() => {});
+    const res = await request(app)
+      .post('/claude-profiles/work/activate')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(profiles.activateProfile).toHaveBeenCalledWith('work');
+  });
+});
+
+describe('DELETE /claude-profiles/:name', () => {
+  afterEach(() => jest.resetAllMocks());
+
+  it('returns 401 without auth', async () => {
+    await request(app).delete('/claude-profiles/work').expect(401);
+  });
+
+  it('returns 400 for invalid name', async () => {
+    await request(app)
+      .delete('/claude-profiles/bad..name')
+      .set('Authorization', auth)
+      .expect(400);
+  });
+
+  it('deletes profile and returns ok', async () => {
+    profiles.deleteProfile.mockImplementation(() => {});
+    const res = await request(app)
+      .delete('/claude-profiles/work')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(profiles.deleteProfile).toHaveBeenCalledWith('work');
   });
 });
