@@ -16,10 +16,13 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Download,
+  Upload,
+  Wifi,
   type LucideIcon,
 } from 'lucide-react'
 import { useDockerMonitor } from '../../../lib/hooks/useDockerMonitor'
-import type { ContainerInfo, DiskStats } from '../../../lib/types'
+import type { ContainerInfo, DiskStats, SpeedTestResult } from '../../../lib/types'
 import Modal from '../../../components/ui/Modal'
 
 // ─── Utility ────────────────────────────────────────────────────────────────
@@ -79,11 +82,15 @@ function MetricCard({
   label: string
   value: string
   sub: string
-  percent: number
+  percent?: number
   color: string
 }) {
   const barColor =
-    percent > 85 ? '#ef4444' : percent > 65 ? '#f59e0b' : color
+    percent !== undefined && percent > 85
+      ? '#ef4444'
+      : percent !== undefined && percent > 65
+        ? '#f59e0b'
+        : color
 
   return (
     <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2">
@@ -93,8 +100,12 @@ function MetricCard({
       </div>
       <div className="text-white text-xl font-semibold tabular-nums">{value}</div>
       <div className="text-[#6b7280] text-xs">{sub}</div>
-      <MiniBar percent={percent} color={barColor} />
-      <div className="text-[10px] text-[#6b7280] text-right tabular-nums">{percent}%</div>
+      {percent !== undefined && (
+        <>
+          <MiniBar percent={percent} color={barColor} />
+          <div className="text-[10px] text-[#6b7280] text-right tabular-nums">{percent}%</div>
+        </>
+      )}
     </div>
   )
 }
@@ -110,6 +121,26 @@ function DiskCard({ disk, label }: { disk: DiskStats; label: string }) {
       percent={disk.percent}
       color={color}
     />
+  )
+}
+
+function SpeedTestResultBar({ result }: { result: SpeedTestResult }) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 text-xs text-[#9ca3af] mt-2">
+      <span className="flex items-center gap-1">
+        <Download size={11} className="text-emerald-400" />
+        <span className="text-white font-medium tabular-nums">{result.downloadMbps}</span> Mbps
+      </span>
+      <span className="flex items-center gap-1">
+        <Upload size={11} className="text-blue-400" />
+        <span className="text-white font-medium tabular-nums">{result.uploadMbps}</span> Mbps
+      </span>
+      <span className="flex items-center gap-1">
+        <RefreshCw size={11} />
+        <span className="text-white font-medium tabular-nums">{result.pingMs}</span> ms
+      </span>
+      <span className="text-[#6b7280]">via {result.server}</span>
+    </div>
   )
 }
 
@@ -318,6 +349,10 @@ export default function DockerMonitorPage() {
     refetchContainers,
     containerAction,
     systemAction,
+    speedTestLoading,
+    speedTestResult,
+    speedTestError,
+    runSpeedTest,
   } = useDockerMonitor()
 
   const [confirmAction, setConfirmAction] = useState<'restart-all' | 'stop-all' | null>(null)
@@ -341,7 +376,7 @@ export default function DockerMonitorPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-white text-xl font-semibold flex items-center gap-2">
           <Container size={20} className="text-[#3b82f6]" />
-          Docker Monitor
+          System/Containers
         </h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-4 text-xs text-[#6b7280]">
@@ -378,39 +413,77 @@ export default function DockerMonitorPage() {
           System Metrics
         </h2>
         {metricsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl h-28 animate-pulse" />
             ))}
           </div>
         ) : metrics ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MetricCard
-              icon={Cpu}
-              label="CPU"
-              value={`${metrics.cpuPercent.toFixed(1)}%`}
-              sub="utilisation"
-              percent={Math.round(metrics.cpuPercent)}
-              color="#3b82f6"
-            />
-            <MetricCard
-              icon={MemoryStick}
-              label="RAM"
-              value={fmtMb(metrics.memUsedMb)}
-              sub={`of ${fmtMb(metrics.memTotalMb)}`}
-              percent={metrics.memPercent}
-              color="#10b981"
-            />
-            <DiskCard disk={metrics.rootDisk} label="Disk /" />
-            {metrics.dataDisk ? (
-              <DiskCard disk={metrics.dataDisk} label="Disk /mnt/data" />
-            ) : (
-              <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2 items-center justify-center">
-                <HardDrive size={20} className="text-[#2a2a2a]" />
-                <span className="text-[#6b7280] text-xs text-center">/mnt/data not mounted</span>
-              </div>
-            )}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <MetricCard
+                icon={Cpu}
+                label="CPU"
+                value={`${metrics.cpuPercent.toFixed(1)}%`}
+                sub="utilisation"
+                percent={Math.round(metrics.cpuPercent)}
+                color="#3b82f6"
+              />
+              <MetricCard
+                icon={MemoryStick}
+                label="RAM"
+                value={fmtMb(metrics.memUsedMb)}
+                sub={`of ${fmtMb(metrics.memTotalMb)}`}
+                percent={metrics.memPercent}
+                color="#10b981"
+              />
+              <DiskCard disk={metrics.rootDisk} label="Disk /" />
+              {metrics.dataDisk ? (
+                <DiskCard disk={metrics.dataDisk} label="Disk /mnt/data" />
+              ) : (
+                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2 items-center justify-center">
+                  <HardDrive size={20} className="text-[#2a2a2a]" />
+                  <span className="text-[#6b7280] text-xs text-center">/mnt/data not mounted</span>
+                </div>
+              )}
+              <MetricCard
+                icon={Download}
+                label="Net ↓"
+                value={`${metrics.network.rxMbps.toFixed(1)} Mbps`}
+                sub={metrics.network.interfaceName}
+                color="#8b5cf6"
+              />
+              <MetricCard
+                icon={Upload}
+                label="Net ↑"
+                value={`${metrics.network.txMbps.toFixed(1)} Mbps`}
+                sub={metrics.network.interfaceName}
+                color="#8b5cf6"
+              />
+            </div>
+
+            {/* ── Speed Test ── */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => void runSpeedTest()}
+                disabled={speedTestLoading}
+                className="self-start flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-[#9ca3af] hover:text-white hover:bg-[#222222] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {speedTestLoading ? (
+                  <RefreshCw size={13} className="animate-spin" />
+                ) : (
+                  <Wifi size={13} />
+                )}
+                {speedTestLoading ? 'Testing…' : 'Test Speed'}
+              </button>
+              {speedTestResult && !speedTestLoading && (
+                <SpeedTestResultBar result={speedTestResult} />
+              )}
+              {speedTestError && !speedTestLoading && (
+                <p className="text-red-400 text-xs">{speedTestError}</p>
+              )}
+            </div>
+          </>
         ) : null}
       </section>
 

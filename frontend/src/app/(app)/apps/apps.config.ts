@@ -19,8 +19,8 @@ export const apps: AppEntry[] = [
   },
   {
     id: 'docker-monitor',
-    name: 'Docker Monitor',
-    description: 'Real-time container health, CPU/RAM/disk usage, and system controls for the Raspberry Pi.',
+    name: 'System/Containers',
+    description: 'Real-time system stats (CPU, RAM, disk, network) and container health for the Raspberry Pi.',
     url: '/docker',
     lucideIcon: 'Container',
     color: '#3b82f6',
