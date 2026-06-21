@@ -1,12 +1,11 @@
 'use client'
-import { Folder, File } from 'lucide-react'
+import { Folder, File, MoreHorizontal } from 'lucide-react'
 import type { DirEntry } from '@/lib/filesApi'
 
 function formatSize(bytes: number): string {
   if (bytes === 0) return '—'
   const units = ['B', 'KB', 'MB', 'GB']
-  let i = 0
-  let v = bytes
+  let i = 0, v = bytes
   while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
   return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
@@ -37,31 +36,50 @@ export default function FileList({
   return (
     <table className="w-full text-sm border-collapse">
       <thead>
-        <tr className="text-[#6b7280] text-xs uppercase tracking-wide border-b border-[#2a2a2a]">
+        <tr className="text-[#6b7280] text-[10px] uppercase tracking-wide border-b border-[#2a2a2a]">
           <th className="text-left py-2 px-3 font-medium">Name</th>
-          <th className="text-right py-2 px-3 font-medium w-24">Size</th>
-          <th className="text-right py-2 px-3 font-medium w-36">Modified</th>
+          {/* Size hidden on mobile */}
+          <th className="hidden sm:table-cell text-right py-2 px-3 font-medium w-20">Size</th>
+          {/* Modified hidden below md */}
+          <th className="hidden md:table-cell text-right py-2 px-3 font-medium w-32">Modified</th>
+          {/* Mobile actions column header */}
+          <th className="sm:hidden w-10" />
         </tr>
       </thead>
       <tbody>
         {entries.map((entry) => (
           <tr
             key={entry.name}
-            onDoubleClick={() => entry.type === 'dir' && onOpenFolder(entry.name)}
+            onClick={() => entry.type === 'dir' && onOpenFolder(entry.name)}
             onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, entry) }}
             className="border-b border-[#1a1a1a] hover:bg-[#111111] cursor-pointer transition-colors group"
           >
-            <td className="py-2 px-3">
-              <div className="flex items-center gap-2">
+            <td className="py-2.5 px-3">
+              <div className="flex items-center gap-2 min-w-0">
                 {entry.type === 'dir'
-                  ? <Folder size={16} className="text-[#f59e0b] shrink-0" />
-                  : <File size={16} className="text-[#6b7280] shrink-0" />
+                  ? <Folder size={15} className="text-[#f59e0b] shrink-0" />
+                  : <File   size={15} className="text-[#6b7280] shrink-0" />
                 }
-                <span className="text-[#d1d5db] group-hover:text-white truncate">{entry.name}</span>
+                <span className="text-[#d1d5db] group-hover:text-white truncate text-xs">
+                  {entry.name}
+                </span>
               </div>
             </td>
-            <td className="py-2 px-3 text-right text-[#9ca3af]">{formatSize(entry.size)}</td>
-            <td className="py-2 px-3 text-right text-[#9ca3af]">{formatDate(entry.modified)}</td>
+            <td className="hidden sm:table-cell py-2.5 px-3 text-right text-[#6b7280] text-xs">
+              {formatSize(entry.size)}
+            </td>
+            <td className="hidden md:table-cell py-2.5 px-3 text-right text-[#6b7280] text-xs">
+              {formatDate(entry.modified)}
+            </td>
+            {/* Mobile: visible ⋯ menu button */}
+            <td className="sm:hidden py-2 px-1.5 text-right">
+              <button
+                onClick={(e) => { e.stopPropagation(); onContextMenu(e, entry) }}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-[#4b5563] hover:text-white hover:bg-[#2a2a2a] active:bg-[#333] transition-colors"
+              >
+                <MoreHorizontal size={14} />
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>

@@ -1,4 +1,5 @@
 'use client'
+import { useRef } from 'react'
 import { Folder, FileText, Image, Film, Music, FileArchive, File } from 'lucide-react'
 import type { DirEntry } from '@/lib/filesApi'
 
@@ -12,6 +13,8 @@ function fileIcon(name: string) {
   return File
 }
 
+const LONG_PRESS_MS = 500
+
 export default function FileGrid({
   entries,
   onOpenFolder,
@@ -21,6 +24,9 @@ export default function FileGrid({
   onOpenFolder: (name: string) => void
   onContextMenu: (e: React.MouseEvent, entry: DirEntry) => void
 }) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longFiredRef = useRef(false)
+
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 text-[#6b7280] text-sm">
@@ -29,23 +35,44 @@ export default function FileGrid({
     )
   }
 
+  const startLongPress = (e: React.TouchEvent, entry: DirEntry) => {
+    longFiredRef.current = false
+    const touch = e.touches[0]
+    timerRef.current = setTimeout(() => {
+      longFiredRef.current = true
+      onContextMenu(
+        { clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent,
+        entry,
+      )
+    }, LONG_PRESS_MS)
+  }
+
+  const cancelLongPress = () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 p-1">
+    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1 p-1">
       {entries.map((entry) => {
         const Icon = entry.type === 'dir' ? Folder : fileIcon(entry.name)
         const color = entry.type === 'dir' ? '#f59e0b' : '#6b7280'
+
         return (
           <button
             key={entry.name}
-            onDoubleClick={() => entry.type === 'dir' && onOpenFolder(entry.name)}
-            onClick={() => {}}
+            onClick={() => {
+              if (!longFiredRef.current && entry.type === 'dir') onOpenFolder(entry.name)
+            }}
             onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, entry) }}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors group text-center"
+            onTouchStart={(e) => startLongPress(e, entry)}
+            onTouchEnd={cancelLongPress}
+            onTouchMove={cancelLongPress}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[#1a1a1a] active:bg-[#222] transition-colors group text-center select-none"
           >
-            <div className="w-12 h-12 flex items-center justify-center">
-              <Icon size={40} style={{ color }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Icon size={34} style={{ color }} />
             </div>
-            <span className="text-[#d1d5db] text-xs leading-tight line-clamp-2 w-full group-hover:text-white break-all">
+            <span className="text-[#d1d5db] text-[10px] leading-tight line-clamp-2 w-full group-hover:text-white break-all">
               {entry.name}
             </span>
           </button>

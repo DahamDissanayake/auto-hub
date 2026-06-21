@@ -22,6 +22,16 @@ export default function ContextMenu({
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
+  // Clamp to viewport so menu never clips off-screen
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const { innerWidth, innerHeight } = window
+    const { offsetWidth, offsetHeight } = el
+    el.style.left = `${Math.min(x, innerWidth  - offsetWidth  - 8)}px`
+    el.style.top  = `${Math.min(y, innerHeight - offsetHeight - 8)}px`
+  }, [x, y])
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
