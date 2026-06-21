@@ -32,21 +32,11 @@ const KEY_SEQUENCES = [
   { label: '→', seq: '\x1b[C' },
 ]
 
-// Styles xterm's built-in .xterm-viewport scrollbar: always visible, 10px wide,
-// dark track, draggable thumb. overflow-y:scroll forces the track to always render
-// (even when content fits) so the user always has a grabbable bar on the right.
-const SCROLLBAR_CSS = `
-  .xterm .xterm-viewport { overflow-y: scroll !important; scrollbar-width: thin; scrollbar-color: #4b5563 #1a1a1a; }
-  .xterm .xterm-viewport::-webkit-scrollbar { width: 10px; display: block; }
-  .xterm .xterm-viewport::-webkit-scrollbar-track { background: #1a1a1a; border-left: 1px solid #2a2a2a; }
-  .xterm .xterm-viewport::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 5px;
-    border: 2px solid #1a1a1a;
-    min-height: 40px;
-  }
-  .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-  .xterm .xterm-viewport::-webkit-scrollbar-thumb:active { background: #3b82f6; }
+// Hide xterm's native scrollbar — we render a custom React scrollbar instead,
+// which is always visible regardless of OS overlay-scrollbar settings.
+const HIDE_NATIVE_SCROLLBAR_CSS = `
+  .xterm .xterm-viewport { overflow-y: scroll !important; scrollbar-width: none; }
+  .xterm .xterm-viewport::-webkit-scrollbar { display: none; width: 0; }
 `
 
 export default function TerminalPage() {
@@ -64,7 +54,13 @@ export default function TerminalPage() {
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
 
+  // Custom scrollbar state: shown only when xterm has its own scrollback (non-tmux mode)
+  const [sbVisible, setSbVisible] = useState(false)
+  const [sbThumb, setSbThumb] = useState({ top: 0, height: 0 })
+
   const termContainerRef = useRef<HTMLDivElement>(null)
+  const scrollbarTrackRef = useRef<HTMLDivElement>(null)
+  const sbDragRef = useRef({ active: false, startY: 0, startST: 0 })
   const wsRef = useRef<WebSocket | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const touchModeRef = useRef<'scroll' | 'select'>('scroll')
@@ -95,7 +91,6 @@ export default function TerminalPage() {
         theme: { background: '#0d0d0d', foreground: '#e5e7eb', cursor: '#3b82f6' },
         cursorBlink: true,
         scrollback: 5000,
-        // Let xterm handle all mouse wheel events natively via .xterm-viewport scroll
         scrollOnUserInput: true,
       })
 
@@ -106,6 +101,33 @@ export default function TerminalPage() {
       term.open(termContainerRef.current)
       fitAddon.fit()
 
+      const el = termContainerRef.current!
+
+      // Scrollbar is only meaningful when xterm has its own scrollback (non-tmux sessions).
+      // In tmux mode the alternate screen always gives buf.length === t.rows (no scrollback).
+      const updateScrollbar = () => {
+        const t = termRef.current
+        if (!t) return
+        const buf = t.buffer.active
+        const totalLines = buf.length
+        const viewRows = t.rows
+        if (totalLines <= viewRows) {
+          setSbVisible(false)
+          return
+        }
+        setSbVisible(true)
+        const track = scrollbarTrackRef.current
+        if (!track || track.clientHeight === 0) return
+        const trackH = track.clientHeight
+        const maxY = totalLines - viewRows
+        const thumbH = Math.max(40, (viewRows / totalLines) * trackH)
+        const thumbT = maxY > 0 ? (buf.viewportY / maxY) * (trackH - thumbH) : 0
+        setSbThumb({ top: Math.max(0, thumbT), height: thumbH })
+      }
+
+      // term.onScroll fires whenever xterm changes ydisp (any scroll path).
+      const scrollDisp = term.onScroll(() => requestAnimationFrame(updateScrollbar))
+
       const token = sessionStorage.getItem('autohub_token') ?? ''
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
@@ -113,7 +135,11 @@ export default function TerminalPage() {
       )
       wsRef.current = ws
 
-      ws.onmessage = e => term.write(e.data as string)
+      // After each data chunk, update the thumb — scrollback grows with new output.
+      ws.onmessage = e => {
+        term.write(e.data as string)
+        requestAnimationFrame(updateScrollbar)
+      }
       ws.onerror = () => setError('Connection error. Authentication may have failed.')
       ws.onclose = e => {
         wsRef.current = null
@@ -127,72 +153,69 @@ export default function TerminalPage() {
 
       const fit = () => {
         fitAddon.fit()
+        updateScrollbar()
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }))
         }
       }
 
-      ws.onopen = () => fit()
+      ws.onopen = () => {
+        fit()
+        setTimeout(updateScrollbar, 200)
+      }
 
       const ro = new ResizeObserver(fit)
       ro.observe(termContainerRef.current!)
       window.visualViewport?.addEventListener('resize', fit)
 
-      const el = termContainerRef.current!
-
-      // Desktop: capture-phase wheel so our handler fires BEFORE xterm's handlers
-      // on child elements (.xterm-viewport, canvas). Without capture, xterm sees the
-      // wheel event first and converts it to ↑/↓ arrow key sequences sent to the PTY
-      // (cycling command history instead of scrolling). stopPropagation() ensures
-      // xterm never receives the event; we drive viewport.scrollTop directly instead.
-      const getViewport = () => el.querySelector('.xterm-viewport') as HTMLElement | null
-      const onWheel = (e: WheelEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const viewport = getViewport()
-        if (viewport) viewport.scrollTop += e.deltaY
-      }
+      // Wheel: prevent browser page scroll; let xterm handle the event natively.
+      // With tmux `mouse on`, tmux sends \x1b[?1000h putting xterm in mouse-tracking mode.
+      // xterm then encodes wheel events as PTY mouse sequences (\x1b[<64/65;X;YM) which
+      // tmux receives and uses to scroll its own copy-mode buffer — no scrollLines() needed.
+      const onWheel = (e: WheelEvent) => { e.preventDefault() }
       el.addEventListener('wheel', onWheel, { passive: false, capture: true })
 
-      // Mobile touch — same root cause as wheel: xterm's canvas touchmove handler
-      // fires in the target/bubble phase and converts movement to selection or PTY
-      // input. We use capture on touchmove to intercept before xterm and drive
-      // viewport.scrollTop directly.
-      //
-      // touchstart stays in bubble (NOT capture) so xterm's target-phase handler
-      // still fires and calls textarea.focus() — that's what shows the keyboard.
-      // stopPropagation() in bubble phase prevents <main> from seeing the tap.
-      //
-      // Direction: swipe UP (finger goes up → clientY decreases → dy > 0) →
-      // scrollTop decreases → older output visible. Matches wheel-up behaviour.
+      // Touch (Scroll mode): synthesize WheelEvents on the xterm viewport so xterm forwards
+      // them to the PTY as mouse sequences the same way real wheel events are handled.
+      // Firing one event per TOUCH_PX_PER_WHEEL pixels gives natural speed control.
+      const TOUCH_PX_PER_WHEEL = 20
       let touchY = 0
+      let touchAccum = 0
       const onTouchStart = (e: TouchEvent) => {
         if (touchModeRef.current === 'scroll') {
-          e.stopPropagation()
           touchY = e.touches[0].clientY
+          touchAccum = 0
         }
       }
       const onTouchMove = (e: TouchEvent) => {
         if (touchModeRef.current !== 'scroll') return
         e.preventDefault()
-        e.stopPropagation()
-        const dy = touchY - e.touches[0].clientY
+        const dy = touchY - e.touches[0].clientY   // positive = swipe up = scroll to older
         touchY = e.touches[0].clientY
-        const viewport = getViewport()
-        if (viewport) viewport.scrollTop -= dy
+        touchAccum += dy
+        const vp = el.querySelector('.xterm-viewport')
+        if (!vp) return
+        while (Math.abs(touchAccum) >= TOUCH_PX_PER_WHEEL) {
+          const dir = touchAccum > 0 ? 1 : -1
+          vp.dispatchEvent(new WheelEvent('wheel', { deltaY: dir * TOUCH_PX_PER_WHEEL, deltaMode: 0, bubbles: true }))
+          touchAccum -= dir * TOUCH_PX_PER_WHEEL
+        }
       }
       el.addEventListener('touchstart', onTouchStart, { passive: true })
-      el.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+      el.addEventListener('touchmove', onTouchMove, { passive: false })
 
       cleanup = () => {
         ro.disconnect()
         window.visualViewport?.removeEventListener('resize', fit)
         el.removeEventListener('wheel', onWheel, { capture: true })
         el.removeEventListener('touchstart', onTouchStart)
-        el.removeEventListener('touchmove', onTouchMove, { capture: true })
+        el.removeEventListener('touchmove', onTouchMove)
+        scrollDisp.dispose()
         ws.close()
         term.dispose()
         termRef.current = null
+        setSbVisible(false)
+        setSbThumb({ top: 0, height: 0 })
       }
     }
 
@@ -215,7 +238,6 @@ export default function TerminalPage() {
         setTimeout(() => setPasteFeedback('idle'), 1200)
       }
     } catch {
-      // On iOS: browser shows "Allow Paste" system prompt — if denied, ends up here
       setPasteFeedback('denied')
       setTimeout(() => setPasteFeedback('idle'), 2500)
     }
@@ -236,6 +258,56 @@ export default function TerminalPage() {
     }
     setCopyFeedback(true)
     setTimeout(() => setCopyFeedback(false), 1200)
+  }, [])
+
+  // Custom scrollbar handlers — use xterm buffer API for metrics, term.scrollLines() for movement
+  const handleTrackClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (sbDragRef.current.active) return
+    const t = termRef.current
+    const track = scrollbarTrackRef.current
+    if (!t || !track) return
+    const buf = t.buffer.active
+    const maxY = buf.length - t.rows
+    if (maxY <= 0) return
+    const rect = track.getBoundingClientRect()
+    const ratio = (e.clientY - rect.top) / track.clientHeight
+    const targetLine = Math.round(ratio * maxY)
+    const delta = targetLine - buf.viewportY
+    if (delta !== 0) t.scrollLines(delta)
+  }, [])
+
+  const handleThumbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const t = termRef.current
+    if (!t) return
+    // startST = line index at drag start (0=top, maxY=bottom)
+    sbDragRef.current = { active: true, startY: e.clientY, startST: t.buffer.active.viewportY }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleThumbPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!sbDragRef.current.active) return
+    const t = termRef.current
+    const track = scrollbarTrackRef.current
+    if (!t || !track) return
+    const buf = t.buffer.active
+    const maxY = buf.length - t.rows
+    if (maxY <= 0) return
+    const trackH = track.clientHeight
+    const thumbH = Math.max(40, (t.rows / buf.length) * trackH)
+    const dy = e.clientY - sbDragRef.current.startY
+    // Absolute target from drag start — no drift accumulation
+    const targetLine = Math.max(0, Math.min(maxY,
+      sbDragRef.current.startST + (dy / Math.max(1, trackH - thumbH)) * maxY
+    ))
+    const delta = Math.round(targetLine) - buf.viewportY
+    if (delta !== 0) t.scrollLines(delta)
+  }, [])
+
+  const handleThumbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    sbDragRef.current.active = false
+    e.currentTarget.releasePointerCapture(e.pointerId)
   }, [])
 
   const createAndOpenSession = async (
@@ -408,10 +480,15 @@ export default function TerminalPage() {
     )
   }
 
+  const thumbStyle: React.CSSProperties = {
+    top: sbThumb.top,
+    height: sbThumb.height,
+    minHeight: 40,
+  }
+
   return (
     <>
-      {/* PowerShell-style scrollbar: always visible, 12px, dark-themed */}
-      <style>{SCROLLBAR_CSS}</style>
+      <style>{HIDE_NATIVE_SCROLLBAR_CSS}</style>
 
       <div
         className="-mx-6 -mt-6 -mb-6 flex flex-col"
@@ -448,7 +525,6 @@ export default function TerminalPage() {
 
             <div className="w-px h-5 bg-[#3a3a3a] shrink-0 mx-1" />
 
-            {/* scroll / select mode toggle */}
             <button
               onPointerDown={e => {
                 e.preventDefault()
@@ -467,7 +543,6 @@ export default function TerminalPage() {
               }
             </button>
 
-            {/* copy — onClick so clipboard.writeText gets a clean user-gesture context */}
             <button
               onClick={() => { void copySelection() }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
@@ -480,8 +555,6 @@ export default function TerminalPage() {
               {copyFeedback ? 'Copied!' : 'Copy'}
             </button>
 
-            {/* paste — onClick (not pointerDown) so iOS permission prompt can appear;
-                shows "Pasted!" on success, "Tap Allow ↑" if permission was denied */}
             <button
               onClick={() => { void pasteFromClipboard() }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
@@ -502,10 +575,31 @@ export default function TerminalPage() {
           </div>
         )}
 
-        {/* overflow-hidden is the standard xterm.js container setup (used by VS Code,
-            Hyper, etc). It does NOT clip the scrollbar — the scrollbar lives inside
-            .xterm-viewport which is inside .xterm which fills this container. */}
-        <div ref={termContainerRef} className="flex-1 overflow-hidden" />
+        {/* Terminal + custom scrollbar side by side */}
+        <div className="flex-1 flex overflow-hidden">
+          <div ref={termContainerRef} className="flex-1 overflow-hidden min-w-0" />
+
+          {/* Custom scrollbar — shown only when xterm has its own scrollback buffer
+              (i.e. non-tmux sessions). In tmux mode the alternate screen provides no
+              xterm scrollback, so the bar is hidden and tmux handles scrolling itself. */}
+          {sbVisible && (
+            <div
+              ref={scrollbarTrackRef}
+              className="w-3 shrink-0 bg-[#0d0d0d] border-l border-[#2a2a2a] relative overflow-hidden select-none cursor-pointer"
+              onClick={handleTrackClick}
+            >
+              <div
+                className="absolute left-0.5 right-0.5 rounded-sm bg-[#4b5563] hover:bg-[#6b7280] transition-colors"
+                style={thumbStyle}
+                onPointerDown={handleThumbPointerDown}
+                onPointerMove={handleThumbPointerMove}
+                onPointerUp={handleThumbPointerUp}
+                onPointerCancel={handleThumbPointerUp}
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
+          )}
+        </div>
 
         {showSessionOverlay && (
           <div
