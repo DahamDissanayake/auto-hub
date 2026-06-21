@@ -10,7 +10,8 @@ import { CloneDialog } from './components/CloneDialog'
 import { SessionTabs, TabSession } from './components/SessionTabs'
 import { TerminalBreadcrumb } from './components/TerminalBreadcrumb'
 import { GridView } from './components/GridView'
-import { Clipboard, ClipboardPaste, MousePointer, MoveVertical } from 'lucide-react'
+import { MdBrowserDrawer } from './components/MdBrowserDrawer'
+import { Clipboard, ClipboardPaste, FolderOpen, MousePointer, MoveVertical } from 'lucide-react'
 
 interface Repo {
   name: string
@@ -51,6 +52,16 @@ const HIDE_NATIVE_SCROLLBAR_CSS = `
   .xterm .xterm-viewport::-webkit-scrollbar { display: none; width: 0; }
 `
 
+function getMdBrowserParams(
+  workspace: Workspace | null,
+  repoName: string | null,
+): { root: string; startPath: string } {
+  if (workspace === 'home') return { root: 'workspace', startPath: 'data' }
+  if (workspace === 'auto-hub') return { root: 'workspace', startPath: 'auto-hub' }
+  if (workspace === 'github' && repoName) return { root: 'workspace', startPath: `github/${repoName}` }
+  return { root: 'workspace', startPath: 'data' }
+}
+
 export default function TerminalPage() {
   const [step, setStep] = useState<Step>('loading')
   const [sessionName, setSessionName] = useState<string | null>(null)
@@ -66,6 +77,7 @@ export default function TerminalPage() {
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
   const [gridView, setGridView] = useState(false)
+  const [showMdBrowser, setShowMdBrowser] = useState(false)
 
   // Custom scrollbar state: shown only when xterm has its own scrollback (non-tmux mode)
   const [sbVisible, setSbVisible] = useState(false)
@@ -613,7 +625,7 @@ export default function TerminalPage() {
       <style>{HIDE_NATIVE_SCROLLBAR_CSS}</style>
 
       <div
-        className="-mx-4 -mt-4 -mb-4 md:-mx-6 md:-mt-6 md:-mb-6 flex flex-col"
+        className="-mx-4 -mt-4 -mb-4 md:-mx-6 md:-mt-6 md:-mb-6 flex flex-col relative"
         style={{ height: isMobile ? 'calc(100dvh - 3rem)' : '100dvh' }}
       >
         {gridView ? (
@@ -789,6 +801,24 @@ export default function TerminalPage() {
               />
             </div>
           </div>
+        )}
+
+        {/* Floating MD file browser — absolute-positioned over the terminal */}
+        <button
+          onClick={() => setShowMdBrowser(true)}
+          title="Browse files"
+          className={`absolute z-10 w-9 h-9 rounded-full flex items-center justify-center text-[#9ca3af] hover:text-[#e5e7eb] bg-[#1e293b]/70 hover:bg-[#1e293b] transition-colors shadow-lg ${
+            isMobile ? 'bottom-16 right-3' : 'bottom-4 right-4'
+          }`}
+        >
+          <FolderOpen size={16} />
+        </button>
+
+        {showMdBrowser && (
+          <MdBrowserDrawer
+            {...getMdBrowserParams(workspace, repoName)}
+            onClose={() => setShowMdBrowser(false)}
+          />
         )}
         </>
         )}
