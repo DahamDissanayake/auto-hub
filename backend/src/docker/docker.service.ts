@@ -11,6 +11,12 @@ export interface DiskStats {
   percent: number;
 }
 
+export interface NetworkStats {
+  rxMbps: number
+  txMbps: number
+  interfaceName: string
+}
+
 export interface SystemMetrics {
   cpuPercent: number;
   memUsedMb: number;
@@ -18,6 +24,7 @@ export interface SystemMetrics {
   memPercent: number;
   rootDisk: DiskStats;
   dataDisk: DiskStats | null;
+  network: NetworkStats;
 }
 
 export interface ContainerInfo {
@@ -130,12 +137,62 @@ export class DockerService {
     }
   }
 
+  private parseNetDev(raw: string): Record<string, { rxBytes: number; txBytes: number }> {
+    const result: Record<string, { rxBytes: number; txBytes: number }> = {}
+    for (const line of raw.split('\n').slice(2)) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      const colonIdx = trimmed.indexOf(':')
+      if (colonIdx === -1) continue
+      const iface = trimmed.slice(0, colonIdx).trim()
+      const fields = trimmed.slice(colonIdx + 1).trim().split(/\s+/)
+      result[iface] = {
+        rxBytes: parseInt(fields[0] ?? '0', 10),
+        txBytes: parseInt(fields[8] ?? '0', 10),
+      }
+    }
+    return result
+  }
+
+  private async getNetworkStats(): Promise<NetworkStats> {
+    const readDev = (): string => {
+      try {
+        return fs.readFileSync('/proc/net/dev', 'utf-8')
+      } catch {
+        return ''
+      }
+    }
+    const s1 = this.parseNetDev(readDev())
+    await new Promise<void>((r) => setTimeout(r, 500))
+    const s2 = this.parseNetDev(readDev())
+
+    const preferred = ['eth0', 'wlan0']
+    const iface =
+      preferred.find((p) => s2[p] !== undefined) ??
+      Object.keys(s2).find((k) => k !== 'lo') ??
+      null
+
+    if (!iface || !s1[iface] || !s2[iface]) {
+      return { rxMbps: 0, txMbps: 0, interfaceName: 'unknown' }
+    }
+
+    const rxDelta = s2[iface].rxBytes - s1[iface].rxBytes
+    const txDelta = s2[iface].txBytes - s1[iface].txBytes
+
+    return {
+      rxMbps: parseFloat(Math.max(0, (rxDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
+      txMbps: parseFloat(Math.max(0, (txDelta * 8) / 1_000_000 / 0.5).toFixed(2)),
+      interfaceName: iface,
+    }
+  }
+
   async getSystemMetrics(): Promise<SystemMetrics> {
-    const [cpuPercent, rootDisk, dataDisk] = await Promise.all([
+    const [cpuPercent, rootDisk, dataDisk, network] = await Promise.all([
       this.getCpuPercent(),
       this.getDiskStats('/host'),
       this.getDiskStats('/mnt/data'),
-    ]);
+      this.getNetworkStats(),
+    ])
     const mem = this.getMemInfo();
 
     return {
@@ -145,6 +202,7 @@ export class DockerService {
       memPercent: mem.totalMb > 0 ? Math.round((mem.usedMb / mem.totalMb) * 100) : 0,
       rootDisk: rootDisk ?? { path: '/', usedGb: 0, totalGb: 0, freeGb: 0, percent: 0 },
       dataDisk,
+      network,
     };
   }
 
