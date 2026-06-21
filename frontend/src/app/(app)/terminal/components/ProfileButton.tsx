@@ -75,7 +75,7 @@ export function ProfileButton() {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-1 w-52 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg shadow-xl z-50 py-1">
+          <div className="absolute right-0 top-full mt-1 w-52 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg shadow-xl z-50 py-1 overflow-hidden">
             {confirmSwitch ? (
               <div className="px-3 py-2">
                 <p className="text-[#9ca3af] text-xs mb-2">
@@ -99,15 +99,15 @@ export function ProfileButton() {
             ) : (
               <>
                 {state.profiles.map(p => (
-                  <div key={p.name} className="flex items-center group hover:bg-[#2a2a2a] transition-colors">
+                  <div key={p.name} className="flex items-center group hover:bg-[#2a2a2a] transition-colors min-w-0">
                     <button
                       onClick={() => handleSwitchClick(p.name)}
-                      className="flex items-center gap-2 flex-1 px-3 py-2 text-xs text-left"
+                      className="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 text-xs text-left"
                     >
                       <span className="w-3 shrink-0">
                         {state.active === p.name && <Check size={11} className="text-[#10b981]" />}
                       </span>
-                      <span className="flex flex-col min-w-0">
+                      <span className="flex flex-col min-w-0 flex-1">
                         <span className="text-[#e5e7eb] font-mono truncate">{p.name}</span>
                         {p.email && <span className="text-[#6b7280] truncate text-[10px]">{p.email}</span>}
                       </span>
@@ -116,7 +116,7 @@ export function ProfileButton() {
                       onClick={(e) => { void handleRemove(e, p.name) }}
                       disabled={removing === p.name}
                       title={`Remove ${p.name}`}
-                      className="opacity-0 group-hover:opacity-100 px-2 py-2 text-[#6b7280] hover:text-[#ef4444] transition-all disabled:opacity-50"
+                      className="opacity-0 group-hover:opacity-100 shrink-0 px-2 py-2 text-[#6b7280] hover:text-[#ef4444] transition-all disabled:opacity-50"
                     >
                       {removing === p.name
                         ? <Loader2 size={11} className="animate-spin" />
