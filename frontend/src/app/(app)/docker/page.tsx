@@ -10,7 +10,6 @@ import {
   Square,
   RotateCcw,
   Power,
-  PowerOff,
   Activity,
   AlertCircle,
   CheckCircle2,
@@ -266,22 +265,22 @@ function ConfirmSystemModal({
   onConfirm,
   onCancel,
 }: {
-  action: 'reboot' | 'shutdown'
+  action: 'restart-all' | 'stop-all'
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const isReboot = action === 'reboot'
+  const isRestart = action === 'restart-all'
   return (
     <Modal
       isOpen
       onClose={onCancel}
-      title={isReboot ? 'Reboot System?' : 'Shutdown System?'}
+      title={isRestart ? 'Restart All Containers?' : 'Stop All Containers?'}
     >
       <div className="space-y-4">
         <p className="text-[#9ca3af] text-sm">
-          {isReboot
-            ? 'This will reboot the Raspberry Pi. All services will be unavailable for ~30–60 seconds.'
-            : 'This will power off the Raspberry Pi. You will need physical access to restart it.'}
+          {isRestart
+            ? 'This will restart every running container. Services will be briefly unavailable.'
+            : 'This will stop all running containers. You will need to start them again manually.'}
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -293,12 +292,12 @@ function ConfirmSystemModal({
           <button
             onClick={onConfirm}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              isReboot
+              isRestart
                 ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30'
                 : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
             }`}
           >
-            {isReboot ? 'Yes, Reboot' : 'Yes, Shutdown'}
+            {isRestart ? 'Yes, Restart All' : 'Yes, Stop All'}
           </button>
         </div>
       </div>
@@ -321,12 +320,12 @@ export default function DockerMonitorPage() {
     systemAction,
   } = useDockerMonitor()
 
-  const [confirmAction, setConfirmAction] = useState<'reboot' | 'shutdown' | null>(null)
+  const [confirmAction, setConfirmAction] = useState<'restart-all' | 'stop-all' | null>(null)
 
   const running = containers.filter((c) => c.state === 'running').length
   const stopped = containers.filter((c) => c.state !== 'running').length
 
-  const handleSystemAction = (action: 'reboot' | 'shutdown') => {
+  const handleSystemAction = (action: 'restart-all' | 'stop-all') => {
     setConfirmAction(action)
   }
 
@@ -445,36 +444,36 @@ export default function DockerMonitorPage() {
         )}
       </section>
 
-      {/* ── System Controls ── */}
+      {/* ── Docker Controls ── */}
       <section className="space-y-3">
         <h2 className="text-[#9ca3af] text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
           <Power size={12} />
-          System Controls
+          Docker Controls
         </h2>
         <div className="flex gap-3">
           <button
-            onClick={() => handleSystemAction('reboot')}
-            disabled={actionLoading === 'reboot'}
+            onClick={() => handleSystemAction('restart-all')}
+            disabled={actionLoading === 'restart-all'}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {actionLoading === 'reboot' ? (
+            {actionLoading === 'restart-all' ? (
               <RefreshCw size={15} className="animate-spin" />
             ) : (
               <RotateCcw size={15} />
             )}
-            Reboot Pi
+            Restart Docker
           </button>
           <button
-            onClick={() => handleSystemAction('shutdown')}
-            disabled={actionLoading === 'shutdown'}
+            onClick={() => handleSystemAction('stop-all')}
+            disabled={actionLoading === 'stop-all'}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {actionLoading === 'shutdown' ? (
+            {actionLoading === 'stop-all' ? (
               <RefreshCw size={15} className="animate-spin" />
             ) : (
-              <PowerOff size={15} />
+              <Square size={15} />
             )}
-            Shutdown Pi
+            Stop All Containers
           </button>
         </div>
       </section>

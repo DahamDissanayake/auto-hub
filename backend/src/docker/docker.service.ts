@@ -280,29 +280,27 @@ export class DockerService {
     await this.dockerRequest('POST', `/containers/${id}/start`);
   }
 
-  private async runHostCommand(command: 'reboot' | 'poweroff'): Promise<void> {
-    const body = JSON.stringify({
-      Image: 'node:20-alpine',
-      Cmd: ['nsenter', '-t', '1', '-m', '-u', '-i', '-n', '--', command],
-      HostConfig: { Privileged: true, PidMode: 'host', AutoRemove: false },
-    });
-    const container = await this.dockerRequest<{ Id: string }>(
-      'POST',
-      '/containers/create',
-      body,
+  async restartAllContainers(): Promise<void> {
+    const containers = await this.dockerRequest<{ Id: string; State: string }[]>(
+      'GET',
+      '/containers/json?all=true',
     );
-    await this.dockerRequest('POST', `/containers/${container.Id}/start`);
-  }
-
-  rebootSystem(): void {
-    this.runHostCommand('reboot').catch((err) =>
-      this.logger.error('reboot failed', err),
+    await Promise.allSettled(
+      containers
+        .filter((c) => c.State === 'running')
+        .map((c) => this.dockerRequest('POST', `/containers/${c.Id}/restart`)),
     );
   }
 
-  shutdownSystem(): void {
-    this.runHostCommand('poweroff').catch((err) =>
-      this.logger.error('poweroff failed', err),
+  async stopAllContainers(): Promise<void> {
+    const containers = await this.dockerRequest<{ Id: string; State: string }[]>(
+      'GET',
+      '/containers/json?all=true',
+    );
+    await Promise.allSettled(
+      containers
+        .filter((c) => c.State === 'running')
+        .map((c) => this.dockerRequest('POST', `/containers/${c.Id}/stop`)),
     );
   }
 }

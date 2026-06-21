@@ -65,14 +65,19 @@ export function useDockerMonitor() {
     [fetchContainers],
   )
 
-  const systemAction = useCallback(async (action: 'reboot' | 'shutdown') => {
-    setActionLoading(action)
-    try {
-      await api.post(`/api/docker/system/${action}`)
-    } finally {
-      setActionLoading(null)
-    }
-  }, [])
+  const systemAction = useCallback(
+    async (action: 'restart-all' | 'stop-all') => {
+      setActionLoading(action)
+      try {
+        await api.post(`/api/docker/system/${action}`)
+        await new Promise((r) => setTimeout(r, 2000))
+        await fetchContainers()
+      } finally {
+        setActionLoading(null)
+      }
+    },
+    [fetchContainers],
+  )
 
   return {
     metrics,

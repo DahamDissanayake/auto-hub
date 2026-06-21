@@ -75,15 +75,29 @@ export class DockerController {
     }
   }
 
-  @Post('system/reboot')
-  rebootSystem() {
-    this.dockerService.rebootSystem();
-    return { ok: true, message: 'System rebooting…' };
+  @Post('system/restart-all')
+  async restartAll() {
+    try {
+      await this.dockerService.restartAllContainers();
+      return { ok: true };
+    } catch (err) {
+      throw new HttpException(
+        `Failed to restart containers: ${String(err)}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
-  @Post('system/shutdown')
-  shutdownSystem() {
-    this.dockerService.shutdownSystem();
-    return { ok: true, message: 'System shutting down…' };
+  @Post('system/stop-all')
+  async stopAll() {
+    try {
+      await this.dockerService.stopAllContainers();
+      return { ok: true };
+    } catch (err) {
+      throw new HttpException(
+        `Failed to stop containers: ${String(err)}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
