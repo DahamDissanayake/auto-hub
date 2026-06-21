@@ -21,10 +21,12 @@ import {
   Wifi,
   ArrowDown,
   ArrowUp,
+  Thermometer,
+  Wind,
   type LucideIcon,
 } from 'lucide-react'
 import { useDockerMonitor, type BandwidthPoint } from '../../../lib/hooks/useDockerMonitor'
-import type { ContainerInfo, DiskStats, NetworkStats, SpeedTestResult } from '../../../lib/types'
+import type { ContainerInfo, DiskStats, NetworkStats, SpeedTestResult, ThermalInfo } from '../../../lib/types'
 import Modal from '../../../components/ui/Modal'
 
 // ─── Utility ────────────────────────────────────────────────────────────────
@@ -246,6 +248,56 @@ function NetworkCard({
               </div>
             )
           })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ThermalCard({ thermal }: { thermal: ThermalInfo }) {
+  const temp = thermal.cpuTempC
+  const tempColor = temp >= 80 ? '#ef4444' : temp >= 70 ? '#f59e0b' : '#10b981'
+  const tempPercent = Math.min(100, Math.round((temp / 100) * 100))
+
+  const fanPercent =
+    thermal.fanLevel !== null && thermal.fanMaxLevel
+      ? Math.round((thermal.fanLevel / thermal.fanMaxLevel) * 100)
+      : null
+
+  return (
+    <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-[#9ca3af] text-xs">
+        <Thermometer size={14} />
+        Thermal
+      </div>
+      <div className="text-xl font-semibold tabular-nums" style={{ color: tempColor }}>
+        {temp.toFixed(1)}°C
+      </div>
+      <div className="text-[#6b7280] text-xs">CPU temp</div>
+      <MiniBar percent={tempPercent} color={tempColor} />
+      <div className="text-[10px] text-[#6b7280] text-right tabular-nums">{tempPercent}%</div>
+
+      {/* Fan info */}
+      {(thermal.fanRpm !== null || thermal.fanLevel !== null) && (
+        <div className="border-t border-[#2a2a2a] pt-2 flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 text-[#9ca3af] text-[10px]">
+            <Wind size={10} />
+            Fan
+          </div>
+          {thermal.fanRpm !== null && (
+            <div className="text-white text-sm font-medium tabular-nums">
+              {thermal.fanRpm.toLocaleString()} RPM
+            </div>
+          )}
+          {fanPercent !== null && (
+            <>
+              <MiniBar percent={fanPercent} color="#3b82f6" />
+              <div className="text-[10px] text-[#6b7280] flex justify-between tabular-nums">
+                <span>level {thermal.fanLevel}/{thermal.fanMaxLevel}</span>
+                <span>{fanPercent}%</span>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -588,11 +640,9 @@ export default function DockerMonitorPage() {
               {metrics.dataDisk ? (
                 <DiskCard disk={metrics.dataDisk} label="Disk /mnt/data" />
               ) : (
-                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 flex flex-col gap-2 items-center justify-center">
-                  <HardDrive size={20} className="text-[#2a2a2a]" />
-                  <span className="text-[#6b7280] text-xs text-center">/mnt/data not mounted</span>
-                </div>
+                <ThermalCard thermal={metrics.thermal} />
               )}
+              {metrics.dataDisk && <ThermalCard thermal={metrics.thermal} />}
               <NetworkCard network={metrics.network} history={networkHistory} />
             </div>
 

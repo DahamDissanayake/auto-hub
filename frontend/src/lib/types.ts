@@ -120,6 +120,13 @@ export interface NetworkStats {
   interfaces: Array<{ name: string; rxMbps: number; txMbps: number; rxTotalBytes: number; txTotalBytes: number }>
 }
 
+export interface ThermalInfo {
+  cpuTempC: number
+  fanRpm: number | null
+  fanLevel: number | null
+  fanMaxLevel: number | null
+}
+
 export interface SystemMetrics {
   cpuPercent: number
   memUsedMb: number
@@ -128,6 +135,7 @@ export interface SystemMetrics {
   rootDisk: DiskStats
   dataDisk: DiskStats | null
   network: NetworkStats
+  thermal: ThermalInfo
 }
 
 export interface ContainerInfo {

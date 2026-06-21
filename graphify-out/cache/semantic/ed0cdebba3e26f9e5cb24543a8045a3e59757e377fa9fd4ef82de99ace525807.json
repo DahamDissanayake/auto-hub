@@ -1,0 +1,1 @@
+{"nodes": [{"id": "nginx_nginx_concept", "label": "Nginx /files-api/ Reverse Proxy", "file_type": "code", "source_file": "nginx/nginx.conf", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

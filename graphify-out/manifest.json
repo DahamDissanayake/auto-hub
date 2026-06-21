@@ -1,0 +1,1232 @@
+{
+  "/workspace/auto-hub/backend/nest-cli.json": {
+    "mtime": 1781801363.2522187,
+    "ast_hash": "b6c9c4b64b7092bea720263a47b574cf",
+    "semantic_hash": "b6c9c4b64b7092bea720263a47b574cf"
+  },
+  "/workspace/auto-hub/backend/package.json": {
+    "mtime": 1781801363.2522187,
+    "ast_hash": "47820d902445f231c93a7b664285f7cd",
+    "semantic_hash": "47820d902445f231c93a7b664285f7cd"
+  },
+  "/workspace/auto-hub/backend/plugins/host-control/index.js": {
+    "mtime": 1782027662.7123263,
+    "ast_hash": "bac0b0d39c74241db2fed5a7292a0d3f",
+    "semantic_hash": "bac0b0d39c74241db2fed5a7292a0d3f"
+  },
+  "/workspace/auto-hub/backend/plugins/host-control/manifest.json": {
+    "mtime": 1781966969.808533,
+    "ast_hash": "1803921a3e67d7eb28d743ecfcf8464e",
+    "semantic_hash": "1803921a3e67d7eb28d743ecfcf8464e"
+  },
+  "/workspace/auto-hub/backend/plugins/system-health/index.js": {
+    "mtime": 1781967945.8962426,
+    "ast_hash": "51a837a176e19aa7b2f4717f58e3e731",
+    "semantic_hash": "51a837a176e19aa7b2f4717f58e3e731"
+  },
+  "/workspace/auto-hub/backend/plugins/system-health/manifest.json": {
+    "mtime": 1781967945.8955135,
+    "ast_hash": "8e355d5bb43afc5f855fef6c2f8babd1",
+    "semantic_hash": "8e355d5bb43afc5f855fef6c2f8babd1"
+  },
+  "/workspace/auto-hub/backend/plugins/webhook-ping/index.js": {
+    "mtime": 1781967945.9161897,
+    "ast_hash": "c592af40004d126c547a210ffafbdf95",
+    "semantic_hash": "c592af40004d126c547a210ffafbdf95"
+  },
+  "/workspace/auto-hub/backend/plugins/webhook-ping/manifest.json": {
+    "mtime": 1781967945.9161897,
+    "ast_hash": "1866c49e26e6a6f36f1ed4372d991000",
+    "semantic_hash": "1866c49e26e6a6f36f1ed4372d991000"
+  },
+  "/workspace/auto-hub/backend/src/app.module.ts": {
+    "mtime": 1781975909.3084354,
+    "ast_hash": "e405c33d886d8bfff8e73e1764ccd6a3",
+    "semantic_hash": "e405c33d886d8bfff8e73e1764ccd6a3"
+  },
+  "/workspace/auto-hub/backend/src/auth/auth.controller.ts": {
+    "mtime": 1781801363.254037,
+    "ast_hash": "6356a255eba2cd9901d42a4ca8f3fc7f",
+    "semantic_hash": "6356a255eba2cd9901d42a4ca8f3fc7f"
+  },
+  "/workspace/auto-hub/backend/src/auth/auth.module.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "690195df0592b673c65daccd4f85b884",
+    "semantic_hash": "690195df0592b673c65daccd4f85b884"
+  },
+  "/workspace/auto-hub/backend/src/auth/auth.service.spec.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "24f898c0795e3e6e7181c51b03d90a80",
+    "semantic_hash": "24f898c0795e3e6e7181c51b03d90a80"
+  },
+  "/workspace/auto-hub/backend/src/auth/auth.service.ts": {
+    "mtime": 1781899882.57693,
+    "ast_hash": "9a6506d521e12467e9a574e40a7844b1",
+    "semantic_hash": "9a6506d521e12467e9a574e40a7844b1"
+  },
+  "/workspace/auto-hub/backend/src/auth/decorators/public.decorator.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "04ce66f12d6dcfdf76cc0f072fa90b45",
+    "semantic_hash": "04ce66f12d6dcfdf76cc0f072fa90b45"
+  },
+  "/workspace/auto-hub/backend/src/auth/guards/jwt-auth.guard.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "da5cf0df3d7533201ed570be0d1e1f1a",
+    "semantic_hash": "da5cf0df3d7533201ed570be0d1e1f1a"
+  },
+  "/workspace/auto-hub/backend/src/auth/guards/real-ip-throttler.guard.ts": {
+    "mtime": 1781899893.4129348,
+    "ast_hash": "033be8b17f69599a1c476eef804bae1c",
+    "semantic_hash": "033be8b17f69599a1c476eef804bae1c"
+  },
+  "/workspace/auto-hub/backend/src/auth/strategies/jwt.strategy.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "34c2c5faa9cba3d4057e36a2ef10ec42",
+    "semantic_hash": "34c2c5faa9cba3d4057e36a2ef10ec42"
+  },
+  "/workspace/auto-hub/backend/src/dashboard/dashboard.controller.ts": {
+    "mtime": 1781801363.254083,
+    "ast_hash": "7067fdf082b171bd95988f96574fcccb",
+    "semantic_hash": "7067fdf082b171bd95988f96574fcccb"
+  },
+  "/workspace/auto-hub/backend/src/dashboard/dashboard.module.ts": {
+    "mtime": 1781801363.2543716,
+    "ast_hash": "f28aa404b65e5e4a55962bb08e6d8eaa",
+    "semantic_hash": "f28aa404b65e5e4a55962bb08e6d8eaa"
+  },
+  "/workspace/auto-hub/backend/src/dashboard/dashboard.service.spec.ts": {
+    "mtime": 1781801363.2543716,
+    "ast_hash": "f35d95a1c35d5e4961ef74f623d62ff5",
+    "semantic_hash": "f35d95a1c35d5e4961ef74f623d62ff5"
+  },
+  "/workspace/auto-hub/backend/src/dashboard/dashboard.service.ts": {
+    "mtime": 1781801363.2543716,
+    "ast_hash": "e98110e45debf2d20d203bf7cb350f27",
+    "semantic_hash": "e98110e45debf2d20d203bf7cb350f27"
+  },
+  "/workspace/auto-hub/backend/src/docker/docker.controller.ts": {
+    "mtime": 1782034882.7414706,
+    "ast_hash": "1dbd1baf9168471fe586e43f36e19a92",
+    "semantic_hash": "1dbd1baf9168471fe586e43f36e19a92"
+  },
+  "/workspace/auto-hub/backend/src/docker/docker.module.ts": {
+    "mtime": 1781974005.3779356,
+    "ast_hash": "a582bf26944d2b8002492c3126ff22bf",
+    "semantic_hash": "a582bf26944d2b8002492c3126ff22bf"
+  },
+  "/workspace/auto-hub/backend/src/docker/docker.service.ts": {
+    "mtime": 1782081707.9218876,
+    "ast_hash": "96b511feea62921c2266472ec0d0ae4f",
+    "semantic_hash": "96b511feea62921c2266472ec0d0ae4f"
+  },
+  "/workspace/auto-hub/backend/src/health/health.controller.spec.ts": {
+    "mtime": 1781971208.4518151,
+    "ast_hash": "dd7eb3eb4f4245b1f50e8ef58edb8668",
+    "semantic_hash": "dd7eb3eb4f4245b1f50e8ef58edb8668"
+  },
+  "/workspace/auto-hub/backend/src/health/health.controller.ts": {
+    "mtime": 1781971212.975824,
+    "ast_hash": "40f3afc65d48e07d37a172c38f6ed841",
+    "semantic_hash": "40f3afc65d48e07d37a172c38f6ed841"
+  },
+  "/workspace/auto-hub/backend/src/health/health.module.ts": {
+    "mtime": 1781971216.479831,
+    "ast_hash": "86bdce03469c1417333a9a956e3b5edd",
+    "semantic_hash": "86bdce03469c1417333a9a956e3b5edd"
+  },
+  "/workspace/auto-hub/backend/src/main.ts": {
+    "mtime": 1781899910.0529428,
+    "ast_hash": "f204a75fa9e289c1ce87efecd6a63b2f",
+    "semantic_hash": "f204a75fa9e289c1ce87efecd6a63b2f"
+  },
+  "/workspace/auto-hub/backend/src/n8n/n8n.controller.ts": {
+    "mtime": 1781801363.254503,
+    "ast_hash": "a05d5a1e727fcf842f7fe21cb93a19dc",
+    "semantic_hash": "a05d5a1e727fcf842f7fe21cb93a19dc"
+  },
+  "/workspace/auto-hub/backend/src/n8n/n8n.module.ts": {
+    "mtime": 1781801363.254588,
+    "ast_hash": "fbfadba421b4bee19d91344b18237f05",
+    "semantic_hash": "fbfadba421b4bee19d91344b18237f05"
+  },
+  "/workspace/auto-hub/backend/src/n8n/n8n.service.spec.ts": {
+    "mtime": 1781801363.254588,
+    "ast_hash": "a7b1157e789b549675d287037f5f2d6d",
+    "semantic_hash": "a7b1157e789b549675d287037f5f2d6d"
+  },
+  "/workspace/auto-hub/backend/src/n8n/n8n.service.ts": {
+    "mtime": 1781859644.9295366,
+    "ast_hash": "12919281775a09675bbdcee55b126f4c",
+    "semantic_hash": "12919281775a09675bbdcee55b126f4c"
+  },
+  "/workspace/auto-hub/backend/src/notifications/notifications.module.ts": {
+    "mtime": 1781801363.254588,
+    "ast_hash": "2e03bc4c273dc88eba83c255bfc449ef",
+    "semantic_hash": "2e03bc4c273dc88eba83c255bfc449ef"
+  },
+  "/workspace/auto-hub/backend/src/notifications/notifications.service.spec.ts": {
+    "mtime": 1781801363.254709,
+    "ast_hash": "d503dceb1733e46f61b49c4d594a28cd",
+    "semantic_hash": "d503dceb1733e46f61b49c4d594a28cd"
+  },
+  "/workspace/auto-hub/backend/src/notifications/notifications.service.ts": {
+    "mtime": 1781801363.254709,
+    "ast_hash": "755dc6d192a4a72cd29afc4c09fb62f9",
+    "semantic_hash": "755dc6d192a4a72cd29afc4c09fb62f9"
+  },
+  "/workspace/auto-hub/backend/src/plugins/entities/plugin-execution.entity.ts": {
+    "mtime": 1781801363.2547853,
+    "ast_hash": "d583a0db52dd209abadf6cd0fa774a95",
+    "semantic_hash": "d583a0db52dd209abadf6cd0fa774a95"
+  },
+  "/workspace/auto-hub/backend/src/plugins/entities/plugin.entity.ts": {
+    "mtime": 1781966585.6684089,
+    "ast_hash": "22ce51197b72fee250851276a4abd662",
+    "semantic_hash": "22ce51197b72fee250851276a4abd662"
+  },
+  "/workspace/auto-hub/backend/src/plugins/plugins.controller.spec.ts": {
+    "mtime": 1781966747.6164618,
+    "ast_hash": "7789059a1892b9668fac009e7bda727c",
+    "semantic_hash": "7789059a1892b9668fac009e7bda727c"
+  },
+  "/workspace/auto-hub/backend/src/plugins/plugins.controller.ts": {
+    "mtime": 1781966784.8444736,
+    "ast_hash": "31251eb4ef6bbc77c0c3c704a0bb1dbb",
+    "semantic_hash": "31251eb4ef6bbc77c0c3c704a0bb1dbb"
+  },
+  "/workspace/auto-hub/backend/src/plugins/plugins.module.ts": {
+    "mtime": 1781801363.2548268,
+    "ast_hash": "eadf98591f3ae17e5f15c1b568d48bf3",
+    "semantic_hash": "eadf98591f3ae17e5f15c1b568d48bf3"
+  },
+  "/workspace/auto-hub/backend/src/plugins/plugins.service.spec.ts": {
+    "mtime": 1781966737.3524582,
+    "ast_hash": "f48a40eb197476128f77307e6d6943c9",
+    "semantic_hash": "f48a40eb197476128f77307e6d6943c9"
+  },
+  "/workspace/auto-hub/backend/src/plugins/plugins.service.ts": {
+    "mtime": 1782051395.2378774,
+    "ast_hash": "a85ed20805f9897c2d1bb1003b95e331",
+    "semantic_hash": "a85ed20805f9897c2d1bb1003b95e331"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/entities/scheduled-job.entity.ts": {
+    "mtime": 1781801363.2550306,
+    "ast_hash": "d8d3484db9fce139ebeb865178f57593",
+    "semantic_hash": "d8d3484db9fce139ebeb865178f57593"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/processors/plugin-job.processor.ts": {
+    "mtime": 1781801363.2550306,
+    "ast_hash": "a959dd21ac464b1b3a84b4756a5c0253",
+    "semantic_hash": "a959dd21ac464b1b3a84b4756a5c0253"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/scheduler.controller.ts": {
+    "mtime": 1781801363.2550306,
+    "ast_hash": "a803c2ab927a103fb4ed06591ea3962c",
+    "semantic_hash": "a803c2ab927a103fb4ed06591ea3962c"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/scheduler.module.ts": {
+    "mtime": 1782017390.1596422,
+    "ast_hash": "7457e903ec39a23f61c3115d64420e0f",
+    "semantic_hash": "7457e903ec39a23f61c3115d64420e0f"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/scheduler.service.spec.ts": {
+    "mtime": 1781801363.2550306,
+    "ast_hash": "a4bac1d13cd7e621ef179af4569d5461",
+    "semantic_hash": "a4bac1d13cd7e621ef179af4569d5461"
+  },
+  "/workspace/auto-hub/backend/src/scheduler/scheduler.service.ts": {
+    "mtime": 1782017403.9275446,
+    "ast_hash": "63a6b73231150418401bc018d3b87602",
+    "semantic_hash": "63a6b73231150418401bc018d3b87602"
+  },
+  "/workspace/auto-hub/backend/src/seed.ts": {
+    "mtime": 1781859644.90831,
+    "ast_hash": "9956d1ed953131448254aba8e35e92ad",
+    "semantic_hash": "9956d1ed953131448254aba8e35e92ad"
+  },
+  "/workspace/auto-hub/backend/src/settings/entities/app-setting.entity.ts": {
+    "mtime": 1781970910.891211,
+    "ast_hash": "c4eb8209429a2cbbbf44ad5a4a43a3fd",
+    "semantic_hash": "c4eb8209429a2cbbbf44ad5a4a43a3fd"
+  },
+  "/workspace/auto-hub/backend/src/settings/settings.controller.spec.ts": {
+    "mtime": 1781970931.8392553,
+    "ast_hash": "644ca71bb7bd93f9c4c0b3a4612acb97",
+    "semantic_hash": "644ca71bb7bd93f9c4c0b3a4612acb97"
+  },
+  "/workspace/auto-hub/backend/src/settings/settings.controller.ts": {
+    "mtime": 1781971146.8596938,
+    "ast_hash": "54f39dd7f46ee4c0011a426abfd52b25",
+    "semantic_hash": "54f39dd7f46ee4c0011a426abfd52b25"
+  },
+  "/workspace/auto-hub/backend/src/settings/settings.module.ts": {
+    "mtime": 1781970941.8512764,
+    "ast_hash": "53d23880cb9d1daf4c78990ae63605bd",
+    "semantic_hash": "53d23880cb9d1daf4c78990ae63605bd"
+  },
+  "/workspace/auto-hub/backend/src/settings/settings.service.spec.ts": {
+    "mtime": 1781970919.1712286,
+    "ast_hash": "f08181483a5eb4d6562f44173575be3d",
+    "semantic_hash": "f08181483a5eb4d6562f44173575be3d"
+  },
+  "/workspace/auto-hub/backend/src/settings/settings.service.ts": {
+    "mtime": 1781970924.2952394,
+    "ast_hash": "ac6de28b2fab21f2c09baade9daa7b63",
+    "semantic_hash": "ac6de28b2fab21f2c09baade9daa7b63"
+  },
+  "/workspace/auto-hub/backend/src/terminal/terminal.controller.spec.ts": {
+    "mtime": 1782036571.5702426,
+    "ast_hash": "832d544077a8d6e1a2fc4dba939abbd8",
+    "semantic_hash": "832d544077a8d6e1a2fc4dba939abbd8"
+  },
+  "/workspace/auto-hub/backend/src/terminal/terminal.controller.ts": {
+    "mtime": 1782036600.9848008,
+    "ast_hash": "0e7af9bcdc9059622886d20d84a9c43d",
+    "semantic_hash": "0e7af9bcdc9059622886d20d84a9c43d"
+  },
+  "/workspace/auto-hub/backend/src/terminal/terminal.module.ts": {
+    "mtime": 1781903004.97841,
+    "ast_hash": "145b6b2e9bc9f0ea7c9f36e0b42a894c",
+    "semantic_hash": "145b6b2e9bc9f0ea7c9f36e0b42a894c"
+  },
+  "/workspace/auto-hub/backend/test/app.e2e-spec.ts": {
+    "mtime": 1781967815.0462346,
+    "ast_hash": "4275b0c34733859528a07eac0d93170a",
+    "semantic_hash": "4275b0c34733859528a07eac0d93170a"
+  },
+  "/workspace/auto-hub/backend/test/jest-e2e.json": {
+    "mtime": 1781801363.255392,
+    "ast_hash": "9f2f5b0e1da31d7b04e205c944e85e8d",
+    "semantic_hash": "9f2f5b0e1da31d7b04e205c944e85e8d"
+  },
+  "/workspace/auto-hub/backend/tsconfig.json": {
+    "mtime": 1781807737.4775949,
+    "ast_hash": "b35506d120bb6d20f620d649254b8bba",
+    "semantic_hash": "b35506d120bb6d20f620d649254b8bba"
+  },
+  "/workspace/auto-hub/files/jest.config.json": {
+    "mtime": 1782072085.0653923,
+    "ast_hash": "ecf388775247a59577d006b4ff644fda",
+    "semantic_hash": "ecf388775247a59577d006b4ff644fda"
+  },
+  "/workspace/auto-hub/files/package.json": {
+    "mtime": 1782072079.0293398,
+    "ast_hash": "e0dd4b00736c1b922d389ade869eaeb1",
+    "semantic_hash": "e0dd4b00736c1b922d389ade869eaeb1"
+  },
+  "/workspace/auto-hub/files/src/index.ts": {
+    "mtime": 1782075501.3041177,
+    "ast_hash": "7f11efccca411cb4d6a53bec3b7ec204",
+    "semantic_hash": "7f11efccca411cb4d6a53bec3b7ec204"
+  },
+  "/workspace/auto-hub/files/src/lib/auth.ts": {
+    "mtime": 1782072225.3093817,
+    "ast_hash": "7e042f60495a54b84062010f84214094",
+    "semantic_hash": "7e042f60495a54b84062010f84214094"
+  },
+  "/workspace/auto-hub/files/src/lib/resolvePath.ts": {
+    "mtime": 1782072200.4095054,
+    "ast_hash": "7f2f7858efd1c8a127d5f59266b34637",
+    "semantic_hash": "7f2f7858efd1c8a127d5f59266b34637"
+  },
+  "/workspace/auto-hub/files/src/lib/transferStore.ts": {
+    "mtime": 1782073311.6001208,
+    "ast_hash": "27d28173ffcd75b74a5b609277636c77",
+    "semantic_hash": "27d28173ffcd75b74a5b609277636c77"
+  },
+  "/workspace/auto-hub/files/src/routes/delete.ts": {
+    "mtime": 1782072801.1655219,
+    "ast_hash": "a359ae9c88c9e752e8d79462f01dbc2b",
+    "semantic_hash": "a359ae9c88c9e752e8d79462f01dbc2b"
+  },
+  "/workspace/auto-hub/files/src/routes/download.ts": {
+    "mtime": 1782075494.7321012,
+    "ast_hash": "e95438b7c78acd76f0f2f55d3da6bc64",
+    "semantic_hash": "e95438b7c78acd76f0f2f55d3da6bc64"
+  },
+  "/workspace/auto-hub/files/src/routes/events.ts": {
+    "mtime": 1782075525.192179,
+    "ast_hash": "b7df28a86ace6efed547559f9e7a300e",
+    "semantic_hash": "b7df28a86ace6efed547559f9e7a300e"
+  },
+  "/workspace/auto-hub/files/src/routes/ls.ts": {
+    "mtime": 1782072550.9449027,
+    "ast_hash": "8c97ba4842ef080bbe80b08e39ff8750",
+    "semantic_hash": "8c97ba4842ef080bbe80b08e39ff8750"
+  },
+  "/workspace/auto-hub/files/src/routes/mkdir.ts": {
+    "mtime": 1782072789.5814803,
+    "ast_hash": "c4deaf578eb62a8ac408cb43071d697e",
+    "semantic_hash": "c4deaf578eb62a8ac408cb43071d697e"
+  },
+  "/workspace/auto-hub/files/src/routes/rename.ts": {
+    "mtime": 1782072795.637502,
+    "ast_hash": "a4223a64107aae5fdf0b04c21f277846",
+    "semantic_hash": "a4223a64107aae5fdf0b04c21f277846"
+  },
+  "/workspace/auto-hub/files/src/routes/upload.ts": {
+    "mtime": 1782075708.9167135,
+    "ast_hash": "d6f669c76afae5cd38257c3e265b8fb6",
+    "semantic_hash": "d6f669c76afae5cd38257c3e265b8fb6"
+  },
+  "/workspace/auto-hub/files/tests/auth.test.ts": {
+    "mtime": 1782072214.0134358,
+    "ast_hash": "63c8c72a5cb33a68ed768916e74c9cde",
+    "semantic_hash": "63c8c72a5cb33a68ed768916e74c9cde"
+  },
+  "/workspace/auto-hub/files/tests/download.test.ts": {
+    "mtime": 1782073204.5354807,
+    "ast_hash": "a23477a4a12e4af2c74c2b5d3dae7a36",
+    "semantic_hash": "a23477a4a12e4af2c74c2b5d3dae7a36"
+  },
+  "/workspace/auto-hub/files/tests/ls.test.ts": {
+    "mtime": 1782072531.5688834,
+    "ast_hash": "fa204affe008e3219daf4f5eb041cf5d",
+    "semantic_hash": "fa204affe008e3219daf4f5eb041cf5d"
+  },
+  "/workspace/auto-hub/files/tests/mutations.test.ts": {
+    "mtime": 1782072775.4614313,
+    "ast_hash": "67b0c56b1954270a6b3ecdd8263abb56",
+    "semantic_hash": "67b0c56b1954270a6b3ecdd8263abb56"
+  },
+  "/workspace/auto-hub/files/tests/resolvePath.test.ts": {
+    "mtime": 1782072156.537762,
+    "ast_hash": "df1b04244210d86eb7bc681d8477fa5b",
+    "semantic_hash": "df1b04244210d86eb7bc681d8477fa5b"
+  },
+  "/workspace/auto-hub/files/tests/upload.test.ts": {
+    "mtime": 1782073337.9162834,
+    "ast_hash": "9f68765588137d0fe04a95e166aa462f",
+    "semantic_hash": "9f68765588137d0fe04a95e166aa462f"
+  },
+  "/workspace/auto-hub/files/tsconfig.json": {
+    "mtime": 1782072082.2573678,
+    "ast_hash": "8113107e7d63e4189de511660bfe1dd1",
+    "semantic_hash": "8113107e7d63e4189de511660bfe1dd1"
+  },
+  "/workspace/auto-hub/frontend/.eslintrc.json": {
+    "mtime": 1781801363.2566986,
+    "ast_hash": "6c636976577d27c2ebdc12da2f6f2b56",
+    "semantic_hash": "6c636976577d27c2ebdc12da2f6f2b56"
+  },
+  "/workspace/auto-hub/frontend/next-env.d.ts": {
+    "mtime": 1781801363.2566986,
+    "ast_hash": "b5ed9dd8b4c5ba8e5ab8e6a379c15838",
+    "semantic_hash": "b5ed9dd8b4c5ba8e5ab8e6a379c15838"
+  },
+  "/workspace/auto-hub/frontend/next.config.mjs": {
+    "mtime": 1781801363.2566986,
+    "ast_hash": "772a20cb032ade848aadb0bb766aa37f",
+    "semantic_hash": "772a20cb032ade848aadb0bb766aa37f"
+  },
+  "/workspace/auto-hub/frontend/package.json": {
+    "mtime": 1782073707.2347276,
+    "ast_hash": "c3a8d653f567641e654f76da3922050b",
+    "semantic_hash": "c3a8d653f567641e654f76da3922050b"
+  },
+  "/workspace/auto-hub/frontend/postcss.config.js": {
+    "mtime": 1781801363.2566986,
+    "ast_hash": "854b38759e7a8b4b82306ae2d9a3a833",
+    "semantic_hash": "854b38759e7a8b4b82306ae2d9a3a833"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/apps/[id]/page.tsx": {
+    "mtime": 1782074651.160554,
+    "ast_hash": "fc3a4d447094206614be26bb21708bc0",
+    "semantic_hash": "fc3a4d447094206614be26bb21708bc0"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/apps/apps.config.ts": {
+    "mtime": 1782074637.6086335,
+    "ast_hash": "9fab5a50c00fa653ed5dfe3c82757696",
+    "semantic_hash": "9fab5a50c00fa653ed5dfe3c82757696"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/apps/apps.test.tsx": {
+    "mtime": 1781933038.201038,
+    "ast_hash": "aad39d149eef7c2bdc6eeeaf5323d5fc",
+    "semantic_hash": "aad39d149eef7c2bdc6eeeaf5323d5fc"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/apps/page.tsx": {
+    "mtime": 1782074645.276588,
+    "ast_hash": "cbaf5dac4ca7e8793fcb1699643ee227",
+    "semantic_hash": "cbaf5dac4ca7e8793fcb1699643ee227"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/calendar/page.tsx": {
+    "mtime": 1782070284.0306122,
+    "ast_hash": "fcf0179239bf55bd874347a45f16ea9c",
+    "semantic_hash": "fcf0179239bf55bd874347a45f16ea9c"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/docker/page.tsx": {
+    "mtime": 1782081892.1584074,
+    "ast_hash": "d3b0d50cd673eec69165fecf3a8df224",
+    "semantic_hash": "d3b0d50cd673eec69165fecf3a8df224"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/files/page.tsx": {
+    "mtime": 1782080085.8068206,
+    "ast_hash": "1821884e683e5639b103ca0393f146f7",
+    "semantic_hash": "1821884e683e5639b103ca0393f146f7"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/layout.tsx": {
+    "mtime": 1781973884.0424898,
+    "ast_hash": "f7c383f7cb1dc2ae9efa2b4aa9c38bf2",
+    "semantic_hash": "f7c383f7cb1dc2ae9efa2b4aa9c38bf2"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/n8n-workflows/page.tsx": {
+    "mtime": 1781859644.9296792,
+    "ast_hash": "4487d955b44b2fe61677ffbdb462efaf",
+    "semantic_hash": "4487d955b44b2fe61677ffbdb462efaf"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/page.tsx": {
+    "mtime": 1781801363.257746,
+    "ast_hash": "36d1850c6d28103a35e6d55852f6a159",
+    "semantic_hash": "36d1850c6d28103a35e6d55852f6a159"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/plugins/page.tsx": {
+    "mtime": 1782051444.8296664,
+    "ast_hash": "407ba08ff842d19efbd27035e5baf007",
+    "semantic_hash": "407ba08ff842d19efbd27035e5baf007"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/settings/page.tsx": {
+    "mtime": 1781971874.3523662,
+    "ast_hash": "3b13fab4bff29fde9156667cc6c895b0",
+    "semantic_hash": "3b13fab4bff29fde9156667cc6c895b0"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/AddAccountModal.test.tsx": {
+    "mtime": 1782036977.5842443,
+    "ast_hash": "6b8a9e1cc39bfa17fbb375d066092b8e",
+    "semantic_hash": "6b8a9e1cc39bfa17fbb375d066092b8e"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/AddAccountModal.tsx": {
+    "mtime": 1782063093.0895388,
+    "ast_hash": "50d72210db4fa50c0ef6e3cb64eca94b",
+    "semantic_hash": "50d72210db4fa50c0ef6e3cb64eca94b"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/CloneDialog.test.tsx": {
+    "mtime": 1781931412.6283765,
+    "ast_hash": "ec37c895c57dc31685e732f556a9ebbd",
+    "semantic_hash": "ec37c895c57dc31685e732f556a9ebbd"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/CloneDialog.tsx": {
+    "mtime": 1781931460.2304034,
+    "ast_hash": "5c2feb5eb005371d8e6e5b3fb198259c",
+    "semantic_hash": "5c2feb5eb005371d8e6e5b3fb198259c"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/CreateSessionDialog.test.tsx": {
+    "mtime": 1781954095.4404671,
+    "ast_hash": "5947e3b9c792b330b1d416fbf8b4e2e9",
+    "semantic_hash": "5947e3b9c792b330b1d416fbf8b4e2e9"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/CreateSessionDialog.tsx": {
+    "mtime": 1781954204.5789526,
+    "ast_hash": "0be21cde88e84fe6814b9ad7b572b14a",
+    "semantic_hash": "0be21cde88e84fe6814b9ad7b572b14a"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/GridView.tsx": {
+    "mtime": 1782069089.1921504,
+    "ast_hash": "43aae86f2e71452b9e87423f99f79d2f",
+    "semantic_hash": "43aae86f2e71452b9e87423f99f79d2f"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/ProfileButton.tsx": {
+    "mtime": 1782067311.7151177,
+    "ast_hash": "a0e00e3aee60981139c00b1451bd6158",
+    "semantic_hash": "a0e00e3aee60981139c00b1451bd6158"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/RepoPicker.test.tsx": {
+    "mtime": 1781931168.3141367,
+    "ast_hash": "44ea3f1e2c9c9970dede3a293caf25fc",
+    "semantic_hash": "44ea3f1e2c9c9970dede3a293caf25fc"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/RepoPicker.tsx": {
+    "mtime": 1781931188.9242985,
+    "ast_hash": "e64adfea5549669030e62081d63c3ba8",
+    "semantic_hash": "e64adfea5549669030e62081d63c3ba8"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SessionManager.test.tsx": {
+    "mtime": 1782041655.8535795,
+    "ast_hash": "f412db21fea77c8308dca052c1a59742",
+    "semantic_hash": "f412db21fea77c8308dca052c1a59742"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SessionManager.tsx": {
+    "mtime": 1782041677.2216084,
+    "ast_hash": "9c04a78841c6740339548ae856acd4bb",
+    "semantic_hash": "9c04a78841c6740339548ae856acd4bb"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SessionTabs.test.tsx": {
+    "mtime": 1782041682.5016155,
+    "ast_hash": "13e403f59e7bfdc89b9d99707fdd1519",
+    "semantic_hash": "13e403f59e7bfdc89b9d99707fdd1519"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SessionTabs.tsx": {
+    "mtime": 1782068208.503103,
+    "ast_hash": "453998e986049c85f3f5977a989d1436",
+    "semantic_hash": "453998e986049c85f3f5977a989d1436"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SlideToConfirm.test.tsx": {
+    "mtime": 1782044918.4562767,
+    "ast_hash": "9a2409ce5cb9a2b45a0557ab3be84a24",
+    "semantic_hash": "9a2409ce5cb9a2b45a0557ab3be84a24"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/SlideToConfirm.tsx": {
+    "mtime": 1782044912.060275,
+    "ast_hash": "4bf1e19570d486a74167706bfefbfbe3",
+    "semantic_hash": "4bf1e19570d486a74167706bfefbfbe3"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/TerminalBreadcrumb.test.tsx": {
+    "mtime": 1781954422.5609658,
+    "ast_hash": "5a9ad2aa83a0f4439663c5468ccf5f8c",
+    "semantic_hash": "5a9ad2aa83a0f4439663c5468ccf5f8c"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/TerminalBreadcrumb.tsx": {
+    "mtime": 1782037405.5989745,
+    "ast_hash": "693ccf899944f5bad4b6b73e7e899166",
+    "semantic_hash": "693ccf899944f5bad4b6b73e7e899166"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/TerminalCell.tsx": {
+    "mtime": 1782068174.3977742,
+    "ast_hash": "a1fbdaec189f2676c10012e6fe823048",
+    "semantic_hash": "a1fbdaec189f2676c10012e6fe823048"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/WorkspacePicker.test.tsx": {
+    "mtime": 1781952627.8300366,
+    "ast_hash": "26545bdf18c8cd68c684ced86167489c",
+    "semantic_hash": "26545bdf18c8cd68c684ced86167489c"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/components/WorkspacePicker.tsx": {
+    "mtime": 1781952644.7420454,
+    "ast_hash": "794bceac8a8aa729892ef80725b6d420",
+    "semantic_hash": "794bceac8a8aa729892ef80725b6d420"
+  },
+  "/workspace/auto-hub/frontend/src/app/(app)/terminal/page.tsx": {
+    "mtime": 1782074031.5050333,
+    "ast_hash": "a5f1dd3717bd47bd0ce272071df77105",
+    "semantic_hash": "a5f1dd3717bd47bd0ce272071df77105"
+  },
+  "/workspace/auto-hub/frontend/src/app/(auth)/login/page.tsx": {
+    "mtime": 1781810517.471257,
+    "ast_hash": "d064e4b89274d8f40c29b37d9f4c8508",
+    "semantic_hash": "d064e4b89274d8f40c29b37d9f4c8508"
+  },
+  "/workspace/auto-hub/frontend/src/app/layout.tsx": {
+    "mtime": 1781965470.0680172,
+    "ast_hash": "a40a3f1cf6b7c66a7c2f60ad12eeaf8e",
+    "semantic_hash": "a40a3f1cf6b7c66a7c2f60ad12eeaf8e"
+  },
+  "/workspace/auto-hub/frontend/src/app/providers.tsx": {
+    "mtime": 1781973878.7345715,
+    "ast_hash": "07338b862e4d23531ff5c77d7106ce0f",
+    "semantic_hash": "07338b862e4d23531ff5c77d7106ce0f"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/ContextMenu.tsx": {
+    "mtime": 1782078864.5519238,
+    "ast_hash": "0f69fc33d63cef546da71ea6cba34e72",
+    "semantic_hash": "0f69fc33d63cef546da71ea6cba34e72"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/DrivesSidebar.tsx": {
+    "mtime": 1782079375.6618557,
+    "ast_hash": "27ea32dc5015560b3e7cf0ddd1a8bfbb",
+    "semantic_hash": "27ea32dc5015560b3e7cf0ddd1a8bfbb"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/FileBreadcrumb.tsx": {
+    "mtime": 1782079387.8778682,
+    "ast_hash": "8cb104080dd265e4ac91a5ffdb3d43d3",
+    "semantic_hash": "8cb104080dd265e4ac91a5ffdb3d43d3"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/FileGrid.tsx": {
+    "mtime": 1782080094.6428344,
+    "ast_hash": "bc8e1bf8c701625b0c5cfa38d4ce7847",
+    "semantic_hash": "bc8e1bf8c701625b0c5cfa38d4ce7847"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/FileList.tsx": {
+    "mtime": 1782078893.6056087,
+    "ast_hash": "be6f03463009e197a09f0edc39a57785",
+    "semantic_hash": "be6f03463009e197a09f0edc39a57785"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/TransferRow.tsx": {
+    "mtime": 1782077226.9047432,
+    "ast_hash": "6470a7b5c46cee21b5891674324700ba",
+    "semantic_hash": "6470a7b5c46cee21b5891674324700ba"
+  },
+  "/workspace/auto-hub/frontend/src/components/files/TransferTray.tsx": {
+    "mtime": 1782079727.5359316,
+    "ast_hash": "761b43e05cbc8558890fe9f2c2bad806",
+    "semantic_hash": "761b43e05cbc8558890fe9f2c2bad806"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/AppShell.tsx": {
+    "mtime": 1782074295.2122135,
+    "ast_hash": "7da44349f13296ee5f727d352c686ca6",
+    "semantic_hash": "7da44349f13296ee5f727d352c686ca6"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/BottomNav.test.tsx": {
+    "mtime": 1782051422.8017216,
+    "ast_hash": "5c67cd60268e716e1d3fd49962c9ea92",
+    "semantic_hash": "5c67cd60268e716e1d3fd49962c9ea92"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/BottomNav.tsx": {
+    "mtime": 1782051405.01381,
+    "ast_hash": "f28291449e7aa7ebc60da15f9039bf1a",
+    "semantic_hash": "f28291449e7aa7ebc60da15f9039bf1a"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/MobileNav.tsx": {
+    "mtime": 1782077337.4568808,
+    "ast_hash": "de477a5127280a428a1809969f96be19",
+    "semantic_hash": "de477a5127280a428a1809969f96be19"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/Sidebar.test.tsx": {
+    "mtime": 1782051414.0217597,
+    "ast_hash": "12e321be874a9dc4cd160b3c6c4583e9",
+    "semantic_hash": "12e321be874a9dc4cd160b3c6c4583e9"
+  },
+  "/workspace/auto-hub/frontend/src/components/layout/Sidebar.tsx": {
+    "mtime": 1782077331.3568726,
+    "ast_hash": "4d29232fe6ad3b6e1e3a433bd9fb69d2",
+    "semantic_hash": "4d29232fe6ad3b6e1e3a433bd9fb69d2"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/ActionConfirmModal.test.tsx": {
+    "mtime": 1781967277.4884493,
+    "ast_hash": "6e1666a5184ec7ca7cbc53cf224ae496",
+    "semantic_hash": "6e1666a5184ec7ca7cbc53cf224ae496"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/ActionConfirmModal.tsx": {
+    "mtime": 1781967415.0846732,
+    "ast_hash": "1ecfa52c6b8d76a6453e039cf4645775",
+    "semantic_hash": "1ecfa52c6b8d76a6453e039cf4645775"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/ConfigModal.tsx": {
+    "mtime": 1781801363.2583742,
+    "ast_hash": "c29ee3aa2cb1447310da4fa73a48a270",
+    "semantic_hash": "c29ee3aa2cb1447310da4fa73a48a270"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/ExecutionLog.tsx": {
+    "mtime": 1781971860.8483937,
+    "ast_hash": "b9e0574620ce6be7f46ee49aef6a03c8",
+    "semantic_hash": "b9e0574620ce6be7f46ee49aef6a03c8"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/PluginCard.test.tsx": {
+    "mtime": 1782051509.0577693,
+    "ast_hash": "78a4a7b546835b10c2d28b69935ca882",
+    "semantic_hash": "78a4a7b546835b10c2d28b69935ca882"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/PluginCard.tsx": {
+    "mtime": 1782053211.0913312,
+    "ast_hash": "d136af23505e59ec95bf43692ca9b48c",
+    "semantic_hash": "d136af23505e59ec95bf43692ca9b48c"
+  },
+  "/workspace/auto-hub/frontend/src/components/plugins/ScheduleModal.tsx": {
+    "mtime": 1782017427.967391,
+    "ast_hash": "721913d784bd7958d6c1db7485ea3a83",
+    "semantic_hash": "721913d784bd7958d6c1db7485ea3a83"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/Modal.test.tsx": {
+    "mtime": 1781801363.2585006,
+    "ast_hash": "d4b5be556dc298a06da442de5623ba4e",
+    "semantic_hash": "d4b5be556dc298a06da442de5623ba4e"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/Modal.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "d16ae401919ee0a11fa86ebfdbfdb422",
+    "semantic_hash": "d16ae401919ee0a11fa86ebfdbfdb422"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/StatCard.test.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "b117a5677508702c8c6d3fccee3e1da3",
+    "semantic_hash": "b117a5677508702c8c6d3fccee3e1da3"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/StatCard.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "31e7749216ec6a0851cd2c4e7e6c2be4",
+    "semantic_hash": "31e7749216ec6a0851cd2c4e7e6c2be4"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/StatusBadge.test.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "1909d069a244d267a562dd2218095368",
+    "semantic_hash": "1909d069a244d267a562dd2218095368"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/StatusBadge.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "d3ccf4107c6b4c57517326ad328e6b48",
+    "semantic_hash": "d3ccf4107c6b4c57517326ad328e6b48"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/Toast.test.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "1d6080ea55a5ef96bcc4b37f5527a41e",
+    "semantic_hash": "1d6080ea55a5ef96bcc4b37f5527a41e"
+  },
+  "/workspace/auto-hub/frontend/src/components/ui/Toast.tsx": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "398fcec12acac8c70c6dcc165bcf23f3",
+    "semantic_hash": "398fcec12acac8c70c6dcc165bcf23f3"
+  },
+  "/workspace/auto-hub/frontend/src/lib/api.ts": {
+    "mtime": 1781801363.2586367,
+    "ast_hash": "3f3ca9dbadeab87ced7fae5522a6d627",
+    "semantic_hash": "3f3ca9dbadeab87ced7fae5522a6d627"
+  },
+  "/workspace/auto-hub/frontend/src/lib/context/TimezoneContext.tsx": {
+    "mtime": 1781971486.466419,
+    "ast_hash": "8db0bfbac78321d8f31225c64d6b889d",
+    "semantic_hash": "8db0bfbac78321d8f31225c64d6b889d"
+  },
+  "/workspace/auto-hub/frontend/src/lib/filesApi.ts": {
+    "mtime": 1782079614.8682017,
+    "ast_hash": "ff9c455c4ded82b140e3426b782f3ee5",
+    "semantic_hash": "ff9c455c4ded82b140e3426b782f3ee5"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useClaudeProfiles.test.ts": {
+    "mtime": 1782036791.7572598,
+    "ast_hash": "8f8d63c8f56f76f16cbb81c21738117a",
+    "semantic_hash": "8f8d63c8f56f76f16cbb81c21738117a"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useClaudeProfiles.ts": {
+    "mtime": 1782063059.7254643,
+    "ast_hash": "9eb540fa9e19a70072da3ec35f09cc6f",
+    "semantic_hash": "9eb540fa9e19a70072da3ec35f09cc6f"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useDashboard.ts": {
+    "mtime": 1781801363.258873,
+    "ast_hash": "95dbfb54a15001c414a12b33bff340aa",
+    "semantic_hash": "95dbfb54a15001c414a12b33bff340aa"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useDockerMonitor.ts": {
+    "mtime": 1782081168.992583,
+    "ast_hash": "fb1d84de18c276594d525211dda70d28",
+    "semantic_hash": "fb1d84de18c276594d525211dda70d28"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useHealth.ts": {
+    "mtime": 1781801363.2589064,
+    "ast_hash": "6dbe233ed35d764a530008ce19af6d9e",
+    "semantic_hash": "6dbe233ed35d764a530008ce19af6d9e"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useN8nWorkflows.ts": {
+    "mtime": 1781801363.2589064,
+    "ast_hash": "e10c61fb97d2fe0e12aed10773e62e24",
+    "semantic_hash": "e10c61fb97d2fe0e12aed10773e62e24"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/usePlugins.ts": {
+    "mtime": 1781967141.9485874,
+    "ast_hash": "edaa26d4a0bf89c760f413f21d0e4f70",
+    "semantic_hash": "edaa26d4a0bf89c760f413f21d0e4f70"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useSchedules.ts": {
+    "mtime": 1781801363.2589064,
+    "ast_hash": "86bf6529d145e13fc77be2feced04562",
+    "semantic_hash": "86bf6529d145e13fc77be2feced04562"
+  },
+  "/workspace/auto-hub/frontend/src/lib/hooks/useSettings.ts": {
+    "mtime": 1781971476.124328,
+    "ast_hash": "193b55b3d1d505e7f1d80c67eec41c0a",
+    "semantic_hash": "193b55b3d1d505e7f1d80c67eec41c0a"
+  },
+  "/workspace/auto-hub/frontend/src/lib/transferStore.ts": {
+    "mtime": 1782073735.9349272,
+    "ast_hash": "6fdc34ff4d8c1c7e0154cbf9b7d563a5",
+    "semantic_hash": "6fdc34ff4d8c1c7e0154cbf9b7d563a5"
+  },
+  "/workspace/auto-hub/frontend/src/lib/types.ts": {
+    "mtime": 1782081712.2138982,
+    "ast_hash": "004cb816d03e4121a9ab37330c5d1ce9",
+    "semantic_hash": "004cb816d03e4121a9ab37330c5d1ce9"
+  },
+  "/workspace/auto-hub/frontend/src/lib/useFiles.ts": {
+    "mtime": 1782079662.2169507,
+    "ast_hash": "44d3f0a7bf6a42a3ffcb887f7499e5a4",
+    "semantic_hash": "44d3f0a7bf6a42a3ffcb887f7499e5a4"
+  },
+  "/workspace/auto-hub/frontend/src/lib/utils/cron.test.ts": {
+    "mtime": 1781801363.2589064,
+    "ast_hash": "53155198a6fb94511b54631776e8917f",
+    "semantic_hash": "53155198a6fb94511b54631776e8917f"
+  },
+  "/workspace/auto-hub/frontend/src/lib/utils/cron.ts": {
+    "mtime": 1781801363.2591023,
+    "ast_hash": "213874b5ca24d06a39daff7fe1176928",
+    "semantic_hash": "213874b5ca24d06a39daff7fe1176928"
+  },
+  "/workspace/auto-hub/frontend/tailwind.config.ts": {
+    "mtime": 1781801363.2591023,
+    "ast_hash": "ebfd62bb1e49b567905bc6fc98d60450",
+    "semantic_hash": "ebfd62bb1e49b567905bc6fc98d60450"
+  },
+  "/workspace/auto-hub/frontend/tsconfig.json": {
+    "mtime": 1781801363.2591023,
+    "ast_hash": "28b4cc92496f7a26571c25ea66e2f011",
+    "semantic_hash": "28b4cc92496f7a26571c25ea66e2f011"
+  },
+  "/workspace/auto-hub/frontend/vitest.config.ts": {
+    "mtime": 1781801363.2591023,
+    "ast_hash": "0c55841b79606b80df48ca1be398ea35",
+    "semantic_hash": "0c55841b79606b80df48ca1be398ea35"
+  },
+  "/workspace/auto-hub/frontend/vitest.setup.ts": {
+    "mtime": 1781801363.2591023,
+    "ast_hash": "994c5bf3f0f8742b450d0ab09b0d6bb9",
+    "semantic_hash": "994c5bf3f0f8742b450d0ab09b0d6bb9"
+  },
+  "/workspace/auto-hub/scripts/deploy.sh": {
+    "mtime": 1782076434.9134862,
+    "ast_hash": "64912899949450a5ddd8943d1310d640",
+    "semantic_hash": "64912899949450a5ddd8943d1310d640"
+  },
+  "/workspace/auto-hub/scripts/install.sh": {
+    "mtime": 1781801363.2605348,
+    "ast_hash": "72e23b2a59469ca63d2bd32d496d9627",
+    "semantic_hash": "72e23b2a59469ca63d2bd32d496d9627"
+  },
+  "/workspace/auto-hub/terminal/entrypoint.sh": {
+    "mtime": 1782024612.7621686,
+    "ast_hash": "232983eb84b1956c2d1a5adb5cc51bb5",
+    "semantic_hash": "232983eb84b1956c2d1a5adb5cc51bb5"
+  },
+  "/workspace/auto-hub/terminal/package.json": {
+    "mtime": 1781930677.6541715,
+    "ast_hash": "4ef6d853c19181e3dbe9b65f0788889a",
+    "semantic_hash": "4ef6d853c19181e3dbe9b65f0788889a"
+  },
+  "/workspace/auto-hub/terminal/src/profiles.js": {
+    "mtime": 1782065712.347081,
+    "ast_hash": "093d7080dc57077828d5e58dfa7997a8",
+    "semantic_hash": "093d7080dc57077828d5e58dfa7997a8"
+  },
+  "/workspace/auto-hub/terminal/src/profiles.test.js": {
+    "mtime": 1782034350.1034172,
+    "ast_hash": "15c795a557105dfd6d6026e5b2d5e5dc",
+    "semantic_hash": "15c795a557105dfd6d6026e5b2d5e5dc"
+  },
+  "/workspace/auto-hub/terminal/src/resurrect.js": {
+    "mtime": 1781955744.9896643,
+    "ast_hash": "d66f411ce1148640d4d38289d6607926",
+    "semantic_hash": "d66f411ce1148640d4d38289d6607926"
+  },
+  "/workspace/auto-hub/terminal/src/server.js": {
+    "mtime": 1782066535.3968508,
+    "ast_hash": "52e79ed3fbcf6fba03946642cefa0f2a",
+    "semantic_hash": "52e79ed3fbcf6fba03946642cefa0f2a"
+  },
+  "/workspace/auto-hub/terminal/src/server.test.js": {
+    "mtime": 1782039808.2944593,
+    "ast_hash": "f97473e1b71975d99cfa18a491aff0ae",
+    "semantic_hash": "f97473e1b71975d99cfa18a491aff0ae"
+  },
+  "/workspace/auto-hub/terminal/src/sessions.js": {
+    "mtime": 1781955731.2990222,
+    "ast_hash": "c80df507ba97e9b49bd8e71281006e76",
+    "semantic_hash": "c80df507ba97e9b49bd8e71281006e76"
+  },
+  "/workspace/auto-hub/terminal/src/sessions.test.js": {
+    "mtime": 1781953493.230567,
+    "ast_hash": "3939e59f0f48d0c2065bec3b700fa373",
+    "semantic_hash": "3939e59f0f48d0c2065bec3b700fa373"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/final-fix-report.md": {
+    "mtime": 1782075781.220949,
+    "ast_hash": "348750529476a46ac3dd7c6e346050f6",
+    "semantic_hash": "348750529476a46ac3dd7c6e346050f6"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/progress.md": {
+    "mtime": 1782075899.6453588,
+    "ast_hash": "2dea207d899c35dd5a2bed011678468a",
+    "semantic_hash": "2dea207d899c35dd5a2bed011678468a"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-1-brief.md": {
+    "mtime": 1782072054.2716923,
+    "ast_hash": "db1ee421880cc7535b127b43aa4eac64",
+    "semantic_hash": "db1ee421880cc7535b127b43aa4eac64"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-1-report.md": {
+    "mtime": 1782072287.1091373,
+    "ast_hash": "c3977c189a9cc63c4cf60af3f92980ac",
+    "semantic_hash": "c3977c189a9cc63c4cf60af3f92980ac"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-10-brief.md": {
+    "mtime": 1782074112.4013042,
+    "ast_hash": "c4c16bc858e5ae0b43b546df91862055",
+    "semantic_hash": "c4c16bc858e5ae0b43b546df91862055"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-10-report.md": {
+    "mtime": 1782074182.7341373,
+    "ast_hash": "01e5808402587d2b8fe88a68a946b0ae",
+    "semantic_hash": "01e5808402587d2b8fe88a68a946b0ae"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-11-brief.md": {
+    "mtime": 1782074223.7814634,
+    "ast_hash": "02d9852ea7a1c504c6187771c4e54adb",
+    "semantic_hash": "02d9852ea7a1c504c6187771c4e54adb"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-11-report.md": {
+    "mtime": 1782074499.5696778,
+    "ast_hash": "051628834f90aef66c0da612c7eb3f8d",
+    "semantic_hash": "051628834f90aef66c0da612c7eb3f8d"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-12-brief.md": {
+    "mtime": 1782074562.3338668,
+    "ast_hash": "127caddb84fa122d586a45daa3b04f30",
+    "semantic_hash": "127caddb84fa122d586a45daa3b04f30"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-12-report.md": {
+    "mtime": 1782074778.5759716,
+    "ast_hash": "b62849eaba0d633e40eeebf7d52b571a",
+    "semantic_hash": "b62849eaba0d633e40eeebf7d52b571a"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-2-brief.md": {
+    "mtime": 1782072425.1848717,
+    "ast_hash": "c0047db517363bb0033046dd684a6580",
+    "semantic_hash": "c0047db517363bb0033046dd684a6580"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-2-report.md": {
+    "mtime": 1782072628.6370258,
+    "ast_hash": "3714fe99b5af911920091b10891d41d7",
+    "semantic_hash": "3714fe99b5af911920091b10891d41d7"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-3-brief.md": {
+    "mtime": 1782072746.7693365,
+    "ast_hash": "a609b5e2f0bc863994d48a397231ca5b",
+    "semantic_hash": "a609b5e2f0bc863994d48a397231ca5b"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-3-report.md": {
+    "mtime": 1782072840.0296686,
+    "ast_hash": "1275136ea3bfff83d42fa653b7e595dc",
+    "semantic_hash": "1275136ea3bfff83d42fa653b7e595dc"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-4-brief.md": {
+    "mtime": 1782072905.6886077,
+    "ast_hash": "ccd8e329598b03c2108ea92c08453dd1",
+    "semantic_hash": "ccd8e329598b03c2108ea92c08453dd1"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-4-report.md": {
+    "mtime": 1782073238.4156792,
+    "ast_hash": "e6b81d9414309529381fc849d22614a1",
+    "semantic_hash": "e6b81d9414309529381fc849d22614a1"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-5-brief.md": {
+    "mtime": 1782073284.9799583,
+    "ast_hash": "5d9b043075e9e0b5436671b4a42458d9",
+    "semantic_hash": "5d9b043075e9e0b5436671b4a42458d9"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-5-report.md": {
+    "mtime": 1782073405.880712,
+    "ast_hash": "0ac4e606812b5cce8a52cbe5ffc4f654",
+    "semantic_hash": "0ac4e606812b5cce8a52cbe5ffc4f654"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-6-brief.md": {
+    "mtime": 1782073492.8857644,
+    "ast_hash": "c6b37c990d8d219c010853783288dfb3",
+    "semantic_hash": "c6b37c990d8d219c010853783288dfb3"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-6-report.md": {
+    "mtime": 1782073595.9459648,
+    "ast_hash": "7b26109c549b82f1929a8fc999cf10fd",
+    "semantic_hash": "7b26109c549b82f1929a8fc999cf10fd"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-7-brief.md": {
+    "mtime": 1782073657.2379663,
+    "ast_hash": "ea9c93455f0838da14f4b537722d3d36",
+    "semantic_hash": "ea9c93455f0838da14f4b537722d3d36"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-7-report.md": {
+    "mtime": 1782073802.1993918,
+    "ast_hash": "3b6520b9970c049925566f675a376043",
+    "semantic_hash": "3b6520b9970c049925566f675a376043"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-8-brief.md": {
+    "mtime": 1782073871.2158062,
+    "ast_hash": "a32b2847394e4e578421c40b8cbef1a7",
+    "semantic_hash": "a32b2847394e4e578421c40b8cbef1a7"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-8-report.md": {
+    "mtime": 1782073907.3001382,
+    "ast_hash": "364d51a0a90eec984d6779d3fe70a74b",
+    "semantic_hash": "364d51a0a90eec984d6779d3fe70a74b"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-9-brief.md": {
+    "mtime": 1782073958.9959128,
+    "ast_hash": "0edca63ed92fab491517336af69a0a1e",
+    "semantic_hash": "0edca63ed92fab491517336af69a0a1e"
+  },
+  "/workspace/auto-hub/.superpowers/sdd/task-9-report.md": {
+    "mtime": 1782074040.9211016,
+    "ast_hash": "39e0f10bf78282c2f7731583eb65aeed",
+    "semantic_hash": "39e0f10bf78282c2f7731583eb65aeed"
+  },
+  "/workspace/auto-hub/README.md": {
+    "mtime": 1781801363.2515433,
+    "ast_hash": "7abb5df98d2159576b953d0d9208ec6c",
+    "semantic_hash": "7abb5df98d2159576b953d0d9208ec6c"
+  },
+  "/workspace/auto-hub/dev-logs/howtostart.md": {
+    "mtime": 1781859644.8992474,
+    "ast_hash": "5e0dbfe19b46c23e8888a15ad037c9ff",
+    "semantic_hash": "5e0dbfe19b46c23e8888a15ad037c9ff"
+  },
+  "/workspace/auto-hub/dev-logs/securitycheck1.md": {
+    "mtime": 1782081492.6094198,
+    "ast_hash": "86f3a71d18012dd7848f545ec9cbd2c4",
+    "semantic_hash": "86f3a71d18012dd7848f545ec9cbd2c4"
+  },
+  "/workspace/auto-hub/dev-logs/testings.md": {
+    "mtime": 1781801363.2555377,
+    "ast_hash": "7a23b6cbe0113363f2e8a2cb4f719325",
+    "semantic_hash": "7a23b6cbe0113363f2e8a2cb4f719325"
+  },
+  "/workspace/auto-hub/docker-compose.yml": {
+    "mtime": 1782073518.713447,
+    "ast_hash": "bdc2efcc2a71fa8704f572e1db9adaef",
+    "semantic_hash": "bdc2efcc2a71fa8704f572e1db9adaef"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-18-autohub-backend.md": {
+    "mtime": 1781801363.255645,
+    "ast_hash": "987cac2abb1ab4c23b4e5721401da429",
+    "semantic_hash": "987cac2abb1ab4c23b4e5721401da429"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-18-autohub-frontend.md": {
+    "mtime": 1781801363.2559988,
+    "ast_hash": "92145903619d65f2cdc4fb7987ca7d22",
+    "semantic_hash": "92145903619d65f2cdc4fb7987ca7d22"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-18-security-fixes.md": {
+    "mtime": 1781801363.2559988,
+    "ast_hash": "a0dd433ad04558f6cff44c9caf1b4ced",
+    "semantic_hash": "a0dd433ad04558f6cff44c9caf1b4ced"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-19-mobile-optimization.md": {
+    "mtime": 1781813038.195226,
+    "ast_hash": "5abea90660e8a2c0b29ea15b01ce5de0",
+    "semantic_hash": "5abea90660e8a2c0b29ea15b01ce5de0"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-19-nav-apps-calendar-schedules.md": {
+    "mtime": 1781883862.8734102,
+    "ast_hash": "1e6a04866d3b295a8dabec8c37d6eb57",
+    "semantic_hash": "1e6a04866d3b295a8dabec8c37d6eb57"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-20-host-control-plugin.md": {
+    "mtime": 1781966173.5562692,
+    "ast_hash": "78a0a88db415579ad52448cc7d0e75c8",
+    "semantic_hash": "78a0a88db415579ad52448cc7d0e75c8"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-20-terminal-claude-user.md": {
+    "mtime": 1781930424.9415348,
+    "ast_hash": "bd50194a8e44d276ae348c318ac7529c",
+    "semantic_hash": "bd50194a8e44d276ae348c318ac7529c"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-20-terminal-sessions.md": {
+    "mtime": 1781952377.5019262,
+    "ast_hash": "c717f2f1b09a2d8696324d0a8e2ab9dc",
+    "semantic_hash": "c717f2f1b09a2d8696324d0a8e2ab9dc"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-20-timezone-settings.md": {
+    "mtime": 1781970830.0590377,
+    "ast_hash": "835481116e745e793a274b8691ea050c",
+    "semantic_hash": "835481116e745e793a274b8691ea050c"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-20-web-terminal.md": {
+    "mtime": 1781902190.0473142,
+    "ast_hash": "bab002639dc3bfe168d2a01b35526f20",
+    "semantic_hash": "bab002639dc3bfe168d2a01b35526f20"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-21-claude-profile-switcher.md": {
+    "mtime": 1782033790.1262374,
+    "ast_hash": "5b96c91b3005eeefa169f1e85fdbf227",
+    "semantic_hash": "5b96c91b3005eeefa169f1e85fdbf227"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-21-files-app.md": {
+    "mtime": 1782071884.6517322,
+    "ast_hash": "2ac022a6b8ce4580710454588bda2688",
+    "semantic_hash": "2ac022a6b8ce4580710454588bda2688"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-21-slide-to-confirm.md": {
+    "mtime": 1782040823.3962297,
+    "ast_hash": "dedd55f25d437946023b400775fe2f94",
+    "semantic_hash": "dedd55f25d437946023b400775fe2f94"
+  },
+  "/workspace/auto-hub/docs/superpowers/plans/2026-06-21-system-containers.md": {
+    "mtime": 1782034534.6334789,
+    "ast_hash": "5d882e97720c04d69ed0fe1c7b56252b",
+    "semantic_hash": "5d882e97720c04d69ed0fe1c7b56252b"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-18-autohub-design.md": {
+    "mtime": 1781801363.2559988,
+    "ast_hash": "dd174b2e2fff085da5b2f747d136b1f4",
+    "semantic_hash": "dd174b2e2fff085da5b2f747d136b1f4"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-19-mobile-optimization-design.md": {
+    "mtime": 1781812853.2379107,
+    "ast_hash": "45959858ea5b4743ccf6c808e0889899",
+    "semantic_hash": "45959858ea5b4743ccf6c808e0889899"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-19-nav-apps-calendar-schedules-design.md": {
+    "mtime": 1781883659.2647212,
+    "ast_hash": "a9635fd103ee0e23555add6c74aa2e59",
+    "semantic_hash": "a9635fd103ee0e23555add6c74aa2e59"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-20-host-control-plugin-design.md": {
+    "mtime": 1781965502.5520217,
+    "ast_hash": "9d3dd08653651619ceab079a0663a69f",
+    "semantic_hash": "9d3dd08653651619ceab079a0663a69f"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-20-terminal-claude-user-design.md": {
+    "mtime": 1781929713.9679186,
+    "ast_hash": "70680faa28ca4246e61a5f7fcfca42d5",
+    "semantic_hash": "70680faa28ca4246e61a5f7fcfca42d5"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-20-terminal-sessions-design.md": {
+    "mtime": 1781951216.2988544,
+    "ast_hash": "d288030bf9e2ec07dc01add124e203e5",
+    "semantic_hash": "d288030bf9e2ec07dc01add124e203e5"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-20-timezone-settings-design.md": {
+    "mtime": 1781965741.1921058,
+    "ast_hash": "b8799f819e188e5c6f43ce13bfa6a693",
+    "semantic_hash": "b8799f819e188e5c6f43ce13bfa6a693"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-20-web-terminal-design.md": {
+    "mtime": 1781901673.4386923,
+    "ast_hash": "76ef1c0fd42d5a90fc388acf769f7497",
+    "semantic_hash": "76ef1c0fd42d5a90fc388acf769f7497"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-21-claude-profile-switcher-design.md": {
+    "mtime": 1782033277.4654443,
+    "ast_hash": "59ec1c30a1bb325c3b1fa74e271765e4",
+    "semantic_hash": "59ec1c30a1bb325c3b1fa74e271765e4"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-21-files-app-design.md": {
+    "mtime": 1782071348.9216855,
+    "ast_hash": "dae66de9705c9041828831d06062df36",
+    "semantic_hash": "dae66de9705c9041828831d06062df36"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-21-plugins-to-tasks-rename-design.md": {
+    "mtime": 1782045914.68919,
+    "ast_hash": "66fa62822796978b59f3efa65cf88fff",
+    "semantic_hash": "66fa62822796978b59f3efa65cf88fff"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-21-slide-to-confirm-design.md": {
+    "mtime": 1782040684.9199266,
+    "ast_hash": "75d31dac9b9351549e28b3745a73ca22",
+    "semantic_hash": "75d31dac9b9351549e28b3745a73ca22"
+  },
+  "/workspace/auto-hub/docs/superpowers/specs/2026-06-21-system-containers-design.md": {
+    "mtime": 1782034177.4015694,
+    "ast_hash": "234badf9486a51138966025a47d376cb",
+    "semantic_hash": "234badf9486a51138966025a47d376cb"
+  },
+  "/workspace/auto-hub/frontend/appcreator.md": {
+    "mtime": 1781884521.7741437,
+    "ast_hash": "a2ae34655d6f43cfe291e753da3b3da6",
+    "semantic_hash": "a2ae34655d6f43cfe291e753da3b3da6"
+  },
+  "/workspace/auto-hub/frontend/public/img/Base Logo - Dark.png": {
+    "mtime": 1781810321.0298557,
+    "ast_hash": "cf429c436754250199ffa0a081095e94",
+    "semantic_hash": "cf429c436754250199ffa0a081095e94"
+  },
+  "/workspace/auto-hub/frontend/public/img/Base Logo - Light.png": {
+    "mtime": 1781810321.0319998,
+    "ast_hash": "78ce5076448b2dc6e087aa1b7555f305",
+    "semantic_hash": "78ce5076448b2dc6e087aa1b7555f305"
+  },
+  "/workspace/auto-hub/frontend/public/img/OG-page.png": {
+    "mtime": 1781810321.032266,
+    "ast_hash": "902d4bc165597734210a19c8900e1d60",
+    "semantic_hash": "902d4bc165597734210a19c8900e1d60"
+  },
+  "/workspace/auto-hub/frontend/public/img/SoterCare banner.png": {
+    "mtime": 1781810321.0328436,
+    "ast_hash": "aee5ea10295329a4a1257f407502c983",
+    "semantic_hash": "aee5ea10295329a4a1257f407502c983"
+  }
+}

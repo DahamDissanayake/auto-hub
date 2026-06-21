@@ -24,6 +24,13 @@ export interface NetworkStats {
   interfaces: Array<{ name: string; rxMbps: number; txMbps: number; rxTotalBytes: number; txTotalBytes: number }>
 }
 
+export interface ThermalInfo {
+  cpuTempC: number
+  fanRpm: number | null
+  fanLevel: number | null
+  fanMaxLevel: number | null
+}
+
 export interface SystemMetrics {
   cpuPercent: number;
   memUsedMb: number;
@@ -32,6 +39,7 @@ export interface SystemMetrics {
   rootDisk: DiskStats;
   dataDisk: DiskStats | null;
   network: NetworkStats;
+  thermal: ThermalInfo;
 }
 
 export interface SpeedTestResult {
@@ -117,6 +125,30 @@ export class DockerService {
     const idleDiff = s2.idle - s1.idle;
     if (totalDiff === 0) return 0;
     return Math.min(100, Math.max(0, (1 - idleDiff / totalDiff) * 100));
+  }
+
+  private getThermalInfo(): ThermalInfo {
+    const readInt = (path: string): number | null => {
+      try { return parseInt(fs.readFileSync(path, 'utf-8').trim(), 10) || null }
+      catch { return null }
+    }
+
+    // CPU temperature — millidegrees → degrees
+    const rawTemp = readInt('/host/sys/class/thermal/thermal_zone0/temp')
+    const cpuTempC = rawTemp !== null ? parseFloat((rawTemp / 1000).toFixed(1)) : 0
+
+    // Fan RPM from pwmfan hwmon
+    let fanRpm: number | null = null
+    for (const path of ['/host/sys/class/hwmon/hwmon2/fan1_input', '/host/sys/class/hwmon/hwmon1/fan1_input']) {
+      const v = readInt(path)
+      if (v !== null) { fanRpm = v; break }
+    }
+
+    // Fan speed level from thermal cooling device
+    const fanLevel = readInt('/host/sys/class/thermal/cooling_device0/cur_state')
+    const fanMaxLevel = readInt('/host/sys/class/thermal/cooling_device0/max_state')
+
+    return { cpuTempC, fanRpm, fanLevel, fanMaxLevel }
   }
 
   private getMemInfo(): { usedMb: number; totalMb: number } {
@@ -318,6 +350,7 @@ export class DockerService {
       this.getDiskIOStats('/mnt/data'),
     ])
     const mem = this.getMemInfo();
+    const thermal = this.getThermalInfo();
 
     return {
       cpuPercent: parseFloat(cpuPercent.toFixed(1)),
@@ -331,6 +364,7 @@ export class DockerService {
         ? { ...dataDisk, readMbps: dataIO.readMbps, writeMbps: dataIO.writeMbps }
         : null,
       network,
+      thermal,
     };
   }
 
