@@ -11,6 +11,44 @@ const { getSessions, getSession, addSession, removeSession, updateLastActive } =
 const { randomUUID } = require('crypto');
 const profiles = require('./profiles');
 
+function getClaudeEmail() {
+  try {
+    const out = cp.execFileSync('claude', ['auth', 'status'], {
+      env: { ...process.env, HOME: DATA_HOME, USER: 'dama', LOGNAME: 'dama', LANG: 'C.utf8', LC_ALL: 'C.utf8' },
+      encoding: 'utf8',
+      timeout: 10_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return JSON.parse(out).email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function migrateProfileEmails() {
+  const meta = profiles.readMeta();
+  const missing = meta.profiles.filter(p => !p.email);
+  if (missing.length === 0) return;
+
+  const currentCreds = fs.existsSync(profiles.CREDENTIALS_PATH)
+    ? fs.readFileSync(profiles.CREDENTIALS_PATH, 'utf8')
+    : null;
+
+  for (const profile of missing) {
+    const profilePath = require('path').join(profiles.PROFILES_DIR, `${profile.name}.json`);
+    if (!fs.existsSync(profilePath)) continue;
+    try {
+      fs.copyFileSync(profilePath, profiles.CREDENTIALS_PATH);
+      const email = getClaudeEmail();
+      if (email) profiles.setProfileEmail(profile.name, email);
+    } catch { /* ignore */ }
+  }
+
+  if (currentCreds !== null) {
+    fs.writeFileSync(profiles.CREDENTIALS_PATH, currentCreds, 'utf8');
+  }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET env var is required');
@@ -276,8 +314,17 @@ app.post('/claude-profiles/login/complete', (req, res) => {
         return res.status(500).json({ error: `claude login exited with code ${exitCode}` });
       }
       try {
-        profiles.saveProfile(name);
-        res.json({ ok: true });
+        const email = getClaudeEmail();
+        let warning = null;
+        if (email) {
+          const existingMeta = profiles.readMeta();
+          const duplicate = existingMeta.profiles.find(p => p.email === email);
+          if (duplicate) {
+            warning = `This Claude account (${email}) is already saved as "${duplicate.name}". Both profiles will use the same account.`;
+          }
+        }
+        profiles.saveProfile(name, email);
+        res.json({ ok: true, ...(warning ? { warning } : {}) });
       } catch (err) {
         res.status(500).json({ error: `Failed to save profile: ${err.message}` });
       }
@@ -389,6 +436,7 @@ wss.on('connection', (ws, req) => {
 
 if (require.main === module) {
   profiles.bootstrapActiveProfile();
+  migrateProfileEmails();
 }
 
 const PORT = 7681;

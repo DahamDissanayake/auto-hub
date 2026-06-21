@@ -47,16 +47,28 @@ function profileExists(name) {
   return fs.existsSync(path.join(PROFILES_DIR, `${name}.json`));
 }
 
-function saveProfile(name) {
+function saveProfile(name, email = null) {
   const creds = fs.readFileSync(CREDENTIALS_PATH, 'utf8');
   ensureProfilesDir();
   fs.writeFileSync(path.join(PROFILES_DIR, `${name}.json`), creds, 'utf8');
   const meta = readMeta();
-  if (!meta.profiles.some(p => p.name === name)) {
-    meta.profiles.push({ name, addedAt: new Date().toISOString() });
+  const existing = meta.profiles.find(p => p.name === name);
+  if (!existing) {
+    meta.profiles.push({ name, addedAt: new Date().toISOString(), ...(email ? { email } : {}) });
+  } else if (email) {
+    existing.email = email;
   }
   meta.active = name;
   writeMeta(meta);
+}
+
+function setProfileEmail(name, email) {
+  const meta = readMeta();
+  const profile = meta.profiles.find(p => p.name === name);
+  if (profile && email) {
+    profile.email = email;
+    writeMeta(meta);
+  }
 }
 
 function activateProfile(name) {
@@ -81,6 +93,7 @@ module.exports = {
   bootstrapActiveProfile,
   profileExists,
   saveProfile,
+  setProfileEmail,
   activateProfile,
   deleteProfile,
   CREDENTIALS_PATH,

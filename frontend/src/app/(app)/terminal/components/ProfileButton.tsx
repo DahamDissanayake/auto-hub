@@ -107,7 +107,10 @@ export function ProfileButton() {
                       <span className="w-3 shrink-0">
                         {state.active === p.name && <Check size={11} className="text-[#10b981]" />}
                       </span>
-                      <span className="text-[#e5e7eb] font-mono truncate">{p.name}</span>
+                      <span className="flex flex-col min-w-0">
+                        <span className="text-[#e5e7eb] font-mono truncate">{p.name}</span>
+                        {p.email && <span className="text-[#6b7280] truncate text-[10px]">{p.email}</span>}
+                      </span>
                     </button>
                     <button
                       onClick={(e) => { void handleRemove(e, p.name) }}

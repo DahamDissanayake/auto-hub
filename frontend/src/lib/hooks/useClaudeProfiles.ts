@@ -5,6 +5,7 @@ import api from '@/lib/api'
 export interface ClaudeProfile {
   name: string
   addedAt: string
+  email?: string
 }
 
 export interface ClaudeProfilesState {
@@ -45,8 +46,12 @@ export function useClaudeProfiles() {
   }, [])
 
   const completeLogin = useCallback(async (sessionId: string, code: string) => {
-    await api.post('/api/terminal/claude-profiles/login/complete', { sessionId, code })
+    const res = await api.post<{ ok: boolean; warning?: string }>(
+      '/api/terminal/claude-profiles/login/complete',
+      { sessionId, code },
+    )
     await refresh()
+    return res.data.warning
   }, [refresh])
 
   const removeProfile = useCallback(async (name: string) => {

@@ -1,12 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { X, Copy, Check, Loader2 } from 'lucide-react'
+import { X, Copy, Check, Loader2, AlertTriangle } from 'lucide-react'
 
 interface AddAccountModalProps {
   onClose: () => void
   onSuccess: () => void
   startLogin: (name: string) => Promise<{ sessionId: string; url: string }>
-  completeLogin: (sessionId: string, code: string) => Promise<void>
+  completeLogin: (sessionId: string, code: string) => Promise<string | undefined>
 }
 
 type ModalStep = 'name' | 'url' | 'code'
@@ -20,6 +20,7 @@ export function AddAccountModal({ onClose, onSuccess, startLogin, completeLogin 
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
 
   const nameValid = /^[a-zA-Z0-9_-]{1,20}$/.test(name)
 
@@ -52,9 +53,14 @@ export function AddAccountModal({ onClose, onSuccess, startLogin, completeLogin 
     if (!code.trim()) return
     setBusy(true)
     setError(null)
+    setWarning(null)
     try {
-      await completeLogin(sessionId, code.trim())
-      onSuccess()
+      const warn = await completeLogin(sessionId, code.trim())
+      if (warn) {
+        setWarning(warn)
+      } else {
+        onSuccess()
+      }
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -130,7 +136,7 @@ export function AddAccountModal({ onClose, onSuccess, startLogin, completeLogin 
             </>
           )}
 
-          {step === 'code' && (
+          {step === 'code' && !warning && (
             <>
               <div>
                 <label className="block text-[#9ca3af] text-xs mb-1.5">Code from browser</label>
@@ -148,6 +154,22 @@ export function AddAccountModal({ onClose, onSuccess, startLogin, completeLogin 
                 className="flex items-center justify-center gap-2 px-4 py-2 rounded bg-[#10b981] text-white text-sm font-medium hover:bg-[#059669] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {busy ? <><Loader2 size={14} className="animate-spin" /> Verifying…</> : 'Verify'}
+              </button>
+            </>
+          )}
+
+          {step === 'code' && warning && (
+            <>
+              <div className="flex gap-2 p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded">
+                <AlertTriangle size={14} className="text-[#f59e0b] shrink-0 mt-0.5" />
+                <p className="text-[#f59e0b] text-xs leading-relaxed">{warning}</p>
+              </div>
+              <p className="text-[#9ca3af] text-xs">The profile was saved. To use a different account, log in on claude.ai with a different email first.</p>
+              <button
+                onClick={onSuccess}
+                className="px-4 py-2 rounded bg-[#2a2a2a] text-white text-sm font-medium hover:bg-[#3a3a3a] transition-colors"
+              >
+                OK
               </button>
             </>
           )}
