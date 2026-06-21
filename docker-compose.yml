@@ -75,6 +75,7 @@ services:
 
   terminal:
     build: ./terminal
+    hostname: autohub
     user: "1000:1000"
     group_add:
       - "984"
@@ -83,6 +84,7 @@ services:
       TERMINAL_DIRS: /workspace/data,/workspace/github,/workspace/auto-hub
       GH_TOKEN: ${GH_TOKEN}
     volumes:
+      - /home/dama:/home/dama:rw
       - /mnt/data:/workspace/data:rw
       - /mnt/data/github:/workspace/github:rw
       - /home/dama/repo/auto-hub:/workspace/auto-hub:rw

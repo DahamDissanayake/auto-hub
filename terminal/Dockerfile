@@ -13,12 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN npm install -g @anthropic-ai/claude-code
 
-RUN usermod -l dama -d /workspace/data node \
+RUN usermod -l dama -d /home/dama node \
     && groupmod -n dama node \
     && echo 'dama ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dama \
     && chmod 440 /etc/sudoers.d/dama
 
-ENV HOME=/workspace/data
+ENV HOME=/home/dama
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --production

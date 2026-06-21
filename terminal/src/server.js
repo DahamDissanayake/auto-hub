@@ -21,7 +21,7 @@ const TERMINAL_DIRS = (process.env.TERMINAL_DIRS ?? '')
   .filter(Boolean);
 
 const GITHUB_DIR = '/workspace/github';
-const DATA_HOME = '/workspace/data';
+const DATA_HOME = '/home/dama';
 
 function isValidCwd(cwd) {
   return TERMINAL_DIRS.some(dir => cwd === dir || cwd.startsWith(dir + '/'));
