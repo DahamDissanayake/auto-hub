@@ -111,6 +111,12 @@ export interface DiskStats {
   percent: number
 }
 
+export interface NetworkStats {
+  rxMbps: number
+  txMbps: number
+  interfaceName: string
+}
+
 export interface SystemMetrics {
   cpuPercent: number
   memUsedMb: number
@@ -118,6 +124,7 @@ export interface SystemMetrics {
   memPercent: number
   rootDisk: DiskStats
   dataDisk: DiskStats | null
+  network: NetworkStats
 }
 
 export interface ContainerInfo {
@@ -133,4 +140,11 @@ export interface ContainerInfo {
   memUsageMb: number
   memLimitMb: number
   memPercent: number
+}
+
+export interface SpeedTestResult {
+  downloadMbps: number
+  uploadMbps: number
+  pingMs: number
+  server: string
 }
