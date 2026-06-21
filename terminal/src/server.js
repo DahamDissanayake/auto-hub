@@ -38,7 +38,10 @@ function migrateProfileEmails() {
     const profilePath = require('path').join(profiles.PROFILES_DIR, `${profile.name}.json`);
     if (!fs.existsSync(profilePath)) continue;
     try {
-      fs.copyFileSync(profilePath, profiles.CREDENTIALS_PATH);
+      // Write only the OAuth tokens (strip _oauthAccount) to avoid confusing claude auth status
+      const profileData = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+      const { _oauthAccount: _, ...creds } = profileData;
+      fs.writeFileSync(profiles.CREDENTIALS_PATH, JSON.stringify(creds), 'utf8');
       const email = getClaudeEmail();
       if (email) profiles.setProfileEmail(profile.name, email);
     } catch { /* ignore */ }
