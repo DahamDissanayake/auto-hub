@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as fs from 'fs';
 import { statfs } from 'fs/promises';
-import { exec } from 'child_process'
+import { exec, spawn } from 'child_process'
 import { promisify } from 'util'
 
 const execAsync = promisify(exec)
@@ -453,17 +453,59 @@ export class DockerService {
   }
 
   async runSpeedTest(): Promise<SpeedTestResult> {
-    let stdout: string
-    try {
-      const result = await execAsync('speedtest-cli --json', { timeout: 90_000 })
-      stdout = result.stdout
-    } catch (err) {
-      const msg = String(err)
-      if (msg.includes('not found') || msg.includes('ENOENT') || msg.includes('No such file')) {
-        throw new Error('speedtest-cli failed — check network connectivity')
-      }
-      throw new Error(`Speed test failed: ${msg}`)
-    }
+    const SCRIPT = `
+import json, time, urllib.request, ssl
+ctx = ssl.create_default_context()
+
+def fetch(url, data=None):
+    req = urllib.request.Request(url, data=data,
+        headers={'User-Agent': 'Mozilla/5.0',
+                 **(({'Content-Type': 'application/octet-stream'}) if data else {})})
+    with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
+        return r.read()
+
+def measure_ping():
+    t = []
+    for _ in range(3):
+        s = time.perf_counter()
+        fetch('https://speed.cloudflare.com/__down?bytes=1000')
+        t.append((time.perf_counter() - s) * 1000)
+    return round(min(t))
+
+def measure_download():
+    s = time.perf_counter()
+    body = fetch('https://speed.cloudflare.com/__down?bytes=25000000')
+    return (len(body) * 8) / (time.perf_counter() - s)
+
+def measure_upload():
+    data = b'x' * 10_000_000
+    s = time.perf_counter()
+    fetch('https://speed.cloudflare.com/__up', data=data)
+    return (len(data) * 8) / (time.perf_counter() - s)
+
+try:
+    ping = measure_ping()
+    dl = measure_download()
+    ul = measure_upload()
+    print(json.dumps({'download': dl, 'upload': ul, 'ping': ping,
+                      'server': {'sponsor': 'Cloudflare', 'country': 'Global'}}))
+except Exception as e:
+    import sys; print(str(e), file=sys.stderr); sys.exit(1)
+`
+    const stdout = await new Promise<string>((resolve, reject) => {
+      const child = spawn('python3', ['-'], { timeout: 120_000 })
+      let out = ''
+      let err = ''
+      child.stdout.on('data', (d: Buffer) => { out += d.toString() })
+      child.stderr.on('data', (d: Buffer) => { err += d.toString() })
+      child.on('close', (code: number | null) => {
+        if (code === 0) resolve(out)
+        else reject(new Error(err.trim() || 'Speed test failed'))
+      })
+      child.on('error', (e: Error) => reject(new Error(`Speed test failed: ${e.message}`)))
+      child.stdin.write(SCRIPT)
+      child.stdin.end()
+    })
 
     const data = JSON.parse(stdout) as {
       download: number

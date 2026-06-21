@@ -422,13 +422,13 @@ export default function DockerMonitorPage() {
   return (
     <div className="space-y-6 max-w-7xl">
       {/* ── Title ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-white text-xl font-semibold flex items-center gap-2">
           <Container size={20} className="text-[#3b82f6]" />
           System/Containers
         </h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-4 text-xs text-[#6b7280]">
+          <div className="flex items-center gap-3 text-xs text-[#6b7280]">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 size={12} className="text-emerald-400" />
               {running} running
@@ -503,7 +503,7 @@ export default function DockerMonitorPage() {
               <button
                 onClick={() => void runSpeedTest()}
                 disabled={speedTestLoading}
-                className="self-start flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-[#9ca3af] hover:text-white hover:bg-[#222222] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-[#9ca3af] hover:text-white hover:bg-[#222222] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed sm:self-start sm:justify-start"
               >
                 {speedTestLoading ? (
                   <RefreshCw size={13} className="animate-spin" />
@@ -559,11 +559,11 @@ export default function DockerMonitorPage() {
           <Power size={12} />
           Docker Controls
         </h2>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => handleSystemAction('restart-all')}
             disabled={actionLoading === 'restart-all'}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {actionLoading === 'restart-all' ? (
               <RefreshCw size={15} className="animate-spin" />
@@ -575,7 +575,7 @@ export default function DockerMonitorPage() {
           <button
             onClick={() => handleSystemAction('stop-all')}
             disabled={actionLoading === 'stop-all'}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {actionLoading === 'stop-all' ? (
               <RefreshCw size={15} className="animate-spin" />
