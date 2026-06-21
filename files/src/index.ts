@@ -8,6 +8,11 @@ import downloadRouter from './routes/download'
 import eventsRouter from './routes/events'
 import uploadRouter from './routes/upload'
 
+// Check JWT_SECRET is set on startup
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set')
+}
+
 const app = express()
 app.use(express.json())
 

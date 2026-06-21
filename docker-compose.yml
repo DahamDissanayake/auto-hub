@@ -89,6 +89,19 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
 
+  files:
+    build: ./files
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      ROOTS_INTERNAL: /roots/internal
+      ROOTS_WORKSPACE: /roots/workspace
+      ROOTS_DATA: /roots/data
+    volumes:
+      - /home/dama:/roots/internal:rw
+      - /workspace:/roots/workspace:rw
+      - /mnt/data:/roots/data:rw
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
@@ -101,6 +114,7 @@ services:
       - backend
       - n8n
       - terminal
+      - files
     restart: unless-stopped
 
   cloudflared:
