@@ -20,6 +20,9 @@ import { Plugin } from './plugins/entities/plugin.entity';
 import { PluginExecution } from './plugins/entities/plugin-execution.entity';
 import { ScheduledJob } from './scheduler/entities/scheduled-job.entity';
 import { AppSetting } from './settings/entities/app-setting.entity';
+import { Device } from './auth/entities/device.entity';
+import { LoginEvent } from './auth/entities/login-event.entity';
+import { AddDevicesAndLoginEvents1750600000000 } from './migrations/1750600000000-AddDevicesAndLoginEvents';
 
 @Module({
   imports: [
@@ -33,7 +36,9 @@ import { AppSetting } from './settings/entities/app-setting.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [Plugin, PluginExecution, ScheduledJob, AppSetting],
+        entities: [Plugin, PluginExecution, ScheduledJob, AppSetting, Device, LoginEvent],
+        migrations: [AddDevicesAndLoginEvents1750600000000],
+        migrationsRun: true,
         synchronize: false,
       }),
       inject: [ConfigService],
