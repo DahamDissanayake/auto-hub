@@ -57,7 +57,9 @@ export function useRevokeSession() {
 }
 
 export function useLogoutAll() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: () => api.post('/api/auth/logout-all'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['auth-sessions'] }),
   })
 }

@@ -5,7 +5,7 @@ import { ExternalLink } from 'lucide-react'
 import { useHealth } from '@/lib/hooks/useHealth'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/useSettings'
 import { useToast } from '@/components/ui/Toast'
-import { useAuthSessions, useUpdateDevice, useRevokeSession, useLogoutAll } from '@/lib/hooks/useAuthSessions'
+import { useAuthSessions, useUpdateDevice, useRevokeSession, useLogoutAll, type LoginEventRow } from '@/lib/hooks/useAuthSessions'
 
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Colombo',        label: 'Asia/Colombo — UTC+5:30 (Sri Lanka)' },
@@ -72,11 +72,21 @@ const EVENT_LABELS: Record<string, { icon: string; color: string; label: string 
 function SessionsSection() {
   const [historyPage, setHistoryPage] = useState(1)
   const [confirmRevokeAll, setConfirmRevokeAll] = useState(false)
+  const [accumulatedEvents, setAccumulatedEvents] = useState<LoginEventRow[]>([])
   const { data, isLoading } = useAuthSessions(historyPage)
   const updateDevice = useUpdateDevice()
   const revokeSession = useRevokeSession()
   const logoutAll = useLogoutAll()
   const currentDeviceToken = typeof window !== 'undefined' ? localStorage.getItem('autohub_device') : null
+
+  useEffect(() => {
+    if (!data?.events) return
+    if (historyPage === 1) {
+      setAccumulatedEvents(data.events)
+    } else {
+      setAccumulatedEvents((prev) => [...prev, ...data.events])
+    }
+  }, [data?.events, historyPage])
 
   const handleLogoutAll = async () => {
     if (!confirmRevokeAll) { setConfirmRevokeAll(true); return }
@@ -171,10 +181,10 @@ function SessionsSection() {
       {/* Login History */}
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-5 space-y-2">
         <h2 className="text-white font-medium text-sm">Login History</h2>
-        {(data?.events ?? []).length === 0 && (
+        {accumulatedEvents.length === 0 && (
           <p className="text-[#6b7280] text-sm">No events yet.</p>
         )}
-        {(data?.events ?? []).map((event) => {
+        {accumulatedEvents.map((event) => {
           const meta = EVENT_LABELS[event.eventType] ?? { icon: '·', color: '#6b7280', label: event.eventType }
           return (
             <div key={event.id} className="flex items-start gap-3 py-1.5 border-t border-[#2a2a2a] first:border-0 text-xs">
@@ -196,7 +206,7 @@ function SessionsSection() {
             </div>
           )
         })}
-        {data && data.total > (data?.events?.length ?? 0) && (
+        {data && accumulatedEvents.length < data.total && (
           <button
             onClick={() => setHistoryPage((p) => p + 1)}
             className="text-xs text-[#3b82f6] hover:underline mt-1"
