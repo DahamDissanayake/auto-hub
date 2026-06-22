@@ -129,6 +129,11 @@ export class AuthService {
   async refresh(sessionToken: string): Promise<{ accessJwt: string }> {
     const session = await this.redis.getSession(sessionToken);
     if (!session) throw new UnauthorizedException('Session expired');
+    const isPermanent = session.expiresAt !== null;
+    if (isPermanent) {
+      const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await this.redis.setSession(sessionToken, { ...session, expiresAt: newExpiresAt }, true);
+    }
     return { accessJwt: this.jwtService.sign({ sub: 'admin' }) };
   }
 

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { setAccessJwt } from '@/lib/api'
 
+const base = process.env.NEXT_PUBLIC_API_URL ?? ''
+
 type Step = 'password' | 'otp'
 
 interface OtpError {
@@ -45,7 +47,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const storedDevice = localStorage.getItem('autohub_device') ?? undefined
-      const { data } = await axios.post('/api/auth/login', { password, deviceToken: storedDevice })
+      const { data } = await axios.post(`${base}/api/auth/login`, { password, deviceToken: storedDevice })
 
       if (data.step === 'otp_required') {
         setDeviceToken(data.deviceToken)
@@ -75,7 +77,7 @@ export default function LoginPage() {
     setOtpError(null)
     setLoading(true)
     try {
-      const { data } = await axios.post('/api/auth/otp/verify', { otp, deviceToken })
+      const { data } = await axios.post(`${base}/api/auth/otp/verify`, { otp, deviceToken })
       storeSession(data)
       router.replace('/')
     } catch (err: any) {

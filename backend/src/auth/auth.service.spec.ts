@@ -168,10 +168,24 @@ describe('AuthService', () => {
   });
 
   describe('refresh()', () => {
-    it('returns new accessJwt when session exists', async () => {
+    it('returns new accessJwt for non-permanent session (no TTL extension)', async () => {
       mockRedis.getSession.mockResolvedValueOnce({ deviceId: 'dev-1', issuedAt: '', expiresAt: null });
       const result = await service.refresh('valid-token');
       expect(result).toEqual({ accessJwt: 'signed-jwt' });
+      expect(mockRedis.setSession).not.toHaveBeenCalled();
+    });
+
+    it('extends TTL for permanent session on refresh', async () => {
+      const futureExpiry = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+      mockRedis.getSession.mockResolvedValueOnce({ deviceId: 'dev-1', issuedAt: '', expiresAt: futureExpiry });
+      mockRedis.setSession.mockResolvedValueOnce(undefined);
+      const result = await service.refresh('perm-token');
+      expect(result).toEqual({ accessJwt: 'signed-jwt' });
+      expect(mockRedis.setSession).toHaveBeenCalledWith(
+        'perm-token',
+        expect.objectContaining({ expiresAt: expect.any(String) }),
+        true,
+      );
     });
 
     it('throws 401 when session not found', async () => {
