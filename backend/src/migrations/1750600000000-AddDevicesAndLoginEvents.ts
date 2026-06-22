@@ -32,6 +32,8 @@ export class AddDevicesAndLoginEvents1750600000000 implements MigrationInterface
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS idx_login_events_created_at`);
+    await queryRunner.query(`DROP INDEX IF EXISTS idx_login_events_device_id`);
     await queryRunner.query(`DROP TABLE IF EXISTS login_events`);
     await queryRunner.query(`DROP TABLE IF EXISTS devices`);
   }

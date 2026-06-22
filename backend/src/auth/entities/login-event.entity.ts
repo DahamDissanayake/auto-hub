@@ -19,7 +19,7 @@ export class LoginEvent {
   id: string;
 
   @Column({ nullable: true })
-  deviceId: string;
+  deviceId: string | null;
 
   @ManyToOne(() => Device, { nullable: true, onDelete: 'SET NULL', eager: false })
   @JoinColumn({ name: 'deviceId' })
