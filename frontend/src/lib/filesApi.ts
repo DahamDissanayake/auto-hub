@@ -1,17 +1,15 @@
+import { getAccessJwt, clearAuth } from '@/lib/api'
+
 const BASE = '/files-api'
 
-function getToken(): string {
-  if (typeof window === 'undefined') return ''
-  return sessionStorage.getItem('autohub_token') ?? ''
-}
-
 function authHeaders(): HeadersInit {
-  return { Authorization: `Bearer ${getToken()}` }
+  const jwt = getAccessJwt()
+  return jwt ? { Authorization: `Bearer ${jwt}` } : {}
 }
 
 function handleUnauth(res: Response): void {
   if (res.status === 401 && typeof window !== 'undefined') {
-    sessionStorage.removeItem('autohub_token')
+    clearAuth()
     window.location.href = '/login'
   }
 }
@@ -69,8 +67,7 @@ export async function apiDelete(root: string, path: string): Promise<void> {
 }
 
 export async function apiDownload(root: string, path: string, filename: string): Promise<void> {
-  const token = getToken()
-  // Use a direct URL with token as query param — avoids buffering the file in RAM
+  const token = getAccessJwt() ?? ''
   const url = `${BASE}/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`
   const a = document.createElement('a')
   a.href = url
@@ -100,7 +97,7 @@ export async function apiUpload(
 
     xhr.onload = () => {
       if (xhr.status === 401) {
-        sessionStorage.removeItem('autohub_token')
+        clearAuth()
         window.location.href = '/login'
         return
       }
@@ -128,7 +125,8 @@ export async function apiUpload(
       'POST',
       `${BASE}/upload?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path)}&transferId=${encodeURIComponent(transferId)}`
     )
-    xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`)
+    const jwt = getAccessJwt()
+    if (jwt) xhr.setRequestHeader('Authorization', `Bearer ${jwt}`)
     xhr.send(formData)
   })
 }

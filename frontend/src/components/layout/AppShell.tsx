@@ -6,24 +6,41 @@ import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { MobileNav } from './MobileNav'
 import TransferTray from '@/components/files/TransferTray'
+import { getSessionToken, refreshAuth, clearAuth } from '@/lib/api'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const [authState, setAuthState] = useState<'loading' | 'ok'>('loading')
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    const token = sessionStorage.getItem('autohub_token')
-    if (!token) {
+    const sessionToken = getSessionToken()
+    if (!sessionToken) {
       router.replace('/login')
+      return
     }
+    refreshAuth().then((ok) => {
+      if (ok) {
+        setAuthState('ok')
+      } else {
+        clearAuth()
+        router.replace('/login')
+      }
+    })
   }, [router])
+
+  if (authState === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-[#6b7280] text-sm">Authenticating…</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a]">
       <Sidebar />
-
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
         <header className="md:hidden flex items-center justify-between px-4 h-12 bg-[#111111] border-b border-[#2a2a2a] shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <Image
@@ -45,12 +62,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Menu size={20} />
           </button>
         </header>
-
         <main className="flex-1 overflow-auto p-4 md:p-6 min-w-0 max-w-full">
           {children}
         </main>
       </div>
-
       <MobileNav open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TransferTray />
     </div>

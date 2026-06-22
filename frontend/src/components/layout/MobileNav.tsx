@@ -8,6 +8,7 @@ import {
   GitBranch, Settings, LogOut, X,
 } from 'lucide-react'
 import { useRecentApps } from '@/lib/hooks/useRecentApps'
+import api, { clearAuth } from '@/lib/api'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,8 +40,13 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('autohub_token')
+  const handleLogout = async () => {
+    const sessionToken =
+      localStorage.getItem('autohub_session') ?? sessionStorage.getItem('autohub_session')
+    if (sessionToken) {
+      try { await api.post('/api/auth/logout', { sessionToken }) } catch { /* ignore */ }
+    }
+    clearAuth()
     router.replace('/login')
   }
 
