@@ -57,7 +57,7 @@ function getMdBrowserParams(
   repoName: string | null,
 ): { root: string; startPath: string } {
   if (workspace === 'home') return { root: 'workspace', startPath: 'data' }
-  if (workspace === 'auto-hub') return { root: 'workspace', startPath: 'auto-hub' }
+  if (workspace === 'auto-hub') return { root: 'internal', startPath: 'repo/auto-hub' }
   if (workspace === 'github' && repoName) return { root: 'workspace', startPath: `github/${repoName}` }
   return { root: 'workspace', startPath: 'data' }
 }
