@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Settings } from 'lucide-react'
+import { Settings, Shield } from 'lucide-react'
 import { ExternalLink } from 'lucide-react'
 import { useHealth } from '@/lib/hooks/useHealth'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/useSettings'
 import { useToast } from '@/components/ui/Toast'
+import { useAuthSessions, useUpdateDevice, useRevokeSession, useLogoutAll } from '@/lib/hooks/useAuthSessions'
 
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Colombo',        label: 'Asia/Colombo — UTC+5:30 (Sri Lanka)' },
@@ -53,6 +54,158 @@ function ConfiguredBadge({ configured }: { configured: boolean }) {
     >
       {configured ? 'Configured' : 'Not configured'}
     </span>
+  )
+}
+
+const EVENT_LABELS: Record<string, { icon: string; color: string; label: string }> = {
+  password_ok:    { icon: '✓', color: '#22c55e', label: 'Password accepted' },
+  otp_ok:         { icon: '✓', color: '#22c55e', label: 'OTP accepted' },
+  session_issued: { icon: '✓', color: '#22c55e', label: 'Login' },
+  password_fail:  { icon: '✗', color: '#ef4444', label: 'Wrong password' },
+  otp_fail:       { icon: '✗', color: '#ef4444', label: 'Wrong OTP' },
+  otp_locked:     { icon: '⚠', color: '#f59e0b', label: 'OTP locked' },
+  logout:         { icon: '↩', color: '#6b7280', label: 'Logout' },
+  revoked:        { icon: '✗', color: '#ef4444', label: 'Revoked' },
+  otp_sent:       { icon: '→', color: '#3b82f6', label: 'OTP sent' },
+}
+
+function SessionsSection() {
+  const [historyPage, setHistoryPage] = useState(1)
+  const [confirmRevokeAll, setConfirmRevokeAll] = useState(false)
+  const { data, isLoading } = useAuthSessions(historyPage)
+  const updateDevice = useUpdateDevice()
+  const revokeSession = useRevokeSession()
+  const logoutAll = useLogoutAll()
+  const currentDeviceToken = typeof window !== 'undefined' ? localStorage.getItem('autohub_device') : null
+
+  const handleLogoutAll = async () => {
+    if (!confirmRevokeAll) { setConfirmRevokeAll(true); return }
+    await logoutAll.mutateAsync()
+    window.location.href = '/login'
+  }
+
+  if (isLoading) return <div className="text-[#6b7280] text-sm">Loading sessions…</div>
+
+  return (
+    <div className="space-y-4">
+      {/* Devices */}
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-white font-medium text-sm flex items-center gap-2">
+            <Shield size={15} className="text-[#3b82f6]" />
+            Sessions & Devices
+          </h2>
+          <button
+            onClick={handleLogoutAll}
+            disabled={logoutAll.isPending}
+            className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
+              confirmRevokeAll
+                ? 'border-[#ef4444] text-[#ef4444] hover:bg-[#ef4444]/10'
+                : 'border-[#2a2a2a] text-[#6b7280] hover:text-white hover:border-[#3a3a3a]'
+            }`}
+          >
+            {confirmRevokeAll ? 'Confirm revoke all?' : 'Revoke All'}
+          </button>
+        </div>
+
+        {(data?.devices ?? []).length === 0 && (
+          <p className="text-[#6b7280] text-sm">No devices recorded yet.</p>
+        )}
+
+        {(data?.devices ?? []).map((device) => {
+          const isCurrentDevice = device.token === currentDeviceToken
+          return (
+            <div
+              key={device.id}
+              className="flex items-center justify-between py-2 border-t border-[#2a2a2a] first:border-0 gap-3"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    device.hasActiveSession ? 'bg-[#22c55e]' : 'bg-[#374151]'
+                  }`}
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-sm text-[#f1f1f1]">
+                    <span className="truncate">
+                      {[device.browser, device.os].filter(Boolean).join(' · ') || 'Unknown device'}
+                    </span>
+                    {isCurrentDevice && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-[#3b82f6]/15 text-[#3b82f6] border border-[#3b82f6]/30 shrink-0">
+                        This device
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[#6b7280] mt-0.5">
+                    {device.ip} · Last seen {new Date(device.lastSeen).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => updateDevice.mutate({ id: device.id, isPermanent: !device.isPermanent })}
+                  disabled={updateDevice.isPending}
+                  className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                    device.isPermanent
+                      ? 'border-[#22c55e]/40 text-[#22c55e] bg-[#22c55e]/5 hover:bg-[#22c55e]/10'
+                      : 'border-[#2a2a2a] text-[#6b7280] hover:text-white hover:border-[#3a3a3a]'
+                  }`}
+                >
+                  {device.isPermanent ? 'Permanent ✓' : 'Make Permanent'}
+                </button>
+                {device.hasActiveSession && !isCurrentDevice && (
+                  <button
+                    onClick={() => revokeSession.mutate(device.id)}
+                    disabled={revokeSession.isPending}
+                    className="text-xs px-2.5 py-1 rounded-md border border-[#2a2a2a] text-[#6b7280] hover:text-[#ef4444] hover:border-[#ef4444]/40 transition-colors"
+                  >
+                    Revoke
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Login History */}
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-5 space-y-2">
+        <h2 className="text-white font-medium text-sm">Login History</h2>
+        {(data?.events ?? []).length === 0 && (
+          <p className="text-[#6b7280] text-sm">No events yet.</p>
+        )}
+        {(data?.events ?? []).map((event) => {
+          const meta = EVENT_LABELS[event.eventType] ?? { icon: '·', color: '#6b7280', label: event.eventType }
+          return (
+            <div key={event.id} className="flex items-start gap-3 py-1.5 border-t border-[#2a2a2a] first:border-0 text-xs">
+              <span style={{ color: meta.color }} className="shrink-0 w-4 text-center font-mono mt-0.5">
+                {meta.icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="text-[#9ca3af]">{meta.label}</span>
+                {(event.browser || event.os) && (
+                  <span className="text-[#6b7280]">
+                    {' · '}{[event.browser, event.os].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                <span className="text-[#6b7280]"> · {event.ip}</span>
+              </div>
+              <span className="text-[#4b5563] shrink-0">
+                {new Date(event.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          )
+        })}
+        {data && data.total > (data?.events?.length ?? 0) && (
+          <button
+            onClick={() => setHistoryPage((p) => p + 1)}
+            className="text-xs text-[#3b82f6] hover:underline mt-1"
+          >
+            Load more
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -177,6 +330,8 @@ export default function SettingsPage() {
               Scheduled jobs automatically re-register on backend startup.
             </p>
           </Section>
+
+          <SessionsSection />
         </>
       )}
     </div>
