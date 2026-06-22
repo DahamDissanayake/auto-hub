@@ -42,8 +42,10 @@ export class AuthService {
     const { browser, os } = this.parseUa(userAgent);
 
     // Resolve or create device
-    const device_found = await this.deviceRepo.findOne({ where: { token: dto.deviceToken } });
-    let device: Device | null = device_found ?? null;
+    let device: Device | null = null;
+    if (dto.deviceToken) {
+      device = await this.deviceRepo.findOne({ where: { token: dto.deviceToken } }) ?? null;
+    }
     if (!device) {
       const newDevice = this.deviceRepo.create({
         token: randomUUID(),
@@ -160,12 +162,8 @@ export class AuthService {
     eventType: LoginEventType, ip: string, userAgent: string, device: Device | null,
   ): Promise<void> {
     const { browser, os } = this.parseUa(userAgent);
-    await this.eventRepo.save({
-      eventType,
-      ip,
-      browser,
-      os,
-      deviceId: device?.id ?? null,
-    } as Partial<LoginEvent>);
+    await this.eventRepo.save(
+      this.eventRepo.create({ eventType, ip, browser, os, deviceId: device?.id ?? null }),
+    );
   }
 }

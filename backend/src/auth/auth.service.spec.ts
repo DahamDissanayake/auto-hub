@@ -17,9 +17,9 @@ const mockDeviceRepo = {
   update: jest.fn(),
 };
 const mockEventRepo = {
-  save: jest.fn(),
+  save: jest.fn().mockImplementation((obj) => Promise.resolve(obj)),
   findAndCount: jest.fn(),
-  create: jest.fn(),
+  create: jest.fn().mockImplementation((obj) => obj),
 };
 const mockRedis = {
   setSession: jest.fn(),
@@ -69,8 +69,7 @@ describe('AuthService', () => {
     });
 
     it('returns otp_required for unknown device', async () => {
-      mockDeviceRepo.findOne.mockResolvedValueOnce(null);
-      mockDeviceRepo.create.mockReturnValueOnce({ id: 'new-dev' });
+      mockDeviceRepo.create.mockReturnValueOnce({ id: 'new-dev', token: 'new-token', isPermanent: false });
       mockDeviceRepo.save.mockResolvedValueOnce({ id: 'new-dev', token: 'new-token', isPermanent: false });
       mockRedis.getOtp.mockResolvedValueOnce(null);
 
@@ -108,8 +107,7 @@ describe('AuthService', () => {
     });
 
     it('returns 429 when OTP already sent and still locked', async () => {
-      mockDeviceRepo.findOne.mockResolvedValueOnce(null);
-      mockDeviceRepo.create.mockReturnValueOnce({ id: 'dev-new' });
+      mockDeviceRepo.create.mockReturnValueOnce({ id: 'dev-new', token: 'tok-new', isPermanent: false });
       mockDeviceRepo.save.mockResolvedValueOnce({ id: 'dev-new', token: 'tok-new', isPermanent: false });
       mockRedis.getOtp.mockResolvedValueOnce({
         code: '999999',
