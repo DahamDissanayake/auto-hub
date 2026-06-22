@@ -3,6 +3,7 @@ import { apps } from '../apps.config'
 import TerminalPage from '../../terminal/page'
 import DockerMonitorPage from '../../docker/page'
 import FilesPage from '../../files/page'
+import AppVisitRecorder from './AppVisitRecorder'
 
 const INTERNAL_PAGES: Record<string, React.ComponentType> = {
   'claude-terminal': TerminalPage as React.ComponentType,
@@ -16,16 +17,23 @@ export default function AppPage({ params }: { params: { id: string } }) {
 
   const InternalPage = INTERNAL_PAGES[app.id]
   if (InternalPage) {
-    return <InternalPage />
+    return (
+      <>
+        <AppVisitRecorder id={app.id} />
+        <InternalPage />
+      </>
+    )
   }
 
-  // External app: embed in full-height iframe
   return (
-    <iframe
-      src={app.url}
-      className="-m-4 md:-m-6 lg:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] h-[calc(100dvh-57px)] md:h-[calc(100dvh-0px)] border-0"
-      title={app.name}
-      allow="fullscreen"
-    />
+    <>
+      <AppVisitRecorder id={app.id} />
+      <iframe
+        src={app.url}
+        className="-m-4 md:-m-6 lg:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] h-[calc(100dvh-57px)] md:h-[calc(100dvh-0px)] border-0"
+        title={app.name}
+        allow="fullscreen"
+      />
+    </>
   )
 }
