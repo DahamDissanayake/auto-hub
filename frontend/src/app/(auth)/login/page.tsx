@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('password')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
-  const [deviceToken, setDeviceToken] = useState<string>('')
+  const [deviceToken, setDeviceToken] = useState<string | undefined>(undefined)
   const [error, setError] = useState('')
   const [otpError, setOtpError] = useState<OtpError | null>(null)
   const [loading, setLoading] = useState(false)
@@ -105,7 +105,10 @@ export default function LoginPage() {
     } else {
       sessionStorage.setItem('autohub_session', data.sessionToken)
       window.addEventListener('beforeunload', () => {
-        navigator.sendBeacon('/api/auth/logout', JSON.stringify({ sessionToken: data.sessionToken }))
+        navigator.sendBeacon(
+          '/api/auth/logout',
+          new Blob([JSON.stringify({ sessionToken: data.sessionToken })], { type: 'application/json' })
+        )
       }, { once: true })
     }
   }
