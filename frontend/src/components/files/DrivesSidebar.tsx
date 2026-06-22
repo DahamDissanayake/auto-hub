@@ -12,7 +12,6 @@ export interface Drive {
 export const DRIVES: Drive[] = [
   { id: 'internal',  root: 'internal',  label: 'Internal',   sublabel: '/home/dama',    startPath: '/'             },
   { id: 'auto-hub',  root: 'internal',  label: 'Auto-Hub',   sublabel: 'repo/auto-hub', startPath: '/repo/auto-hub' },
-  { id: 'workspace', root: 'workspace', label: 'Workspace',  sublabel: '/workspace',    startPath: '/'             },
   { id: 'data',      root: 'data',      label: 'Data Drive', sublabel: '/mnt/data',     startPath: '/'             },
 ]
 
