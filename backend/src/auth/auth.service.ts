@@ -1,5 +1,5 @@
 import {
-  Injectable, UnauthorizedException, HttpException, HttpStatus,
+  Injectable, UnauthorizedException, HttpException, HttpStatus, NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -124,6 +124,58 @@ export class AuthService {
 
     const session = await this.issueSession(device, false, ip, userAgent);
     return { ...session as any, isPermanent: false as const };
+  }
+
+  async refresh(sessionToken: string): Promise<{ accessJwt: string }> {
+    const session = await this.redis.getSession(sessionToken);
+    if (!session) throw new UnauthorizedException('Session expired');
+    return { accessJwt: this.jwtService.sign({ sub: 'admin' }) };
+  }
+
+  async logout(sessionToken: string, ip: string, userAgent: string): Promise<void> {
+    await this.redis.deleteSession(sessionToken);
+    await this.logEvent(LoginEventType.LOGOUT, ip, userAgent, null);
+  }
+
+  async logoutAll(ip: string, userAgent: string): Promise<void> {
+    await this.redis.deleteAllSessions();
+    await this.logEvent(LoginEventType.REVOKED, ip, userAgent, null);
+  }
+
+  async getSessions(page: number, limit: number): Promise<{
+    devices: (Device & { hasActiveSession: boolean })[];
+    events: LoginEvent[];
+    total: number;
+  }> {
+    const [devices, sessionMap, [events, total]] = await Promise.all([
+      this.deviceRepo.find({ order: { lastSeen: 'DESC' } }),
+      this.redis.getAllSessionDeviceIds(),
+      this.eventRepo.findAndCount({
+        order: { createdAt: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    const activeDeviceIds = new Set(sessionMap.values());
+    return {
+      devices: devices.map(d => ({ ...d, hasActiveSession: activeDeviceIds.has(d.id) })),
+      events,
+      total,
+    };
+  }
+
+  async updateDevice(id: string, isPermanent: boolean): Promise<Device> {
+    const device = await this.deviceRepo.findOne({ where: { id } });
+    if (!device) throw new NotFoundException('Device not found');
+    return this.deviceRepo.save({ ...device, isPermanent });
+  }
+
+  async revokeSession(deviceId: string, ip: string, userAgent: string): Promise<void> {
+    const device = await this.deviceRepo.findOne({ where: { id: deviceId } });
+    const sessionToken = await this.redis.findSessionByDeviceId(deviceId);
+    if (sessionToken) await this.redis.deleteSession(sessionToken);
+    await this.logEvent(LoginEventType.REVOKED, ip, userAgent, device ?? null);
   }
 
   private async issueSession(device: Device, permanent: boolean, ip: string, userAgent: string): Promise<{
