@@ -56,10 +56,10 @@ function getMdBrowserParams(
   workspace: Workspace | null,
   repoName: string | null,
 ): { root: string; startPath: string } {
-  if (workspace === 'home') return { root: 'workspace', startPath: 'data' }
+  if (workspace === 'home') return { root: 'data', startPath: '/' }
   if (workspace === 'auto-hub') return { root: 'internal', startPath: 'repo/auto-hub' }
-  if (workspace === 'github' && repoName) return { root: 'workspace', startPath: `github/${repoName}` }
-  return { root: 'workspace', startPath: 'data' }
+  if (workspace === 'github' && repoName) return { root: 'data', startPath: `github/${repoName}` }
+  return { root: 'data', startPath: '/' }
 }
 
 export default function TerminalPage() {
