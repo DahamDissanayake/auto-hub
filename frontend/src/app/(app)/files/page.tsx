@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { LayoutGrid, List, FolderPlus, Upload, RefreshCw, X, AlertCircle, HardDrive, Server } from 'lucide-react'
-import DrivesSidebar, { DRIVES } from '@/components/files/DrivesSidebar'
+import DrivesSidebar, { DRIVES, type Drive } from '@/components/files/DrivesSidebar'
 import FileBreadcrumb from '@/components/files/FileBreadcrumb'
 import FileGrid from '@/components/files/FileGrid'
 import FileList from '@/components/files/FileList'
@@ -22,6 +22,7 @@ interface Toast {
 export default function FilesPage() {
   const [root, setRoot]       = useState('internal')
   const [path, setPath]       = useState('/')
+  const [activeDriveId, setActiveDriveId] = useState('internal')
   const [entries, setEntries] = useState<DirEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [view, setView]       = useState<'grid' | 'list'>('grid')
@@ -60,7 +61,9 @@ export default function FilesPage() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const handleSelectRoot = (r: string) => { setRoot(r); setPath('/'); setEntries([]) }
+  const handleSelectDrive = (drive: Drive) => {
+    setRoot(drive.root); setPath(drive.startPath); setEntries([]); setActiveDriveId(drive.id)
+  }
   const handleOpenFolder = (name: string) => setPath(posixJoin(path, name))
   const handleContextMenu = (e: React.MouseEvent, entry: DirEntry) =>
     setCtx({ x: e.clientX, y: e.clientY, entry })
@@ -108,8 +111,8 @@ export default function FilesPage() {
 
       {/* Desktop collapsible drives sidebar */}
       <DrivesSidebar
-        activeRoot={root}
-        onSelect={handleSelectRoot}
+        activeDriveId={activeDriveId}
+        onSelect={handleSelectDrive}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
@@ -218,22 +221,22 @@ export default function FilesPage() {
               </button>
             </div>
             <div className="p-3 space-y-1 pb-8">
-              {DRIVES.map(({ id, label, sublabel }) => (
+              {DRIVES.map((drive) => (
                 <button
-                  key={id}
-                  onClick={() => { handleSelectRoot(id); setDrivesSheetOpen(false) }}
+                  key={drive.id}
+                  onClick={() => { handleSelectDrive(drive); setDrivesSheetOpen(false) }}
                   className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-left transition-colors active:scale-[0.98] ${
-                    root === id ? 'bg-[#f59e0b]/10' : 'hover:bg-[#1e1e1e] active:bg-[#222]'
+                    activeDriveId === drive.id ? 'bg-[#f59e0b]/10' : 'hover:bg-[#1e1e1e] active:bg-[#222]'
                   }`}
                 >
-                  <HardDrive size={18} className={root === id ? 'text-[#f59e0b]' : 'text-[#6b7280]'} />
+                  <HardDrive size={18} className={activeDriveId === drive.id ? 'text-[#f59e0b]' : 'text-[#6b7280]'} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${root === id ? 'text-white' : 'text-[#d1d5db]'}`}>
-                      {label}
+                    <p className={`text-sm font-medium ${activeDriveId === drive.id ? 'text-white' : 'text-[#d1d5db]'}`}>
+                      {drive.label}
                     </p>
-                    <p className="text-xs text-[#4b5563] mt-0.5">{sublabel}</p>
+                    <p className="text-xs text-[#4b5563] mt-0.5">{drive.sublabel}</p>
                   </div>
-                  {root === id && (
+                  {activeDriveId === drive.id && (
                     <div className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0" />
                   )}
                 </button>

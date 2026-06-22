@@ -1,20 +1,29 @@
 'use client'
 import { HardDrive, ChevronLeft, ChevronRight } from 'lucide-react'
 
-export const DRIVES = [
-  { id: 'internal',  label: 'Internal',   sublabel: '/home/dama' },
-  { id: 'workspace', label: 'Workspace',  sublabel: '/workspace'  },
-  { id: 'data',      label: 'Data Drive', sublabel: '/mnt/data'   },
+export interface Drive {
+  id: string
+  root: string
+  label: string
+  sublabel: string
+  startPath: string
+}
+
+export const DRIVES: Drive[] = [
+  { id: 'internal',  root: 'internal',  label: 'Internal',   sublabel: '/home/dama',    startPath: '/'             },
+  { id: 'auto-hub',  root: 'internal',  label: 'Auto-Hub',   sublabel: 'repo/auto-hub', startPath: '/repo/auto-hub' },
+  { id: 'workspace', root: 'workspace', label: 'Workspace',  sublabel: '/workspace',    startPath: '/'             },
+  { id: 'data',      root: 'data',      label: 'Data Drive', sublabel: '/mnt/data',     startPath: '/'             },
 ]
 
 export default function DrivesSidebar({
-  activeRoot,
+  activeDriveId,
   onSelect,
   collapsed,
   onToggleCollapse,
 }: {
-  activeRoot: string
-  onSelect: (root: string) => void
+  activeDriveId: string
+  onSelect: (drive: Drive) => void
   collapsed: boolean
   onToggleCollapse: () => void
 }) {
@@ -42,13 +51,13 @@ export default function DrivesSidebar({
 
       {/* Drive list */}
       <nav className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
-        {DRIVES.map(({ id, label, sublabel }) => {
-          const active = activeRoot === id
+        {DRIVES.map((drive) => {
+          const active = activeDriveId === drive.id
           return (
             <button
-              key={id}
-              onClick={() => onSelect(id)}
-              title={collapsed ? `${label} — ${sublabel}` : undefined}
+              key={drive.id}
+              onClick={() => onSelect(drive)}
+              title={collapsed ? `${drive.label} — ${drive.sublabel}` : undefined}
               className={`flex items-center w-full rounded-md transition-colors ${
                 collapsed ? 'justify-center py-2.5' : 'gap-2.5 px-2 py-2'
               } ${active ? 'bg-[#f59e0b]/10' : 'hover:bg-[#1a1a1a]'}`}
@@ -60,9 +69,9 @@ export default function DrivesSidebar({
               {!collapsed && (
                 <div className="min-w-0">
                   <p className={`text-xs font-medium leading-snug truncate ${active ? 'text-white' : 'text-[#d1d5db]'}`}>
-                    {label}
+                    {drive.label}
                   </p>
-                  <p className="text-[10px] text-[#4b5563] leading-snug truncate">{sublabel}</p>
+                  <p className="text-[10px] text-[#4b5563] leading-snug truncate">{drive.sublabel}</p>
                 </div>
               )}
             </button>
