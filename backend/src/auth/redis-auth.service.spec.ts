@@ -56,10 +56,12 @@ describe('RedisAuthService', () => {
     expect(await service.getSession('missing')).toBeNull();
   });
 
-  it('deleteAllSessions deletes all session keys', async () => {
+  it('deleteAllSessions deletes all session keys and returns count', async () => {
     mockRedis.keys.mockResolvedValueOnce(['autohub:session:a', 'autohub:session:b']);
-    await service.deleteAllSessions();
+    mockRedis.del.mockResolvedValueOnce(2);
+    const result = await service.deleteAllSessions();
     expect(mockRedis.del).toHaveBeenCalledWith('autohub:session:a', 'autohub:session:b');
+    expect(result).toBe(2);
   });
 
   it('deleteAllSessions does nothing when no sessions exist', async () => {
@@ -91,5 +93,27 @@ describe('RedisAuthService', () => {
     mockRedis.keys.mockResolvedValueOnce(['autohub:session:tok-abc']);
     mockRedis.get.mockResolvedValueOnce(JSON.stringify(data));
     expect(await service.findSessionByDeviceId('dev-1')).toBeNull();
+  });
+
+  it('getAllSessionDeviceIds returns map of sessionToken to deviceId', async () => {
+    const data1 = { deviceId: 'dev-1', issuedAt: '', expiresAt: null };
+    const data2 = { deviceId: 'dev-2', issuedAt: '', expiresAt: null };
+    mockRedis.keys.mockResolvedValueOnce(['autohub:session:tok-a', 'autohub:session:tok-b']);
+    mockRedis.get
+      .mockResolvedValueOnce(JSON.stringify(data1))
+      .mockResolvedValueOnce(JSON.stringify(data2));
+
+    const result = await service.getAllSessionDeviceIds();
+    expect(result).toBeInstanceOf(Map);
+    expect(result.get('tok-a')).toBe('dev-1');
+    expect(result.get('tok-b')).toBe('dev-2');
+    expect(result.size).toBe(2);
+  });
+
+  it('getAllSessionDeviceIds returns empty map when no sessions', async () => {
+    mockRedis.keys.mockResolvedValueOnce([]);
+    const result = await service.getAllSessionDeviceIds();
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(0);
   });
 });
