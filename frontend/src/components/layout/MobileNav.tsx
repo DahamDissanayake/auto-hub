@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Zap, LayoutGrid, Calendar,
   GitBranch, Settings, LogOut, X,
 } from 'lucide-react'
+import { useRecentApps } from '@/lib/hooks/useRecentApps'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,7 +15,6 @@ const navItems = [
   { href: '/apps', label: 'Apps', icon: LayoutGrid },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/n8n-workflows', label: 'n8n Workflows', icon: GitBranch },
-  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 interface MobileNavProps {
@@ -26,11 +26,12 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const drawerRef = useRef<HTMLDivElement>(null)
+  const recentApps = useRecentApps()
 
   // Close on route change
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Trap focus & close on Escape
+  // Close on Escape
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -91,24 +92,60 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'text-[#3b82f6] bg-[#3b82f6]/10 border-l-2 border-[#3b82f6] pl-[14px]'
-                    : 'text-[#9ca3af] hover:text-[#f1f1f1] hover:bg-[#1a1a1a] active:bg-[#1a1a1a]'
-                }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
+              <div key={href}>
+                <Link
+                  href={href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? 'text-[#3b82f6] bg-[#3b82f6]/10 border-l-2 border-[#3b82f6] pl-[14px]'
+                      : 'text-[#9ca3af] hover:text-[#f1f1f1] hover:bg-[#1a1a1a] active:bg-[#1a1a1a]'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+                {href === '/apps' && recentApps.length > 0 && (
+                  <div className="mt-0.5 space-y-0.5 pl-4">
+                    {recentApps.map(app => {
+                      const isAppActive = pathname === `/apps/${app.id}`
+                      return (
+                        <Link
+                          key={app.id}
+                          href={`/apps/${app.id}`}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors ${
+                            isAppActive
+                              ? 'text-[#3b82f6] bg-[#3b82f6]/10'
+                              : 'text-[#6b7280] hover:text-[#f1f1f1] hover:bg-[#1a1a1a]'
+                          }`}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: app.color ?? '#3b82f6' }}
+                          />
+                          <span className="truncate">{app.name}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-3 border-t border-[#2a2a2a]">
+        {/* Bottom — Settings + Logout */}
+        <div className="p-3 border-t border-[#2a2a2a] space-y-0.5">
+          <Link
+            href="/settings"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${
+              pathname === '/settings'
+                ? 'text-[#3b82f6] bg-[#3b82f6]/10 border-l-2 border-[#3b82f6] pl-[14px]'
+                : 'text-[#9ca3af] hover:text-[#f1f1f1] hover:bg-[#1a1a1a]'
+            }`}
+          >
+            <Settings size={18} />
+            Settings
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-[#9ca3af] hover:text-[#ef4444] hover:bg-[#1a1a1a] w-full transition-colors"

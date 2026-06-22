@@ -15,8 +15,13 @@ vi.mock('next/link', () => ({
   ),
 }))
 
+vi.mock('@/lib/hooks/useRecentApps', () => ({
+  useRecentApps: vi.fn(() => []),
+}))
+
 import Sidebar from './Sidebar'
 import { usePathname, useRouter } from 'next/navigation'
+import { useRecentApps } from '@/lib/hooks/useRecentApps'
 
 // Mock sessionStorage (app uses sessionStorage for autohub_token everywhere)
 const sessionStorageMock = (() => {
@@ -75,5 +80,16 @@ describe('Sidebar', () => {
     const aside = screen.getByRole('complementary')
     expect(aside.className).toContain('hidden')
     expect(aside.className).toContain('md:flex')
+  })
+
+  it('shows recent apps sub-list under Apps when visits exist', () => {
+    vi.mocked(useRecentApps).mockReturnValue([
+      { id: 'files', name: 'Files', description: '', url: '/files', color: '#f59e0b' },
+      { id: 'claude-terminal', name: 'Code Terminal', description: '', url: '/terminal', color: '#10b981' },
+    ])
+    render(<Sidebar />)
+    const filesLink = screen.getByText('Files').closest('a')
+    expect(filesLink).toHaveAttribute('href', '/apps/files')
+    expect(screen.getByText('Code Terminal')).toBeInTheDocument()
   })
 })
