@@ -227,11 +227,11 @@ function NetworkCard({
             const isDown = iface.rxTotalBytes + iface.txTotalBytes === 0
             return (
               <div key={iface.name} className="flex items-center justify-between text-[10px]">
-                <span className={`font-mono ${isDown ? 'text-[#4b5563]' : 'text-[#9ca3af]'}`}>
+                <span className={`font-mono ${isDown ? 'text-[#9ca3af]' : 'text-[#9ca3af]'}`}>
                   {iface.name}
                 </span>
                 {isDown ? (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[#1f1f1f] text-[#4b5563] border border-[#2a2a2a]">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-900/30 text-red-400 border border-red-800/40">
                     down
                   </span>
                 ) : (

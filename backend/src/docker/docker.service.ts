@@ -288,9 +288,24 @@ export class DockerService {
       return ''
     }
 
+    // Enumerate all interfaces from sysfs so down interfaces (e.g. eth0 with no cable)
+    // are always included even if they have never carried traffic.
+    const getSysfsIfaces = (): string[] => {
+      for (const base of ['/host/sys/class/net', '/sys/class/net']) {
+        try { return fs.readdirSync(base) } catch { /* try next */ }
+      }
+      return []
+    }
+
     const s1 = this.parseNetDev(readDev())
     await new Promise<void>((r) => setTimeout(r, 500))
     const s2 = this.parseNetDev(readDev())
+
+    // Seed s1/s2 with any sysfs interfaces missing from /proc/net/dev
+    for (const iface of getSysfsIfaces()) {
+      if (!s1[iface]) s1[iface] = { rxBytes: 0, txBytes: 0 }
+      if (!s2[iface]) s2[iface] = { rxBytes: 0, txBytes: 0 }
+    }
 
     // Physical interfaces only (no Docker virtuals)
     const physicalIfaces = Object.keys(s2).filter(

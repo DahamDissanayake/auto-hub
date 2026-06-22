@@ -85,12 +85,11 @@ export function MdBrowserDrawer({ root, startPath, onClose }: MdBrowserDrawerPro
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 flex items-start justify-center pt-8 px-4 pb-8"
+      className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-start md:items-center justify-center sm:pt-8 sm:px-4 sm:pb-8 md:p-6"
       onClick={onClose}
     >
       <div
-        className="bg-[#111] rounded-lg w-full max-w-lg flex flex-col overflow-hidden border border-[#2a2a2a]"
-        style={{ maxHeight: 'calc(100dvh - 4rem)' }}
+        className="bg-[#111] rounded-t-lg sm:rounded-lg w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl flex flex-col overflow-hidden border border-[#2a2a2a] max-h-[85dvh] sm:max-h-[calc(100dvh-4rem)] md:max-h-[90dvh]"
         onClick={e => e.stopPropagation()}
       >
         {view === 'browse' ? (
