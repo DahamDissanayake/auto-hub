@@ -173,9 +173,10 @@ export class AuthService {
 
   async revokeSession(deviceId: string, ip: string, userAgent: string): Promise<void> {
     const device = await this.deviceRepo.findOne({ where: { id: deviceId } });
+    if (!device) throw new NotFoundException('Device not found');
     const sessionToken = await this.redis.findSessionByDeviceId(deviceId);
     if (sessionToken) await this.redis.deleteSession(sessionToken);
-    await this.logEvent(LoginEventType.REVOKED, ip, userAgent, device ?? null);
+    await this.logEvent(LoginEventType.REVOKED, ip, userAgent, device);
   }
 
   private async issueSession(device: Device, permanent: boolean, ip: string, userAgent: string): Promise<{

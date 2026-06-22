@@ -7,7 +7,7 @@ import { Device } from './entities/device.entity';
 import { LoginEvent, LoginEventType } from './entities/login-event.entity';
 import { RedisAuthService } from './redis-auth.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { UnauthorizedException, HttpException } from '@nestjs/common';
+import { UnauthorizedException, HttpException, NotFoundException } from '@nestjs/common';
 
 const mockDeviceRepo = {
   findOne: jest.fn(),
@@ -212,6 +212,15 @@ describe('AuthService', () => {
       expect(result.devices[0]).toMatchObject({ id: 'dev-1', hasActiveSession: true });
       expect(result.total).toBe(1);
     });
+
+    it('returns devices with hasActiveSession: false when not in session map', async () => {
+      mockDeviceRepo.find.mockResolvedValueOnce([{ id: 'dev-2', token: 'tok-2' }]);
+      mockRedis.getAllSessionDeviceIds.mockResolvedValueOnce(new Map([['s1', 'dev-1']])); // dev-2 not in map
+      mockEventRepo.findAndCount.mockResolvedValueOnce([[], 0]);
+
+      const result = await service.getSessions(1, 20);
+      expect(result.devices[0]).toMatchObject({ id: 'dev-2', hasActiveSession: false });
+    });
   });
 
   describe('updateDevice()', () => {
@@ -225,7 +234,6 @@ describe('AuthService', () => {
 
     it('throws NotFoundException when device not found', async () => {
       mockDeviceRepo.findOne.mockResolvedValueOnce(null);
-      const { NotFoundException } = await import('@nestjs/common');
       await expect(service.updateDevice('missing', true)).rejects.toThrow(NotFoundException);
     });
   });
@@ -240,6 +248,11 @@ describe('AuthService', () => {
       expect(mockEventRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ eventType: LoginEventType.REVOKED }),
       );
+    });
+
+    it('throws NotFoundException when device does not exist', async () => {
+      mockDeviceRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.revokeSession('missing', '1.2.3.4', 'ua')).rejects.toThrow(NotFoundException);
     });
   });
 });
