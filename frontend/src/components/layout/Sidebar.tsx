@@ -7,7 +7,7 @@ import {
   GitBranch, Settings, LogOut,
 } from 'lucide-react'
 import { useRecentApps } from '@/lib/hooks/useRecentApps'
-import api, { clearAuth } from '@/lib/api'
+import api, { clearAuth, getSessionToken } from '@/lib/api'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,8 +49,7 @@ export default function Sidebar() {
   const recentApps = useRecentApps()
 
   const handleLogout = async () => {
-    const sessionToken =
-      localStorage.getItem('autohub_session') ?? sessionStorage.getItem('autohub_session')
+    const sessionToken = getSessionToken()
     if (sessionToken) {
       try { await api.post('/api/auth/logout', { sessionToken }) } catch { /* ignore */ }
     }

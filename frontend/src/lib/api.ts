@@ -27,7 +27,8 @@ export async function refreshAuth(): Promise<boolean> {
   const sessionToken = getSessionToken()
   if (!sessionToken) return false
   try {
-    const { data } = await axios.post('/api/auth/refresh', { sessionToken })
+    const base = process.env.NEXT_PUBLIC_API_URL ?? ''
+    const { data } = await axios.post(`${base}/api/auth/refresh`, { sessionToken })
     setAccessJwt(data.accessJwt)
     return true
   } catch {
@@ -47,7 +48,7 @@ api.interceptors.request.use((config) => {
 })
 
 let isRefreshing = false
-let refreshQueue: Array<(token: string) => void> = []
+let refreshQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = []
 
 api.interceptors.response.use(
   (response) => response,
@@ -56,10 +57,13 @@ api.interceptors.response.use(
     if (error.response?.status !== 401 || original._retry) return Promise.reject(error)
 
     if (isRefreshing) {
-      return new Promise((resolve) => {
-        refreshQueue.push((token) => {
-          original.headers.Authorization = `Bearer ${token}`
-          resolve(api(original))
+      return new Promise((resolve, reject) => {
+        refreshQueue.push({
+          resolve: (token) => {
+            original.headers.Authorization = `Bearer ${token}`
+            resolve(api(original))
+          },
+          reject,
         })
       })
     }
@@ -71,12 +75,13 @@ api.interceptors.response.use(
     isRefreshing = false
 
     if (ok && accessJwt) {
-      refreshQueue.forEach((cb) => cb(accessJwt!))
+      refreshQueue.forEach(({ resolve }) => resolve(accessJwt!))
       refreshQueue = []
       original.headers.Authorization = `Bearer ${accessJwt}`
       return api(original)
     }
 
+    refreshQueue.forEach(({ reject }) => reject(new Error('Session expired')))
     refreshQueue = []
     clearAuth()
     if (typeof window !== 'undefined') window.location.href = '/login'
