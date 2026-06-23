@@ -467,6 +467,7 @@ wss.on('connection', (ws, req) => {
 
 if (require.main === module) {
   profiles.bootstrapActiveProfile();
+  profiles.setupCredentialWatcher();
   migrateProfileEmails();
 }
 

@@ -105,13 +105,10 @@ export default function LoginPage() {
     if (data.isPermanent) {
       localStorage.setItem('autohub_session', data.sessionToken)
     } else {
+      // sessionStorage clears naturally when the tab is closed; the backend
+      // enforces a 24 h TTL so orphaned sessions self-clean without needing
+      // a beforeunload beacon (which fires on refresh and breaks the session).
       sessionStorage.setItem('autohub_session', data.sessionToken)
-      window.addEventListener('beforeunload', () => {
-        navigator.sendBeacon(
-          '/api/auth/logout',
-          new Blob([JSON.stringify({ sessionToken: data.sessionToken })], { type: 'application/json' })
-        )
-      }, { once: true })
     }
   }
 

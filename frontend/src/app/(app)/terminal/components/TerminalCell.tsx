@@ -38,7 +38,8 @@ export function TerminalCell({ sessionName, fontSize = 10 }: TerminalCellProps) 
       fitAddon.fit()
 
       const el = containerRef.current!
-      const token = sessionStorage.getItem('autohub_token') ?? ''
+      const { getAccessJwt } = await import('@/lib/api')
+      const token = getAccessJwt() ?? ''
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
         `${proto}//${window.location.host}/terminal-ws/?session=${encodeURIComponent(sessionName)}&token=${encodeURIComponent(token)}`

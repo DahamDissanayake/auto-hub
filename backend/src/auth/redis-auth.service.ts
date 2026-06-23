@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 const SESSION_PREFIX = 'autohub:session:';
 const OTP_PREFIX = 'autohub:otp:';
 const SEVEN_DAYS_SEC = 7 * 24 * 60 * 60;
+const ONE_DAY_SEC = 24 * 60 * 60;
 const FIVE_MIN_SEC = 300;
 
 export interface SessionData {
@@ -30,11 +31,8 @@ export class RedisAuthService {
   async setSession(token: string, data: SessionData, permanent: boolean): Promise<void> {
     const key = SESSION_PREFIX + token;
     const value = JSON.stringify(data);
-    if (permanent) {
-      await this.client.set(key, value, 'EX', SEVEN_DAYS_SEC);
-    } else {
-      await this.client.set(key, value);
-    }
+    const ttl = permanent ? SEVEN_DAYS_SEC : ONE_DAY_SEC;
+    await this.client.set(key, value, 'EX', ttl);
   }
 
   async getSession(token: string): Promise<SessionData | null> {

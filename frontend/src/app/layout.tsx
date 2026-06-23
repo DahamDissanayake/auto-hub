@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'AutoHub',
   description: 'Personal automation OS',
   icons: {
-    icon: '/img/icons/Base Logo - Dark.ico',
+    icon: '/img/icons/Base Logo - Light.ico',
   },
 }
 

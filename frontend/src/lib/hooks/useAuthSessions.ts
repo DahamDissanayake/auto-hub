@@ -63,3 +63,11 @@ export function useLogoutAll() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['auth-sessions'] }),
   })
 }
+
+export function useDeleteDevice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/auth/devices/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['auth-sessions'] }),
+  })
+}

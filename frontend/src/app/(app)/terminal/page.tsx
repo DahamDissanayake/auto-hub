@@ -2,7 +2,7 @@
 import '@xterm/xterm/css/xterm.css'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Terminal } from '@xterm/xterm'
-import api from '@/lib/api'
+import api, { getAccessJwt } from '@/lib/api'
 import { SessionManager, Session } from './components/SessionManager'
 import { WorkspacePicker } from './components/WorkspacePicker'
 import { RepoPicker } from './components/RepoPicker'
@@ -177,7 +177,7 @@ export default function TerminalPage() {
       // term.onScroll fires whenever xterm changes ydisp (any scroll path).
       const scrollDisp = term.onScroll(() => requestAnimationFrame(updateScrollbar))
 
-      const token = sessionStorage.getItem('autohub_token') ?? ''
+      const token = getAccessJwt() ?? ''
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const ws = new WebSocket(
         `${proto}//${window.location.host}/terminal-ws/?session=${encodeURIComponent(sessionName)}&token=${encodeURIComponent(token)}`
@@ -351,15 +351,8 @@ export default function TerminalPage() {
     const term = termRef.current
     if (!term) return
     const text = term.getSelection()
-    if (!text) {
-      term.selectAll()
-      const all = term.getSelection()
-      term.clearSelection()
-      if (!all) return
-      await navigator.clipboard.writeText(all)
-    } else {
-      await navigator.clipboard.writeText(text)
-    }
+    if (!text) return
+    await navigator.clipboard.writeText(text)
     setCopyFeedback(true)
     setTimeout(() => setCopyFeedback(false), 1200)
   }, [])

@@ -55,16 +55,19 @@ describe('bootstrapActiveProfile', () => {
     expect(fs.copyFileSync).not.toHaveBeenCalled();
   });
 
-  it('copies profile to credentials when active profile exists', () => {
-    fs.readFileSync.mockReturnValue(META_WITH_WORK);
+  it('writes profile credentials when active profile exists', () => {
+    const profileCreds = { claudeAiOauth: { token: 'abc' } };
+    fs.readFileSync.mockImplementation(p => {
+      if (p === META_PATH) return META_WITH_WORK;
+      return JSON.stringify(profileCreds);
+    });
     fs.existsSync.mockReturnValue(true);
-    fs.copyFileSync.mockImplementation(() => {});
+    fs.writeFileSync.mockImplementation(() => {});
     const { bootstrapActiveProfile } = require('./profiles');
     bootstrapActiveProfile();
-    expect(fs.copyFileSync).toHaveBeenCalledWith(
-      PROFILES_DIR + '/work.json',
-      CREDENTIALS_PATH,
-    );
+    const credCall = fs.writeFileSync.mock.calls.find(c => c[0] === CREDENTIALS_PATH);
+    expect(credCall).toBeTruthy();
+    expect(JSON.parse(credCall[1])).toEqual(profileCreds);
   });
 });
 
@@ -108,18 +111,21 @@ describe('saveProfile', () => {
 });
 
 describe('activateProfile', () => {
-  it('copies profile file to credentials and updates meta', () => {
-    fs.readFileSync.mockReturnValue(META_WITH_WORK);
+  it('writes profile credentials and updates meta', () => {
+    const profileCreds = { claudeAiOauth: { token: 'abc' } };
+    fs.readFileSync.mockImplementation(p => {
+      if (p === META_PATH) return META_WITH_WORK;
+      return JSON.stringify(profileCreds);
+    });
     fs.existsSync.mockReturnValue(true);
     fs.mkdirSync.mockImplementation(() => {});
-    fs.copyFileSync.mockImplementation(() => {});
     fs.writeFileSync.mockImplementation(() => {});
     fs.renameSync.mockImplementation(() => {});
     const { activateProfile } = require('./profiles');
     activateProfile('work');
-    expect(fs.copyFileSync).toHaveBeenCalledWith(
-      PROFILES_DIR + '/work.json', CREDENTIALS_PATH,
-    );
+    const credCall = fs.writeFileSync.mock.calls.find(c => c[0] === CREDENTIALS_PATH);
+    expect(credCall).toBeTruthy();
+    expect(JSON.parse(credCall[1])).toEqual(profileCreds);
     const metaCall = fs.writeFileSync.mock.calls.find(c => c[0].includes('meta'));
     const meta = JSON.parse(metaCall[1]);
     expect(meta.active).toBe('work');

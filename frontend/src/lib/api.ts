@@ -19,7 +19,8 @@ export function clearAuth(): void {
   accessJwt = null
   if (typeof window === 'undefined') return
   localStorage.removeItem('autohub_session')
-  localStorage.removeItem('autohub_device')
+  // autohub_device is a persistent device fingerprint — never cleared on logout
+  // so the backend can recognise this browser across sessions.
   sessionStorage.removeItem('autohub_session')
 }
 

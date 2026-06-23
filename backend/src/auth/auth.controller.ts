@@ -74,4 +74,10 @@ export class AuthController {
   async revokeSession(@Param('deviceId') deviceId: string, @Req() req: Request) {
     await this.authService.revokeSession(deviceId, clientIp(req), req.headers['user-agent'] ?? '');
   }
+
+  @Delete('devices/:id')
+  @HttpCode(200)
+  async deleteDevice(@Param('id') id: string) {
+    await this.authService.deleteDevice(id);
+  }
 }

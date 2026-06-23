@@ -48,6 +48,7 @@ services:
       N8N_URL: http://n8n:5678
       PLUGIN_DIR: /app/plugins
       TIMEZONE: ${TIMEZONE}
+      TZ: ${TIMEZONE}
       TERMINAL_DIRS: /workspace/data,/workspace/github,/workspace/auto-hub
     volumes:
       - ./backend/plugins:/app/plugins
@@ -81,6 +82,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       TERMINAL_DIRS: /workspace/data,/workspace/github,/workspace/auto-hub
       GH_TOKEN: ${GH_TOKEN}
+      TZ: ${TIMEZONE}
     volumes:
       - /home/dama:/home/dama:rw
       - /mnt/data:/workspace/data:rw

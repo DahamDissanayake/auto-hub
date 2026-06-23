@@ -184,6 +184,14 @@ export class AuthService {
     await this.logEvent(LoginEventType.REVOKED, ip, userAgent, device);
   }
 
+  async deleteDevice(id: string): Promise<void> {
+    const device = await this.deviceRepo.findOne({ where: { id } });
+    if (!device) throw new NotFoundException('Device not found');
+    const sessionToken = await this.redis.findSessionByDeviceId(id);
+    if (sessionToken) await this.redis.deleteSession(sessionToken);
+    await this.deviceRepo.remove(device);
+  }
+
   private async issueSession(device: Device, permanent: boolean, ip: string, userAgent: string): Promise<{
     sessionToken: string; accessJwt: string; deviceToken: string; isPermanent: boolean;
   }> {
