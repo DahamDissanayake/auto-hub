@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import { FolderOpen, FileText, File, X, ChevronLeft } from 'lucide-react'
 import { apiLs } from '@/lib/filesApi'
 import type { DirEntry } from '@/lib/filesApi'
+import { getAccessJwt } from '@/lib/api'
 
 export interface MdBrowserDrawerProps {
   root: string
@@ -60,7 +61,7 @@ export function MdBrowserDrawer({ root, startPath, onClose }: MdBrowserDrawerPro
     setMdLoading(true)
     setView('viewer')
     try {
-      const token = sessionStorage.getItem('autohub_token') ?? ''
+      const token = getAccessJwt() ?? ''
       const res = await fetch(
         `/files-api/download?root=${encodeURIComponent(root)}&path=${encodeURIComponent(filePath)}&token=${encodeURIComponent(token)}`
       )
