@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtGuard } from './auth/jwt.guard';
 import { CryptoModule } from './crypto/crypto.module';
 import { AccountsModule } from './accounts/accounts.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 import { GmailAccount } from './accounts/entities/gmail-account.entity';
 import { Campaign } from './campaigns/entities/campaign.entity';
 import { Contact } from './campaigns/entities/contact.entity';
@@ -34,6 +35,7 @@ import { SendLog } from './campaigns/entities/send-log.entity';
     }),
     CryptoModule,
     AccountsModule,
+    CampaignsModule,
   ],
   providers: [
     JwtGuard,
