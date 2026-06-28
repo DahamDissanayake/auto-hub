@@ -9,9 +9,11 @@ interface Props {
   bodyHtml: string
   onSubjectChange: (v: string) => void
   onBodyChange: (v: string) => void
+  onBack: () => void
+  onNext: () => void
 }
 
-export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange }: Props) {
+export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange, onBack, onNext }: Props) {
   const editor = useEditor({
     extensions: [StarterKit],
     content: bodyHtml || '<p>Hi {{firstName}},</p><p></p>',
@@ -56,6 +58,24 @@ export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange 
         <div className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 min-h-[240px] text-sm text-[#e5e7eb] focus-within:border-[#8b5cf6] transition-colors prose prose-invert max-w-none">
           <EditorContent editor={editor} />
         </div>
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex gap-3 justify-end">
+        <button
+          type="button"
+          onClick={onBack}
+          className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-4 py-2 rounded-lg"
+        >
+          Next
+        </button>
       </div>
     </div>
   )

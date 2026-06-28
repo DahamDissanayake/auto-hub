@@ -5,6 +5,8 @@ interface Props {
   ratePerHour: number | null
   totalContacts: number
   onChange: (scheduledAt: string | null, ratePerHour: number | null) => void
+  onBack: () => void
+  onNext: () => void
 }
 
 function estimatedCompletion(total: number, ratePerHour: number | null, scheduledAt: string | null): string {
@@ -14,7 +16,7 @@ function estimatedCompletion(total: number, ratePerHour: number | null, schedule
   return new Date(startMs + durationMs).toLocaleString()
 }
 
-export function Step4SendOptions({ scheduledAt, ratePerHour, totalContacts, onChange }: Props) {
+export function Step4SendOptions({ scheduledAt, ratePerHour, totalContacts, onChange, onBack, onNext }: Props) {
   const isScheduled = scheduledAt !== null
 
   return (
@@ -88,6 +90,24 @@ export function Step4SendOptions({ scheduledAt, ratePerHour, totalContacts, onCh
           Estimated completion: <span className="text-[#e5e7eb]">{estimatedCompletion(totalContacts, ratePerHour, scheduledAt)}</span>
         </p>
       )}
+
+      {/* Navigation buttons */}
+      <div className="flex gap-3 justify-end">
+        <button
+          type="button"
+          onClick={onBack}
+          className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-4 py-2 rounded-lg"
+        >
+          Confirm
+        </button>
+      </div>
     </div>
   )
 }
