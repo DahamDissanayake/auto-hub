@@ -9,9 +9,10 @@ type FieldOption = typeof FIELD_OPTIONS[number]
 
 interface Props {
   onConfirm: (contacts: MappedContact[]) => void
+  onBack: () => void
 }
 
-export function Step2UploadContacts({ onConfirm }: Props) {
+export function Step2UploadContacts({ onConfirm, onBack }: Props) {
   const [headers, setHeaders] = useState<string[]>([])
   const [mapping, setMapping] = useState<Record<string, FieldOption>>({})
   const [preview, setPreview] = useState<string[][]>([])
@@ -126,13 +127,21 @@ export function Step2UploadContacts({ onConfirm }: Props) {
             </div>
           )}
 
-          <button
-            onClick={handleConfirm}
-            disabled={confirmed}
-            className="px-4 py-2 bg-[#8b5cf6] text-white text-sm rounded-lg hover:bg-[#7c3aed] disabled:opacity-50"
-          >
-            {confirmed ? `✓ ${allRows.length} contacts loaded` : 'Confirm mapping'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onBack}
+              className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={confirmed}
+              className="px-4 py-2 bg-[#8b5cf6] text-white text-sm rounded-lg hover:bg-[#7c3aed] disabled:opacity-50"
+            >
+              {confirmed ? `✓ ${allRows.length} contacts loaded` : 'Confirm mapping'}
+            </button>
+          </div>
         </>
       )}
     </div>
