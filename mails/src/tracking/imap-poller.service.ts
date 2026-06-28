@@ -52,9 +52,9 @@ export class ImapPollerService implements OnModuleInit {
     try {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const uids = await client.search({ since });
-      if (!uids.length) return;
+      if (!uids || !uids.length) return;
 
-      for await (const msg of client.fetch(uids.join(','), { envelope: true })) {
+      for await (const msg of client.fetch((uids as number[]).join(','), { envelope: true })) {
         const inReplyTo: string = (msg.envelope as any)?.inReplyTo;
         if (!inReplyTo) continue;
         const match = sentLogs.find(l => l.messageId === inReplyTo);

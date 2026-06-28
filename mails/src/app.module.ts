@@ -10,6 +10,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { MailQueueModule } from './mail-queue/mail-queue.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { TemplateModule } from './template/template.module';
 import { GmailAccount } from './accounts/entities/gmail-account.entity';
 import { Campaign } from './campaigns/entities/campaign.entity';
 import { Contact } from './campaigns/entities/contact.entity';
@@ -40,6 +41,7 @@ import { SendLog } from './campaigns/entities/send-log.entity';
     MailQueueModule,
     CampaignsModule,
     TrackingModule,
+    TemplateModule,
   ],
   providers: [
     JwtGuard,
