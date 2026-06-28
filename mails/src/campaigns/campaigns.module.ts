@@ -5,9 +5,13 @@ import { Contact } from './entities/contact.entity';
 import { SendLog } from './entities/send-log.entity';
 import { CampaignsService } from './campaigns.service';
 import { CampaignsController } from './campaigns.controller';
+import { MailQueueModule } from '../mail-queue/mail-queue.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Campaign, Contact, SendLog])],
+  imports: [
+    TypeOrmModule.forFeature([Campaign, Contact, SendLog]),
+    MailQueueModule,
+  ],
   controllers: [CampaignsController],
   providers: [CampaignsService],
 })
