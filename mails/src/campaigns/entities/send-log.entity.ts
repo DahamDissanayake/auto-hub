@@ -14,7 +14,7 @@ export class SendLog {
   @Column()
   contactId: number;
 
-  @ManyToOne(() => Contact, { eager: false })
+  @ManyToOne(() => Contact, { eager: false, createForeignKeyConstraints: false })
   @JoinColumn({ name: 'contactId' })
   contact: Contact;
 
