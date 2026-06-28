@@ -33,4 +33,12 @@ export const apps: AppEntry[] = [
     lucideIcon: 'FolderOpen',
     color: '#f59e0b',
   },
+  {
+    id: 'mails',
+    name: 'Mails',
+    description: 'Outreach email campaigns — import contacts from Excel, personalise with merge tags, send via Gmail SMTP, track opens and replies.',
+    url: '/mails',
+    lucideIcon: 'Mail',
+    color: '#8b5cf6',
+  },
 ]
