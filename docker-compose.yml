@@ -104,6 +104,16 @@ services:
       - /mnt/data:/roots/data:rw
     restart: unless-stopped
 
+  mails:
+    build: ./mails
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      DOMAIN: ${DOMAIN}
+      DB_PATH: /data/mails.db
+    volumes:
+      - mails_data:/data
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
@@ -117,6 +127,7 @@ services:
       - n8n
       - terminal
       - files
+      - mails
     restart: unless-stopped
 
   cloudflared:
@@ -132,3 +143,4 @@ services:
 volumes:
   postgres_data:
   n8n_data:
+  mails_data:
