@@ -10,17 +10,13 @@ const TRANSPARENT_GIF = Buffer.from(
   'base64',
 );
 
-// Google proxies images at delivery time, not open time, producing false opens.
-// Known signatures:
-//   - UA contains "GoogleImageProxy" or "ggpht.com" (Gmail mobile proxy)
-//   - UA contains "Chrome/42." + "Edge/12." (Gmail web cache bot)
-function isGoogleProxy(ua: string): boolean {
+// Gmail's web cache pre-fetches images at delivery using a specific ancient UA.
+// The GoogleImageProxy UA (mobile) fires when the user actually opens on mobile —
+// so we only filter the web-cache delivery bot, not GoogleImageProxy itself.
+function isDeliveryBot(ua: string): boolean {
   const u = ua.toLowerCase();
-  return (
-    u.includes('googleimageproxy') ||
-    u.includes('ggpht.com') ||
-    (u.includes('chrome/42.') && u.includes('edge/12.'))
-  );
+  // Chrome/42 + Edge/12 is Gmail's web delivery cache — fires in seconds, not a human open
+  return u.includes('chrome/42.') && u.includes('edge/12.');
 }
 
 @Controller('track')
@@ -39,7 +35,7 @@ export class TrackingController {
     const ua = req.get('user-agent') ?? '';
     const id = parseInt(rawId, 10);
 
-    if (!isNaN(id) && !isGoogleProxy(ua)) {
+    if (!isNaN(id) && !isDeliveryBot(ua)) {
       const log = await this.logRepo.findOneBy({ id });
       if (log && !log.openedAt) {
         await this.logRepo.update(id, { openedAt: new Date() });

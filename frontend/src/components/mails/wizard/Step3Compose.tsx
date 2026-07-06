@@ -1,6 +1,5 @@
 'use client'
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
+import { RichTextEditor } from '@/components/mails/RichTextEditor'
 
 const MERGE_TAGS = ['{{firstName}}', '{{lastName}}', '{{email}}', '{{company}}']
 
@@ -14,16 +13,6 @@ interface Props {
 }
 
 export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange, onBack, onNext }: Props) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: bodyHtml || '<p>Hi {{firstName}},</p><p></p>',
-    onUpdate: ({ editor }) => onBodyChange(editor.getHTML()),
-  })
-
-  function insertTag(tag: string) {
-    editor?.chain().focus().insertContent(tag).run()
-  }
-
   return (
     <div className="space-y-4">
       {/* Subject */}
@@ -39,12 +28,18 @@ export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange,
 
       {/* Merge tag helpers */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-[#6b7280]">Insert:</span>
+        <span className="text-xs text-[#6b7280]">Merge tags:</span>
         {MERGE_TAGS.map(tag => (
           <button
             key={tag}
             type="button"
-            onClick={() => insertTag(tag)}
+            onClick={() => {
+              const active = document.querySelector('.ProseMirror') as HTMLElement | null
+              if (active) {
+                active.focus()
+                document.execCommand('insertText', false, tag)
+              }
+            }}
             className="px-2 py-0.5 text-xs bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/30 rounded hover:bg-[#8b5cf6]/20"
           >
             {tag}
@@ -55,24 +50,26 @@ export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange,
       {/* Body editor */}
       <div>
         <label className="block text-xs text-[#9ca3af] mb-1.5">Email body</label>
-        <div className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 min-h-[240px] text-sm text-[#e5e7eb] focus-within:border-[#8b5cf6] transition-colors prose prose-invert max-w-none">
-          <EditorContent editor={editor} />
-        </div>
+        <RichTextEditor
+          content={bodyHtml || '<p>Hi {{firstName}},</p><p></p>'}
+          onChange={onBodyChange}
+          minHeight="300px"
+        />
       </div>
 
-      {/* Navigation buttons */}
+      {/* Navigation */}
       <div className="flex gap-3 justify-end">
         <button
           type="button"
           onClick={onBack}
-          className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg"
+          className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg text-sm"
         >
           Back
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-4 py-2 rounded-lg"
+          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-4 py-2 rounded-lg text-sm"
         >
           Next
         </button>

@@ -3,6 +3,7 @@ export interface GmailAccount {
   email: string
   displayName: string
   smtpUser: string | null
+  signature: string | null
   isDefault: boolean
   createdAt: string
 }

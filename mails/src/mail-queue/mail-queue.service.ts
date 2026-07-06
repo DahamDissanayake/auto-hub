@@ -94,8 +94,11 @@ export class MailQueueService implements OnModuleInit {
 
       const contact = log.contact;
       const subject = this.replaceMergeTags(campaign.subject, contact);
+      const bodyWithSignature = account.signature
+        ? `${campaign.bodyHtml}<br><br><div class="signature">${account.signature}</div>`
+        : campaign.bodyHtml;
       const body = this.injectPixel(
-        this.replaceMergeTags(campaign.bodyHtml, contact),
+        this.replaceMergeTags(bodyWithSignature, contact),
         log.id,
         domain,
       );

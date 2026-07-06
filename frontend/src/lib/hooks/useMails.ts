@@ -14,6 +14,15 @@ export function useCreateAccount() {
   })
 }
 
+export function useUpdateAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number; displayName?: string; email?: string; appPassword?: string; smtpUser?: string; signature?: string; isDefault?: boolean }) =>
+      mailsApi.updateAccount(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mails', 'accounts'] }),
+  })
+}
+
 export function useSetDefaultAccount() {
   const qc = useQueryClient()
   return useMutation({

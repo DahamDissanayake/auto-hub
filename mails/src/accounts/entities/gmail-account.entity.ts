@@ -17,6 +17,9 @@ export class GmailAccount {
   @Column({ nullable: true })
   smtpUser: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  signature: string | null;
+
   @Column({ default: false })
   isDefault: boolean;
 
