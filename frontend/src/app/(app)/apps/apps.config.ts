@@ -35,7 +35,7 @@ export const apps: AppEntry[] = [
   },
   {
     id: 'mails',
-    name: 'Mails',
+    name: 'Mail Campaigns',
     description: 'Outreach email campaigns — import contacts from Excel, personalise with merge tags, send via Gmail SMTP, track opens and replies.',
     url: '/mails',
     lucideIcon: 'Mail',
