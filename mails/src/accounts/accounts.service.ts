@@ -20,9 +20,12 @@ export class AccountsService {
 
   async create(dto: CreateAccountDto): Promise<GmailAccount> {
     const account = this.repo.create({
-      ...dto,
+      email: dto.email,
+      displayName: dto.displayName,
       appPassword: this.crypto.encrypt(dto.appPassword.replace(/\s/g, '')),
       smtpUser: dto.smtpUser?.trim() || null,
+      signature: dto.signature || null,
+      isDefault: dto.isDefault ?? false,
     });
     return this.repo.save(account);
   }

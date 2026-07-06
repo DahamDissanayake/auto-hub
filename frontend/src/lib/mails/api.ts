@@ -7,7 +7,7 @@ export const mailsApi = {
   // Accounts
   getAccounts: (): Promise<GmailAccount[]> =>
     api.get(`${B}/accounts`).then(r => r.data),
-  createAccount: (body: { email: string; displayName: string; appPassword: string; smtpUser?: string; isDefault?: boolean }) =>
+  createAccount: (body: { email: string; displayName: string; appPassword: string; smtpUser?: string; signature?: string; isDefault?: boolean }) =>
     api.post(`${B}/accounts`, body).then(r => r.data),
   updateAccount: (id: number, body: { displayName?: string; email?: string; appPassword?: string; smtpUser?: string; signature?: string; isDefault?: boolean }) =>
     api.patch(`${B}/accounts/${id}`, body).then(r => r.data),

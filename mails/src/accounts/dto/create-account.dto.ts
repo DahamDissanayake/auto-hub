@@ -3,5 +3,6 @@ export class CreateAccountDto {
   displayName: string;
   appPassword: string;
   smtpUser?: string;
+  signature?: string;
   isDefault?: boolean;
 }

@@ -16,21 +16,39 @@ function AccountForm({
   isEdit,
 }: {
   initial: typeof BLANK_FORM
-  onSave: (f: typeof BLANK_FORM) => void
+  onSave: (f: typeof BLANK_FORM) => Promise<void>
   onCancel: () => void
   isPending: boolean
   isEdit: boolean
 }) {
   const [form, setForm] = useState(initial)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const f = (k: keyof typeof BLANK_FORM) => (v: string | boolean) =>
     setForm(prev => ({ ...prev, [k]: v }))
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    try {
+      await onSave(form)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } }; message?: string })
+        ?.response?.data?.message
+        ?? (err as { message?: string })?.message
+        ?? 'Save failed. Check your inputs and try again.'
+      setError(Array.isArray(msg) ? msg.join(', ') : String(msg))
+    }
+  }
+
   return (
-    <form
-      onSubmit={e => { e.preventDefault(); onSave(form) }}
-      className="px-5 py-4 border-b border-[#1e1e1e] space-y-3"
-    >
+    <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-[#1e1e1e] space-y-3">
+      {error && (
+        <div className="text-xs text-[#ef4444] bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <input
           required
@@ -41,7 +59,6 @@ function AccountForm({
         />
         <input
           required
-          type="email"
           placeholder="From address (e.g. sales@company.com)"
           value={form.email}
           onChange={e => f('email')(e.target.value)}
@@ -69,27 +86,22 @@ function AccountForm({
 
       <div>
         <input
-          type="email"
-          placeholder="Gmail login (only for &lsquo;Send mail as&rsquo; aliases — e.g. you@gmail.com)"
+          type="text"
+          placeholder="Gmail login for 'Send mail as' aliases (e.g. you@gmail.com) — leave blank for primary Gmail"
           value={form.smtpUser}
           onChange={e => f('smtpUser')(e.target.value)}
           className="w-full bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e5e7eb] placeholder-[#4b5563] focus:outline-none focus:border-[#8b5cf6]"
         />
-        <p className="text-xs text-[#4b5563] mt-1">
-          Leave blank if this is your actual Gmail. For a &ldquo;Send mail as&rdquo; alias, enter the Gmail you authenticate with and use its App Password above.
-        </p>
       </div>
 
-      {/* Signature */}
       <div>
         <label className="block text-xs text-[#9ca3af] mb-1.5">Signature (optional)</label>
         <RichTextEditor
           content={form.signature}
           onChange={v => f('signature')(v)}
           minHeight="120px"
-          placeholder="Your email signature…"
         />
-        <p className="text-xs text-[#4b5563] mt-1">Appended automatically to every email sent from this account. Supports images, links, and rich text.</p>
+        <p className="text-xs text-[#4b5563] mt-1">Appended automatically to every email sent from this account.</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -177,13 +189,27 @@ export default function MailsSettings() {
   const [editingId, setEditingId] = useState<number | null>(null)
 
   async function handleCreate(form: typeof BLANK_FORM) {
-    await createAccount.mutateAsync(form)
+    await createAccount.mutateAsync({
+      email: form.email,
+      displayName: form.displayName,
+      appPassword: form.appPassword,
+      smtpUser: form.smtpUser || undefined,
+      signature: form.signature || undefined,
+      isDefault: form.isDefault,
+    })
     setShowAddForm(false)
   }
 
   async function handleUpdate(id: number, form: typeof BLANK_FORM) {
-    const patch: Parameters<typeof updateAccount.mutateAsync>[0] = { id, ...form }
-    if (!form.appPassword) delete patch.appPassword
+    const patch: Parameters<typeof updateAccount.mutateAsync>[0] = {
+      id,
+      email: form.email,
+      displayName: form.displayName,
+      smtpUser: form.smtpUser || undefined,
+      signature: form.signature,
+      isDefault: form.isDefault,
+    }
+    if (form.appPassword) patch.appPassword = form.appPassword
     await updateAccount.mutateAsync(patch)
     setEditingId(null)
   }
@@ -216,7 +242,7 @@ export default function MailsSettings() {
         {showAddForm && (
           <AccountForm
             initial={BLANK_FORM}
-            onSave={handleCreate}
+            onSave={form => handleCreate(form)}
             onCancel={() => setShowAddForm(false)}
             isPending={createAccount.isPending}
             isEdit={false}
@@ -244,7 +270,7 @@ export default function MailsSettings() {
                     onSave={form => handleUpdate(acc.id, form)}
                     onCancel={() => setEditingId(null)}
                     isPending={updateAccount.isPending}
-                    isEdit
+                    isEdit={true}
                   />
                 ) : (
                   <AccountRow
