@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { ContactDto } from './dto/add-contacts.dto';
@@ -35,4 +35,7 @@ export class CampaignsController {
 
   @Get(':id/logs')
   getLogs(@Param('id', ParseIntPipe) id: number) { return this.service.getLogs(id); }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
 }

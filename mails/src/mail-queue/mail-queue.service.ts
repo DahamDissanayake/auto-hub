@@ -68,7 +68,7 @@ export class MailQueueService implements OnModuleInit {
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
-      auth: { user: account.email, pass: account.appPassword },
+      auth: { user: account.smtpUser || account.email, pass: account.appPassword },
     });
 
     const delayMs = campaign.ratePerHour

@@ -7,7 +7,7 @@ export const mailsApi = {
   // Accounts
   getAccounts: (): Promise<GmailAccount[]> =>
     api.get(`${B}/accounts`).then(r => r.data),
-  createAccount: (body: { email: string; displayName: string; appPassword: string; isDefault?: boolean }) =>
+  createAccount: (body: { email: string; displayName: string; appPassword: string; smtpUser?: string; isDefault?: boolean }) =>
     api.post(`${B}/accounts`, body).then(r => r.data),
   setDefaultAccount: (id: number) =>
     api.patch(`${B}/accounts/${id}/default`).then(r => r.data),
@@ -31,6 +31,8 @@ export const mailsApi = {
     api.post(`${B}/campaigns/${id}/resume`).then(r => r.data),
   retryFailed: (id: number) =>
     api.post(`${B}/campaigns/${id}/retry-failed`).then(r => r.data),
+  deleteCampaign: (id: number) =>
+    api.delete(`${B}/campaigns/${id}`).then(r => r.data),
   getLogs: (campaignId: number): Promise<SendLog[]> =>
     api.get(`${B}/campaigns/${campaignId}/logs`).then(r => r.data),
 

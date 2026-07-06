@@ -74,6 +74,14 @@ export class CampaignsService {
     this.mailQueue.enqueue(campaign);
   }
 
+  async remove(id: number): Promise<void> {
+    const campaign = await this.findOne(id);
+    this.mailQueue.pause(id);
+    await this.logRepo.delete({ campaignId: id });
+    await this.contactRepo.delete({ campaignId: id });
+    await this.campaignRepo.remove(campaign);
+  }
+
   async getLogs(campaignId: number): Promise<SendLog[]> {
     return this.logRepo.find({
       where: { campaignId },

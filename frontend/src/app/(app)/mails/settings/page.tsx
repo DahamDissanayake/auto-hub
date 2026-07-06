@@ -10,14 +10,14 @@ export default function MailsSettings() {
   const setDefault = useSetDefaultAccount()
   const deleteAccount = useDeleteAccount()
 
-  const [form, setForm] = useState({ email: '', displayName: '', appPassword: '', isDefault: false })
+  const [form, setForm] = useState({ email: '', displayName: '', appPassword: '', smtpUser: '', isDefault: false })
   const [showForm, setShowForm] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await createAccount.mutateAsync(form)
-    setForm({ email: '', displayName: '', appPassword: '', isDefault: false })
+    setForm({ email: '', displayName: '', appPassword: '', smtpUser: '', isDefault: false })
     setShowForm(false)
   }
 
@@ -67,7 +67,7 @@ export default function MailsSettings() {
               <input
                 required
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Gmail App Password (16 chars)"
+                placeholder="App Password (16 chars, from Google Account → Security)"
                 value={form.appPassword}
                 onChange={e => setForm(f => ({ ...f, appPassword: e.target.value }))}
                 className="flex-1 bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e5e7eb] placeholder-[#4b5563] focus:outline-none focus:border-[#8b5cf6]"
@@ -79,6 +79,18 @@ export default function MailsSettings() {
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
+            </div>
+            <div>
+              <input
+                type="email"
+                placeholder="Gmail login (only if this is a 'Send mail as' alias)"
+                value={form.smtpUser}
+                onChange={e => setForm(f => ({ ...f, smtpUser: e.target.value }))}
+                className="w-full bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e5e7eb] placeholder-[#4b5563] focus:outline-none focus:border-[#8b5cf6]"
+              />
+              <p className="text-xs text-[#4b5563] mt-1">
+                Leave blank if this is your actual Gmail account. For a &ldquo;Send mail as&rdquo; alias, enter the Gmail address you authenticate with (e.g. you@gmail.com) and its App Password above.
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -123,6 +135,9 @@ export default function MailsSettings() {
                     {acc.isDefault && <Star size={11} className="text-[#f59e0b] fill-[#f59e0b]" />}
                   </div>
                   <div className="text-xs text-[#6b7280]">{acc.email}</div>
+                  {acc.smtpUser && (
+                    <div className="text-xs text-[#4b5563]">via {acc.smtpUser}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {!acc.isDefault && (

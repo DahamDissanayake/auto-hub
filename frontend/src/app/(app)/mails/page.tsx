@@ -1,8 +1,8 @@
 'use client'
-import { useCampaigns } from '@/lib/hooks/useMails'
+import { useCampaigns, useDeleteCampaign } from '@/lib/hooks/useMails'
 import { mailsApi } from '@/lib/mails/api'
 import Link from 'next/link'
-import { Mail, Plus, Download } from 'lucide-react'
+import { Mail, Plus, Download, Trash2 } from 'lucide-react'
 import type { Campaign } from '@/lib/mails/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,6 +26,12 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
 
 export default function MailsDashboard() {
   const { data: campaigns = [], isLoading } = useCampaigns()
+  const deleteCampaign = useDeleteCampaign()
+
+  function handleDelete(c: Campaign) {
+    if (!confirm(`Delete "${c.name}"? This removes all contacts and send logs and cannot be undone.`)) return
+    deleteCampaign.mutate(c.id)
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -85,7 +91,8 @@ export default function MailsDashboard() {
                 <th className="text-right px-4 py-2.5 font-medium">Replied</th>
                 <th className="text-right px-4 py-2.5 font-medium">Failed</th>
                 <th className="text-left px-4 py-2.5 font-medium">Status</th>
-                <th className="text-right px-5 py-2.5 font-medium">Date</th>
+                <th className="text-right px-4 py-2.5 font-medium">Date</th>
+                <th className="px-5 py-2.5" />
               </tr>
             </thead>
             <tbody>
@@ -101,8 +108,18 @@ export default function MailsDashboard() {
                   <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.replied ?? 0}</td>
                   <td className="px-4 py-3 text-right text-[#ef4444]">{c.stats?.failed ?? 0}</td>
                   <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                  <td className="px-5 py-3 text-right text-[#6b7280] text-xs">
+                  <td className="px-4 py-3 text-right text-[#6b7280] text-xs">
                     {new Date(c.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => handleDelete(c)}
+                      disabled={deleteCampaign.isPending}
+                      className="text-[#4b5563] hover:text-[#ef4444] transition-colors disabled:opacity-40"
+                      title="Delete campaign"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

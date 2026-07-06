@@ -21,6 +21,7 @@ export class AccountsService {
     const account = this.repo.create({
       ...dto,
       appPassword: this.crypto.encrypt(dto.appPassword.replace(/\s/g, '')),
+      smtpUser: dto.smtpUser?.trim() || null,
     });
     return this.repo.save(account);
   }

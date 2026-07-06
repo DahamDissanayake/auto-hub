@@ -96,3 +96,11 @@ export function useRetryFailed() {
     onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ['mails', 'logs', id] }),
   })
 }
+
+export function useDeleteCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: mailsApi.deleteCampaign,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mails', 'campaigns'] }),
+  })
+}

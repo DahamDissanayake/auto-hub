@@ -14,6 +14,9 @@ export class GmailAccount {
   @Column()
   appPassword: string;
 
+  @Column({ nullable: true })
+  smtpUser: string | null;
+
   @Column({ default: false })
   isDefault: boolean;
 
