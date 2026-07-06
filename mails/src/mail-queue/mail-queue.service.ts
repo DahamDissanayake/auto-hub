@@ -57,6 +57,41 @@ export class MailQueueService implements OnModuleInit {
       : html + pixel;
   }
 
+  // Extract base64 data-URI images from HTML, replace with CID references,
+  // and return the cleaned HTML + nodemailer inline attachments.
+  extractInlineImages(html: string): {
+    html: string;
+    attachments: Array<{
+      cid: string;
+      filename: string;
+      content: Buffer;
+      contentType: string;
+      contentDisposition: 'inline';
+    }>;
+  } {
+    const attachments: ReturnType<typeof this.extractInlineImages>['attachments'] = [];
+    let idx = 0;
+
+    const processed = html.replace(
+      /src=["']data:([^;]+);base64,([A-Za-z0-9+/=\s]+)["']/g,
+      (_match, mimeType: string, b64: string) => {
+        const clean = mimeType.trim();
+        const ext = clean.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png';
+        const cid = `inline-img-${idx++}@mails`;
+        attachments.push({
+          cid,
+          filename: `image${idx}.${ext}`,
+          content: Buffer.from(b64.replace(/\s/g, ''), 'base64'),
+          contentType: clean,
+          contentDisposition: 'inline',
+        });
+        return `src="cid:${cid}"`;
+      },
+    );
+
+    return { html: processed, attachments };
+  }
+
   private async processCampaign(campaign: Campaign) {
     if (this.running.has(campaign.id)) return;
     this.running.add(campaign.id);
@@ -104,11 +139,13 @@ export class MailQueueService implements OnModuleInit {
       );
 
       try {
+        const { html: finalHtml, attachments } = this.extractInlineImages(body);
         const info = await transporter.sendMail({
           from: `"${account.displayName}" <${account.email}>`,
           to: contact.email,
           subject,
-          html: body,
+          html: finalHtml,
+          attachments,
         });
         await this.logRepo.update(log.id, {
           status: 'sent',
