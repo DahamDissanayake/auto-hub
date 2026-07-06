@@ -6,13 +6,14 @@ const MERGE_TAGS = ['{{firstName}}', '{{lastName}}', '{{email}}', '{{company}}']
 interface Props {
   subject: string
   bodyHtml: string
+  signature: string | null
   onSubjectChange: (v: string) => void
   onBodyChange: (v: string) => void
   onBack: () => void
   onNext: () => void
 }
 
-export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange, onBack, onNext }: Props) {
+export function Step3Compose({ subject, bodyHtml, signature, onSubjectChange, onBodyChange, onBack, onNext }: Props) {
   return (
     <div className="space-y-4">
       {/* Subject */}
@@ -55,6 +56,21 @@ export function Step3Compose({ subject, bodyHtml, onSubjectChange, onBodyChange,
           onChange={onBodyChange}
           minHeight="300px"
         />
+
+        {/* Signature preview — shown below editor, appended automatically at send time */}
+        {signature && (
+          <div className="mt-0 border border-t-0 border-[#222] rounded-b-lg bg-[#0a0a0a] px-3 pt-3 pb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 h-px bg-[#2a2a2a]" />
+              <span className="text-[10px] text-[#4b5563] whitespace-nowrap">Signature — added automatically</span>
+              <div className="flex-1 h-px bg-[#2a2a2a]" />
+            </div>
+            <div
+              className="text-sm text-[#6b7280] opacity-70 pointer-events-none select-none prose prose-invert prose-sm max-w-none [&_img]:max-w-full"
+              dangerouslySetInnerHTML={{ __html: signature }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

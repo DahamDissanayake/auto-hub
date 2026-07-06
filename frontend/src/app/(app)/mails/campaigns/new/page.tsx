@@ -34,6 +34,9 @@ export default function NewCampaignPage() {
   const [subject, setSubject] = useState('')
   const [bodyHtml, setBodyHtml] = useState('')
 
+  // Resolved account for signature preview
+  const selectedAccount = accounts.find(a => a.id === (fromAccountId ?? accounts[0]?.id))
+
   // Step 4 state
   const [scheduledAt, setScheduledAt] = useState<string | null>(null)
   const [ratePerHour, setRatePerHour] = useState<number | null>(null)
@@ -155,6 +158,7 @@ export default function NewCampaignPage() {
           <Step3Compose
             subject={subject}
             bodyHtml={bodyHtml}
+            signature={selectedAccount?.signature ?? null}
             onSubjectChange={setSubject}
             onBodyChange={setBodyHtml}
             onBack={() => setStep(1)}
