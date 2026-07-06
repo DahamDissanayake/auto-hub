@@ -13,6 +13,7 @@ import {
   Bold, Italic, UnderlineIcon, Strikethrough,
   Link2, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo,
+  ZoomIn, ZoomOut,
 } from 'lucide-react'
 
 // ── Image extension with width attribute ─────────────────────────────────────
@@ -32,13 +33,29 @@ const ResizableImage = Image.extend({
   },
 })
 
-// ── Image size options (mirrors Gmail) ───────────────────────────────────────
-const IMG_SIZES = [
-  { label: 'Small',    width: '200px' },
-  { label: 'Medium',   width: '350px' },
-  { label: 'Large',    width: '500px' },
-  { label: 'Original', width: null    },
-] as const
+// ── Incremental image resize (25% per step, min 50px) ───────────────────────
+const RESIZE_STEP = 0.25
+
+function resizeImage(editor: Editor, direction: 'larger' | 'smaller') {
+  const factor = direction === 'larger' ? 1 + RESIZE_STEP : 1 - RESIZE_STEP
+  const attrWidth = editor.getAttributes('image').width as string | null
+
+  let currentPx: number
+  if (attrWidth) {
+    currentPx = parseInt(attrWidth, 10)
+  } else {
+    // No explicit width — measure the rendered image from the DOM
+    const { from } = editor.state.selection
+    const domNode = editor.view.nodeDOM(from) as HTMLElement | null
+    const img = domNode instanceof HTMLImageElement
+      ? domNode
+      : (domNode?.querySelector?.('img') as HTMLImageElement | null)
+    currentPx = img ? (img.naturalWidth || img.offsetWidth || 300) : 300
+  }
+
+  const newPx = Math.max(50, Math.round(currentPx * factor))
+  editor.chain().focus().updateAttributes('image', { width: `${newPx}px` }).run()
+}
 
 // ── Toolbar button ────────────────────────────────────────────────────────────
 function Btn({
@@ -174,36 +191,30 @@ function Toolbar({ editor, onImageUpload }: { editor: Editor; onImageUpload: () 
 
 // ── Image resize bubble menu ──────────────────────────────────────────────────
 function ImageBubble({ editor }: { editor: Editor }) {
-  const currentWidth: string | null = editor.getAttributes('image').width ?? null
-
   return (
     <BubbleMenu
       editor={editor}
       shouldShow={({ editor: ed }) => ed.isActive('image')}
       options={{ placement: 'bottom-start', offset: 6 }}
     >
-      <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-2 py-1.5 shadow-2xl">
-        <span className="text-[10px] text-[#6b7280] pr-1 select-none">Size:</span>
-        {IMG_SIZES.map(({ label, width }) => {
-          const isActive = currentWidth === width
-          return (
-            <button
-              key={label}
-              type="button"
-              onMouseDown={e => {
-                e.preventDefault()
-                editor.chain().focus().updateAttributes('image', { width }).run()
-              }}
-              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-[#8b5cf6] text-white'
-                  : 'text-[#9ca3af] hover:bg-[#333] hover:text-[#e5e7eb]'
-              }`}
-            >
-              {label}
-            </button>
-          )
-        })}
+      <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-1.5 py-1 shadow-2xl">
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); resizeImage(editor, 'smaller') }}
+          title="Smaller (−25%)"
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#9ca3af] hover:bg-[#333] hover:text-[#e5e7eb] transition-colors"
+        >
+          <ZoomOut size={13} /> Smaller
+        </button>
+        <span className="w-px h-3.5 bg-[#333] self-center" />
+        <button
+          type="button"
+          onMouseDown={e => { e.preventDefault(); resizeImage(editor, 'larger') }}
+          title="Larger (+25%)"
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#9ca3af] hover:bg-[#333] hover:text-[#e5e7eb] transition-colors"
+        >
+          <ZoomIn size={13} /> Larger
+        </button>
       </div>
     </BubbleMenu>
   )
