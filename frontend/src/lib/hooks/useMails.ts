@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { mailsApi } from '@/lib/mails/api'
+import type { MappedContact } from '@/lib/mails/types'
 
 export function useAccounts() {
   return useQuery({ queryKey: ['mails', 'accounts'], queryFn: mailsApi.getAccounts })
@@ -26,6 +27,29 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: mailsApi.deleteAccount,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['mails', 'accounts'] }),
+  })
+}
+
+export function useCreateCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: mailsApi.createCampaign,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mails', 'campaigns'] }),
+  })
+}
+
+export function useAddContacts() {
+  return useMutation({
+    mutationFn: ({ campaignId, contacts }: { campaignId: number; contacts: MappedContact[] }) =>
+      mailsApi.addContacts(campaignId, contacts),
+  })
+}
+
+export function useLaunchCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: mailsApi.launchCampaign,
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ['mails', 'campaigns', id] }),
   })
 }
 

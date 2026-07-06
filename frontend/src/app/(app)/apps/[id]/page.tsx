@@ -3,12 +3,14 @@ import { apps } from '../apps.config'
 import TerminalPage from '../../terminal/page'
 import DockerMonitorPage from '../../docker/page'
 import FilesPage from '../../files/page'
+import MailsDashboard from '../../mails/page'
 import AppVisitRecorder from './AppVisitRecorder'
 
 const INTERNAL_PAGES: Record<string, React.ComponentType> = {
   'claude-terminal': TerminalPage as React.ComponentType,
   'docker-monitor': DockerMonitorPage as React.ComponentType,
   'files': FilesPage as React.ComponentType,
+  'mails': MailsDashboard as React.ComponentType,
 }
 
 export default function AppPage({ params }: { params: { id: string } }) {
