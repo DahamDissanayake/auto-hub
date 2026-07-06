@@ -78,21 +78,21 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/mails" className="text-[#6b7280] hover:text-[#e5e7eb]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/mails" className="text-[#6b7280] hover:text-[#e5e7eb] shrink-0">
             <ArrowLeft size={16} />
           </Link>
-          <div className="flex items-center gap-2">
-            <Mail size={18} className="text-[#8b5cf6]" />
-            <h1 className="text-[#e5e7eb] font-semibold">{campaign.name}</h1>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <Mail size={18} className="text-[#8b5cf6] shrink-0" />
+            <h1 className="text-[#e5e7eb] font-semibold truncate">{campaign.name}</h1>
+            <StatusBadge status={campaign.status} />
           </div>
-          <StatusBadge status={campaign.status} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-7 sm:ml-0">
           {campaign.status === 'sending' && (
             <button
               onClick={() => pause.mutate(campaignId)}
@@ -123,9 +123,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — 3 cols on mobile, 5 on desktop */}
       {campaign.stats && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
           <StatCard label="Total" value={campaign.stats.total} />
           <StatCard label="Sent" value={campaign.stats.sent} color="#22c55e" />
           <StatCard label="Opened" value={campaign.stats.opened} color="#3b82f6" />
@@ -135,34 +135,34 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       )}
 
       {/* Campaign info */}
-      <div className="bg-[#111111] border border-[#222222] rounded-xl p-5 space-y-2 text-sm">
-        <div className="flex gap-2">
-          <span className="text-[#6b7280] w-24">Subject</span>
-          <span className="text-[#e5e7eb]">{campaign.subject}</span>
+      <div className="bg-[#111111] border border-[#222222] rounded-xl p-4 sm:p-5 space-y-2 text-sm">
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-[#6b7280] w-20 sm:w-24 shrink-0">Subject</span>
+          <span className="text-[#e5e7eb] flex-1 min-w-0 break-words">{campaign.subject}</span>
         </div>
         {campaign.scheduledAt && (
-          <div className="flex gap-2">
-            <span className="text-[#6b7280] w-24">Scheduled</span>
+          <div className="flex gap-2 flex-wrap">
+            <span className="text-[#6b7280] w-20 sm:w-24 shrink-0">Scheduled</span>
             <span className="text-[#e5e7eb]">{new Date(campaign.scheduledAt).toLocaleString()}</span>
           </div>
         )}
         {campaign.ratePerHour && (
           <div className="flex gap-2">
-            <span className="text-[#6b7280] w-24">Rate cap</span>
+            <span className="text-[#6b7280] w-20 sm:w-24 shrink-0">Rate cap</span>
             <span className="text-[#e5e7eb]">{campaign.ratePerHour}/hr</span>
           </div>
         )}
         <div className="flex gap-2">
-          <span className="text-[#6b7280] w-24">Created</span>
+          <span className="text-[#6b7280] w-20 sm:w-24 shrink-0">Created</span>
           <span className="text-[#9ca3af] text-xs self-center">{new Date(campaign.createdAt).toLocaleString()}</span>
         </div>
       </div>
 
       {/* Send logs */}
       <div className="bg-[#111111] border border-[#222222] rounded-xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#1e1e1e] flex items-center justify-between">
+        <div className="px-4 sm:px-5 py-3.5 border-b border-[#1e1e1e] flex items-center justify-between">
           <h2 className="text-[#e5e7eb] font-medium text-sm">Send Logs</h2>
-          <span className="text-xs text-[#4b5563]">Auto-refreshes every 5s</span>
+          <span className="text-xs text-[#4b5563] hidden sm:block">Auto-refreshes every 5s</span>
         </div>
 
         {loadingLogs ? (
@@ -170,50 +170,72 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         ) : logs.length === 0 ? (
           <div className="p-6 text-sm text-[#6b7280]">No logs yet.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[#6b7280] text-xs border-b border-[#1e1e1e]">
-                  <th className="text-left px-5 py-2.5 font-medium">Contact</th>
-                  <th className="text-left px-4 py-2.5 font-medium">Email</th>
-                  <th className="text-center px-4 py-2.5 font-medium">Status</th>
-                  <th className="text-right px-4 py-2.5 font-medium">Sent</th>
-                  <th className="text-right px-4 py-2.5 font-medium">Opened</th>
-                  <th className="text-right px-5 py-2.5 font-medium">Replied</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id} className="border-b border-[#1a1a1a] hover:bg-[#161616]">
-                    <td className="px-5 py-2.5 text-[#e5e7eb]">
-                      {[log.contact.firstName, log.contact.lastName].filter(Boolean).join(' ') || '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-[#9ca3af]">{log.contact.email}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className="flex items-center justify-center gap-1.5">
+          <>
+            {/* Mobile: card list */}
+            <ul className="sm:hidden divide-y divide-[#1a1a1a]">
+              {logs.map(log => {
+                const name = [log.contact.firstName, log.contact.lastName].filter(Boolean).join(' ') || null
+                return (
+                  <li key={log.id} className="px-4 py-3 hover:bg-[#161616]">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-sm text-[#e5e7eb] truncate">{name ?? log.contact.email}</span>
+                      <span className="flex items-center gap-1 shrink-0">
                         <LogStatusDot status={log.status} />
-                        <span
-                          className="text-xs"
-                          style={{ color: LOG_STATUS_COLORS[log.status] }}
-                        >
-                          {log.status}
-                        </span>
+                        <span className="text-xs" style={{ color: LOG_STATUS_COLORS[log.status] }}>{log.status}</span>
                       </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-xs text-[#6b7280]">
-                      {log.sentAt ? new Date(log.sentAt).toLocaleTimeString() : '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-xs text-[#3b82f6]">
-                      {log.openedAt ? new Date(log.openedAt).toLocaleTimeString() : '—'}
-                    </td>
-                    <td className="px-5 py-2.5 text-right text-xs text-[#8b5cf6]">
-                      {log.repliedAt ? new Date(log.repliedAt).toLocaleTimeString() : '—'}
-                    </td>
+                    </div>
+                    {name && <div className="text-xs text-[#6b7280] mb-1.5 truncate">{log.contact.email}</div>}
+                    <div className="flex gap-3 text-xs flex-wrap">
+                      {log.sentAt && <span className="text-[#9ca3af]">Sent {new Date(log.sentAt).toLocaleTimeString()}</span>}
+                      {log.openedAt && <span className="text-[#3b82f6]">Opened {new Date(log.openedAt).toLocaleTimeString()}</span>}
+                      {log.repliedAt && <span className="text-[#8b5cf6]">Replied {new Date(log.repliedAt).toLocaleTimeString()}</span>}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+
+            {/* Desktop: full table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[#6b7280] text-xs border-b border-[#1e1e1e]">
+                    <th className="text-left px-5 py-2.5 font-medium">Contact</th>
+                    <th className="text-left px-4 py-2.5 font-medium">Email</th>
+                    <th className="text-center px-4 py-2.5 font-medium">Status</th>
+                    <th className="text-right px-4 py-2.5 font-medium">Sent</th>
+                    <th className="text-right px-4 py-2.5 font-medium">Opened</th>
+                    <th className="text-right px-5 py-2.5 font-medium">Replied</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} className="border-b border-[#1a1a1a] hover:bg-[#161616]">
+                      <td className="px-5 py-2.5 text-[#e5e7eb]">
+                        {[log.contact.firstName, log.contact.lastName].filter(Boolean).join(' ') || '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-[#9ca3af]">{log.contact.email}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className="flex items-center justify-center gap-1.5">
+                          <LogStatusDot status={log.status} />
+                          <span className="text-xs" style={{ color: LOG_STATUS_COLORS[log.status] }}>{log.status}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-[#6b7280]">
+                        {log.sentAt ? new Date(log.sentAt).toLocaleTimeString() : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-[#3b82f6]">
+                        {log.openedAt ? new Date(log.openedAt).toLocaleTimeString() : '—'}
+                      </td>
+                      <td className="px-5 py-2.5 text-right text-xs text-[#8b5cf6]">
+                        {log.repliedAt ? new Date(log.repliedAt).toLocaleTimeString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

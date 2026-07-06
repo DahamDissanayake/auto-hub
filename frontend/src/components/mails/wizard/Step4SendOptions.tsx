@@ -50,7 +50,7 @@ export function Step4SendOptions({ scheduledAt, ratePerHour, totalContacts, onCh
             type="datetime-local"
             value={scheduledAt?.slice(0, 16)}
             onChange={e => onChange(e.target.value, ratePerHour)}
-            className="bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e5e7eb] focus:outline-none focus:border-[#8b5cf6]"
+            className="w-full sm:w-auto bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e5e7eb] focus:outline-none focus:border-[#8b5cf6]"
           />
         </div>
       )}

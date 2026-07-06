@@ -86,7 +86,7 @@ export default function NewCampaignPage() {
   const isSubmitting = createCampaign.isPending || addContacts.isPending || launchCampaign.isPending
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/mails" className="text-[#6b7280] hover:text-[#e5e7eb]">
@@ -99,34 +99,40 @@ export default function NewCampaignPage() {
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-0">
-        {STEPS.map((label, i) => (
-          <div key={i} className="flex items-center">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
-                  i < step
-                    ? 'bg-[#8b5cf6] text-white'
-                    : i === step
-                    ? 'bg-[#8b5cf6]/20 border border-[#8b5cf6] text-[#8b5cf6]'
-                    : 'bg-[#1a1a1a] border border-[#333] text-[#4b5563]'
-                }`}
-              >
-                {i < step ? '✓' : i + 1}
+      <div>
+        <div className="flex items-center">
+          {STEPS.map((label, i) => (
+            <div key={i} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                    i < step
+                      ? 'bg-[#8b5cf6] text-white'
+                      : i === step
+                      ? 'bg-[#8b5cf6]/20 border border-[#8b5cf6] text-[#8b5cf6]'
+                      : 'bg-[#1a1a1a] border border-[#333] text-[#4b5563]'
+                  }`}
+                >
+                  {i < step ? '✓' : i + 1}
+                </div>
+                <span className={`hidden sm:block text-xs mt-1 text-center ${i === step ? 'text-[#e5e7eb]' : 'text-[#4b5563]'}`}>
+                  {label}
+                </span>
               </div>
-              <span className={`text-xs mt-1 ${i === step ? 'text-[#e5e7eb]' : 'text-[#4b5563]'}`}>
-                {label}
-              </span>
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-px mx-1 mb-0 sm:mb-4 ${i < step ? 'bg-[#8b5cf6]' : 'bg-[#333]'}`} />
+              )}
             </div>
-            {i < STEPS.length - 1 && (
-              <div className={`h-px w-12 mx-1 mb-4 ${i < step ? 'bg-[#8b5cf6]' : 'bg-[#333]'}`} />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Current step label on mobile */}
+        <p className="sm:hidden text-xs text-[#9ca3af] mt-2">
+          Step {step + 1} of {STEPS.length}: <span className="text-[#e5e7eb]">{STEPS[step]}</span>
+        </p>
       </div>
 
       {/* Step content */}
-      <div className="bg-[#111111] border border-[#222222] rounded-xl p-5">
+      <div className="bg-[#111111] border border-[#222222] rounded-xl p-4 sm:p-5">
         {step === 0 && (
           <>
             <Step1NameSender

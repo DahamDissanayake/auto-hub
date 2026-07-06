@@ -127,17 +127,17 @@ export function Step2UploadContacts({ onConfirm, onBack }: Props) {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={onBack}
-              className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg"
+              className="border border-[#333] text-[#9ca3af] hover:text-[#e5e7eb] px-4 py-2 rounded-lg text-sm"
             >
               Back
             </button>
             <button
               onClick={handleConfirm}
               disabled={confirmed}
-              className="px-4 py-2 bg-[#8b5cf6] text-white text-sm rounded-lg hover:bg-[#7c3aed] disabled:opacity-50"
+              className="flex-1 sm:flex-none px-4 py-2 bg-[#8b5cf6] text-white text-sm rounded-lg hover:bg-[#7c3aed] disabled:opacity-50"
             >
               {confirmed ? `✓ ${allRows.length} contacts loaded` : 'Confirm mapping'}
             </button>

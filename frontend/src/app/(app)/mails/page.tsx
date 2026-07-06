@@ -2,7 +2,7 @@
 import { useCampaigns, useDeleteCampaign } from '@/lib/hooks/useMails'
 import { mailsApi } from '@/lib/mails/api'
 import Link from 'next/link'
-import { Mail, Plus, Download, Trash2 } from 'lucide-react'
+import { Mail, Plus, Download, Trash2, Settings } from 'lucide-react'
 import type { Campaign } from '@/lib/mails/types'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -34,44 +34,47 @@ export default function MailsDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Mail size={20} className="text-[#8b5cf6]" />
           <h1 className="text-[#e5e7eb] text-lg font-semibold">Mails</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/mails/settings"
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs text-[#9ca3af] border border-[#222222] rounded-lg hover:border-[#8b5cf6] hover:text-[#8b5cf6] transition-colors"
+            title="Gmail Accounts"
+          >
+            <Settings size={13} />
+            <span className="hidden sm:inline">Accounts</span>
+          </Link>
           <a
             href={mailsApi.templateUrl}
             download
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#9ca3af] border border-[#222222] rounded-lg hover:border-[#8b5cf6] hover:text-[#8b5cf6] transition-colors"
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs text-[#9ca3af] border border-[#222222] rounded-lg hover:border-[#8b5cf6] hover:text-[#8b5cf6] transition-colors"
+            title="Download Excel Template"
           >
             <Download size={13} />
-            Excel Template
+            <span className="hidden sm:inline">Template</span>
           </a>
           <Link
             href="/mails/campaigns/new"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#8b5cf6] text-white rounded-lg hover:bg-[#7c3aed] transition-colors"
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs bg-[#8b5cf6] text-white rounded-lg hover:bg-[#7c3aed] transition-colors"
           >
             <Plus size={13} />
-            New Campaign
+            <span className="hidden sm:inline">New Campaign</span>
           </Link>
         </div>
       </div>
 
-      {/* Settings link */}
-      <div className="flex justify-end">
-        <Link href="/mails/settings" className="text-xs text-[#6b7280] hover:text-[#8b5cf6]">
-          Gmail Accounts →
-        </Link>
-      </div>
-
-      {/* Campaign table */}
+      {/* Campaign list */}
       <div className="bg-[#111111] border border-[#222222] rounded-xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#1e1e1e]">
+        <div className="px-4 sm:px-5 py-3.5 border-b border-[#1e1e1e]">
           <h2 className="text-[#e5e7eb] font-medium text-sm">Campaigns</h2>
         </div>
+
         {isLoading ? (
           <div className="p-8 text-center text-[#6b7280] text-sm">Loading…</div>
         ) : campaigns.length === 0 ? (
@@ -82,49 +85,90 @@ export default function MailsDashboard() {
             </Link>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[#6b7280] text-xs border-b border-[#1e1e1e]">
-                <th className="text-left px-5 py-2.5 font-medium">Campaign</th>
-                <th className="text-right px-4 py-2.5 font-medium">Sent</th>
-                <th className="text-right px-4 py-2.5 font-medium">Opened</th>
-                <th className="text-right px-4 py-2.5 font-medium">Replied</th>
-                <th className="text-right px-4 py-2.5 font-medium">Failed</th>
-                <th className="text-left px-4 py-2.5 font-medium">Status</th>
-                <th className="text-right px-4 py-2.5 font-medium">Date</th>
-                <th className="px-5 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Mobile: card list */}
+            <ul className="sm:hidden divide-y divide-[#1a1a1a]">
               {campaigns.map(c => (
-                <tr key={c.id} className="border-b border-[#1a1a1a] hover:bg-[#161616] transition-colors">
-                  <td className="px-5 py-3">
-                    <Link href={`/mails/campaigns/${c.id}`} className="text-[#e5e7eb] hover:text-[#8b5cf6]">
+                <li key={c.id} className="px-4 py-3 hover:bg-[#161616] transition-colors">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <Link
+                      href={`/mails/campaigns/${c.id}`}
+                      className="text-sm text-[#e5e7eb] font-medium hover:text-[#8b5cf6] truncate"
+                    >
                       {c.name}
                     </Link>
-                  </td>
-                  <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.sent ?? 0}</td>
-                  <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.opened ?? 0}</td>
-                  <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.replied ?? 0}</td>
-                  <td className="px-4 py-3 text-right text-[#ef4444]">{c.stats?.failed ?? 0}</td>
-                  <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                  <td className="px-4 py-3 text-right text-[#6b7280] text-xs">
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-right">
+                    <StatusBadge status={c.status} />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-[#9ca3af] mb-2">
+                    <span>{c.stats?.sent ?? 0} sent</span>
+                    <span>{c.stats?.opened ?? 0} opened</span>
+                    <span>{c.stats?.replied ?? 0} replied</span>
+                    {(c.stats?.failed ?? 0) > 0 && (
+                      <span className="text-[#ef4444]">{c.stats?.failed} failed</span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#6b7280]">
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </span>
                     <button
                       onClick={() => handleDelete(c)}
                       disabled={deleteCampaign.isPending}
-                      className="text-[#4b5563] hover:text-[#ef4444] transition-colors disabled:opacity-40"
+                      className="p-1 text-[#4b5563] hover:text-[#ef4444] transition-colors disabled:opacity-40"
                       title="Delete campaign"
                     >
                       <Trash2 size={14} />
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </li>
               ))}
-            </tbody>
-          </table>
+            </ul>
+
+            {/* Desktop: full table */}
+            <table className="hidden sm:table w-full text-sm">
+              <thead>
+                <tr className="text-[#6b7280] text-xs border-b border-[#1e1e1e]">
+                  <th className="text-left px-5 py-2.5 font-medium">Campaign</th>
+                  <th className="text-right px-4 py-2.5 font-medium">Sent</th>
+                  <th className="text-right px-4 py-2.5 font-medium">Opened</th>
+                  <th className="text-right px-4 py-2.5 font-medium">Replied</th>
+                  <th className="text-right px-4 py-2.5 font-medium">Failed</th>
+                  <th className="text-left px-4 py-2.5 font-medium">Status</th>
+                  <th className="text-right px-4 py-2.5 font-medium">Date</th>
+                  <th className="px-5 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {campaigns.map(c => (
+                  <tr key={c.id} className="border-b border-[#1a1a1a] hover:bg-[#161616] transition-colors">
+                    <td className="px-5 py-3">
+                      <Link href={`/mails/campaigns/${c.id}`} className="text-[#e5e7eb] hover:text-[#8b5cf6]">
+                        {c.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.sent ?? 0}</td>
+                    <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.opened ?? 0}</td>
+                    <td className="px-4 py-3 text-right text-[#9ca3af]">{c.stats?.replied ?? 0}</td>
+                    <td className="px-4 py-3 text-right text-[#ef4444]">{c.stats?.failed ?? 0}</td>
+                    <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                    <td className="px-4 py-3 text-right text-[#6b7280] text-xs">
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        onClick={() => handleDelete(c)}
+                        disabled={deleteCampaign.isPending}
+                        className="text-[#4b5563] hover:text-[#ef4444] transition-colors disabled:opacity-40"
+                        title="Delete campaign"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>

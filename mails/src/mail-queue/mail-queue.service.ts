@@ -61,13 +61,7 @@ export class MailQueueService implements OnModuleInit {
   // and return the cleaned HTML + nodemailer inline attachments.
   extractInlineImages(html: string): {
     html: string;
-    attachments: Array<{
-      cid: string;
-      filename: string;
-      content: Buffer;
-      contentType: string;
-      contentDisposition: 'inline';
-    }>;
+    attachments: Array<{ cid: string; content: Buffer; contentType: string }>;
   } {
     const attachments: ReturnType<typeof this.extractInlineImages>['attachments'] = [];
     let idx = 0;
@@ -80,10 +74,12 @@ export class MailQueueService implements OnModuleInit {
         const cid = `inline-img-${idx++}@mails`;
         attachments.push({
           cid,
-          filename: `image${idx}.${ext}`,
+          // No filename — a filename causes Gmail to list the image in the
+          // attachments panel even when Content-Disposition is inline.
           content: Buffer.from(b64.replace(/\s/g, ''), 'base64'),
           contentType: clean,
-          contentDisposition: 'inline',
+          // Let nodemailer handle Content-Disposition via the cid field;
+          // setting it explicitly along with a filename triggers the Gmail bug.
         });
         return `src="cid:${cid}"`;
       },

@@ -74,7 +74,7 @@ export function Step3Compose({ subject, bodyHtml, signature, onSubjectChange, on
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3 justify-end">
+      <div className="flex gap-3 justify-end pt-1">
         <button
           type="button"
           onClick={onBack}
