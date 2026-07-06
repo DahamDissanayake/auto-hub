@@ -1,5 +1,6 @@
 'use client'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import { Link } from '@tiptap/extension-link'
 import { Image } from '@tiptap/extension-image'
@@ -13,6 +14,31 @@ import {
   Link2, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Heading2, Heading3, Minus, Undo, Redo,
 } from 'lucide-react'
+
+// ── Image extension with width attribute ─────────────────────────────────────
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: el => el.getAttribute('width') || el.style.width || null,
+        renderHTML: ({ width }) => {
+          if (!width) return {}
+          return { width, style: `width:${width};max-width:100%` }
+        },
+      },
+    }
+  },
+})
+
+// ── Image size options (mirrors Gmail) ───────────────────────────────────────
+const IMG_SIZES = [
+  { label: 'Small',    width: '200px' },
+  { label: 'Medium',   width: '350px' },
+  { label: 'Large',    width: '500px' },
+  { label: 'Original', width: null    },
+] as const
 
 // ── Toolbar button ────────────────────────────────────────────────────────────
 function Btn({
@@ -146,6 +172,43 @@ function Toolbar({ editor, onImageUpload }: { editor: Editor; onImageUpload: () 
   )
 }
 
+// ── Image resize bubble menu ──────────────────────────────────────────────────
+function ImageBubble({ editor }: { editor: Editor }) {
+  const currentWidth: string | null = editor.getAttributes('image').width ?? null
+
+  return (
+    <BubbleMenu
+      editor={editor}
+      shouldShow={({ editor: ed }) => ed.isActive('image')}
+      options={{ placement: 'bottom-start', offset: 6 }}
+    >
+      <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-2 py-1.5 shadow-2xl">
+        <span className="text-[10px] text-[#6b7280] pr-1 select-none">Size:</span>
+        {IMG_SIZES.map(({ label, width }) => {
+          const isActive = currentWidth === width
+          return (
+            <button
+              key={label}
+              type="button"
+              onMouseDown={e => {
+                e.preventDefault()
+                editor.chain().focus().updateAttributes('image', { width }).run()
+              }}
+              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                isActive
+                  ? 'bg-[#8b5cf6] text-white'
+                  : 'text-[#9ca3af] hover:bg-[#333] hover:text-[#e5e7eb]'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </BubbleMenu>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 interface Props {
   content: string
@@ -154,7 +217,7 @@ interface Props {
   placeholder?: string
 }
 
-export function RichTextEditor({ content, onChange, minHeight = '220px', placeholder }: Props) {
+export function RichTextEditor({ content, onChange, minHeight = '220px' }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
@@ -162,12 +225,12 @@ export function RichTextEditor({ content, onChange, minHeight = '220px', placeho
       StarterKit,
       Underline,
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: true, allowBase64: true }),
+      ResizableImage.configure({ inline: true, allowBase64: true }),
       TextStyle,
       Color,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: content || `<p>${placeholder ? '' : ''}</p>`,
+    content: content || '<p></p>',
     onUpdate: ({ editor: ed }) => onChange(ed.getHTML()),
     editorProps: {
       attributes: {
@@ -195,9 +258,10 @@ export function RichTextEditor({ content, onChange, minHeight = '220px', placeho
   if (!editor) return null
 
   return (
-    <div className="border border-[#222] rounded-lg overflow-hidden focus-within:border-[#8b5cf6] transition-colors bg-[#0a0a0a]">
+    <div className="border border-[#222] rounded-lg overflow-visible focus-within:border-[#8b5cf6] transition-colors bg-[#0a0a0a]">
       <Toolbar editor={editor} onImageUpload={handleImageUpload} />
-      <div className="px-3 py-2 text-sm text-[#e5e7eb]" style={{ minHeight }}>
+      <ImageBubble editor={editor} />
+      <div className="px-3 py-2 text-sm text-[#e5e7eb] rounded-b-lg overflow-hidden" style={{ minHeight }}>
         <EditorContent editor={editor} />
       </div>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
