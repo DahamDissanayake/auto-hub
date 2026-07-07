@@ -135,6 +135,7 @@ services:
     command: tunnel run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+      TUNNEL_TRANSPORT_PROTOCOL: http2
     network_mode: host
     depends_on:
       - nginx

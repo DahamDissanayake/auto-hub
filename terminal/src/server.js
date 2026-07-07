@@ -10,6 +10,7 @@ const cp = require('child_process');
 const { getSessions, getSession, addSession, removeSession, updateLastActive } = require('./sessions');
 const { randomUUID } = require('crypto');
 const profiles = require('./profiles');
+const { setupProactiveRefresh } = profiles;
 
 function getClaudeAuthStatus() {
   try {
@@ -363,7 +364,7 @@ app.post('/claude-profiles/login/complete', (req, res) => {
   });
 });
 
-app.post('/claude-profiles/:name/activate', (req, res) => {
+app.post('/claude-profiles/:name/activate', async (req, res) => {
   if (!requireAuth(req, res)) return;
   const { name } = req.params;
 
@@ -374,7 +375,7 @@ app.post('/claude-profiles/:name/activate', (req, res) => {
     return res.status(404).json({ error: `Profile "${name}" not found` });
   }
   try {
-    profiles.activateProfile(name);
+    await profiles.activateProfile(name);
     // Kill running claude processes so they restart with the new credentials on next invocation
     try {
       cp.execFileSync('pkill', ['-x', 'claude'], { stdio: 'ignore' });
@@ -468,6 +469,7 @@ wss.on('connection', (ws, req) => {
 if (require.main === module) {
   profiles.bootstrapActiveProfile();
   profiles.setupCredentialWatcher();
+  setupProactiveRefresh();
   migrateProfileEmails();
 }
 

@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 const DATA_HOME = '/home/dama';
 const CLAUDE_DIR = path.join(DATA_HOME, '.claude');
@@ -64,7 +65,14 @@ function _writeCredentials(creds) {
   } finally {
     // fs.watch fires asynchronously; give it 500 ms to arrive before clearing
     // the flag so the debounce inside the watcher has time to see it.
-    setTimeout(() => { _credWriteInProgress = false; }, 500);
+    setTimeout(() => {
+      _credWriteInProgress = false;
+      // Claude may have refreshed its token during the lock window (common when
+      // activating a profile with an expired access token). The watcher skips
+      // events while _credWriteInProgress is true, so we do one final sync here
+      // to capture any refresh that slipped through.
+      setTimeout(updateActiveProfileCredentials, 3_000);
+    }, 500);
   }
 }
 
@@ -111,6 +119,20 @@ function setupCredentialWatcher() {
   } catch (err) {
     console.error(`[profiles] Failed to set up credential watcher: ${err.message}`);
   }
+
+  // Polling fallback: fs.watch can miss events on Docker bind mounts.
+  // Sync every 30 s to ensure no token refresh is ever permanently lost.
+  let _lastCredMtime = 0;
+  setInterval(() => {
+    if (_credWriteInProgress) return;
+    try {
+      const mtime = fs.statSync(CREDENTIALS_PATH).mtimeMs;
+      if (mtime !== _lastCredMtime) {
+        _lastCredMtime = mtime;
+        updateActiveProfileCredentials();
+      }
+    } catch { /* credentials file may not exist yet */ }
+  }, 30_000);
 }
 
 function bootstrapActiveProfile() {
@@ -120,8 +142,30 @@ function bootstrapActiveProfile() {
   if (!fs.existsSync(profilePath)) return;
   try {
     const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-    const { _oauthAccount, ...creds } = profile;
-    _writeCredentials(creds);
+    const { _oauthAccount, ...profileCreds } = profile;
+
+    // If the live credentials file has a newer token than what's stored in the
+    // profile (e.g. Claude refreshed right before the server restarted and the
+    // watcher missed it), preserve the live tokens rather than overwriting them
+    // with the stale snapshot from the profile file.
+    if (fs.existsSync(CREDENTIALS_PATH)) {
+      try {
+        const liveCreds = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+        const liveExpiry = liveCreds.claudeAiOauth?.expiresAt ?? 0;
+        const profileExpiry = profileCreds.claudeAiOauth?.expiresAt ?? 0;
+        if (liveExpiry > profileExpiry) {
+          const merged = { ...liveCreds, ...(_oauthAccount ? { _oauthAccount } : {}) };
+          const tmp = profilePath + '.tmp';
+          fs.writeFileSync(tmp, JSON.stringify(merged), 'utf8');
+          fs.renameSync(tmp, profilePath);
+          console.log(`[profiles] Bootstrap: live credentials are fresher, synced to "${meta.active}" (skipped overwrite)`);
+          if (_oauthAccount) writeClaudeJsonAccount(_oauthAccount);
+          return;
+        }
+      } catch { /* ignore – fall through to normal restore */ }
+    }
+
+    _writeCredentials(profileCreds);
     if (_oauthAccount) writeClaudeJsonAccount(_oauthAccount);
     console.log(`[profiles] Restored active profile: ${meta.active}`);
   } catch (err) {
@@ -159,7 +203,7 @@ function setProfileEmail(name, email) {
   }
 }
 
-function activateProfile(name) {
+async function activateProfile(name) {
   const meta = readMeta();
 
   // Snapshot live credentials back into the currently active profile before
@@ -169,6 +213,14 @@ function activateProfile(name) {
   if (meta.active && meta.active !== name) {
     updateActiveProfileCredentials();
   }
+
+  // Proactively refresh the target profile's tokens before activating.
+  // refreshProfileTokens is a no-op when tokens have > 30 min remaining,
+  // but it rescues profiles whose tokens expired while inactive (missed
+  // proactive-refresh cycle, server restart, etc.).  The profile file is
+  // written atomically by the refresh call, so the fs.readFileSync below
+  // always picks up the freshest credentials.
+  await refreshProfileTokens(name);
 
   const profilePath = path.join(PROFILES_DIR, `${name}.json`);
   const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
@@ -188,6 +240,164 @@ function deleteProfile(name) {
   writeMeta(meta);
 }
 
+// ---------------------------------------------------------------------------
+// Proactive OAuth token refresh for ALL profiles (active + inactive)
+// ---------------------------------------------------------------------------
+
+// Cache the OAuth client metadata (client_id + token_endpoint) so we don't
+// hammer the discovery endpoint on every refresh cycle.
+let _oauthClientMeta = null;
+let _oauthClientMetaAt = 0;
+
+function _httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { timeout: 10_000 }, (res) => {
+      let body = '';
+      res.on('data', (d) => { body += d; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+        } else {
+          try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+        }
+      });
+    }).on('error', reject).on('timeout', function () { this.destroy(new Error('timeout')); });
+  });
+}
+
+function _httpsPost(url, body, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const data = Buffer.from(body, 'utf8');
+    const req = https.request({
+      hostname: u.hostname,
+      port: 443,
+      path: u.pathname + u.search,
+      method: 'POST',
+      timeout: 15_000,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': data.length,
+        ...headers,
+      },
+    }, (res) => {
+      let buf = '';
+      res.on('data', (d) => { buf += d; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${buf}`));
+        } else {
+          try { resolve(JSON.parse(buf)); } catch (e) { reject(e); }
+        }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.write(data);
+    req.end();
+  });
+}
+
+async function _fetchOAuthClientMeta() {
+  const now = Date.now();
+  if (_oauthClientMeta && now - _oauthClientMetaAt < 3_600_000) return _oauthClientMeta;
+  try {
+    const meta = await _httpsGet('https://claude.ai/oauth/claude-code-client-metadata');
+    if (meta && meta.client_id) {
+      _oauthClientMeta = meta;
+      _oauthClientMetaAt = now;
+    }
+    return _oauthClientMeta;
+  } catch (err) {
+    console.error(`[profiles] Could not fetch OAuth client metadata: ${err.message}`);
+    return null;
+  }
+}
+
+// Refresh tokens for one profile using the OAuth refresh_token grant.
+// Returns true if tokens were refreshed and saved, false otherwise.
+async function refreshProfileTokens(profileName) {
+  const profilePath = path.join(PROFILES_DIR, `${profileName}.json`);
+  if (!fs.existsSync(profilePath)) return false;
+
+  let profile;
+  try { profile = JSON.parse(fs.readFileSync(profilePath, 'utf8')); } catch { return false; }
+
+  const oauth = profile.claudeAiOauth;
+  if (!oauth?.refreshToken) return false;
+
+  // Only refresh if token is missing an expiry or expires within 30 minutes.
+  if (oauth.expiresAt && oauth.expiresAt - Date.now() > 30 * 60_000) return false;
+
+  try {
+    const clientMeta = await _fetchOAuthClientMeta();
+    if (!clientMeta?.client_id) {
+      console.error(`[profiles] Cannot refresh "${profileName}": OAuth client_id unavailable`);
+      return false;
+    }
+
+    const tokenEndpoint = clientMeta.token_endpoint ?? 'https://platform.claude.com/v1/oauth/token';
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: oauth.refreshToken,
+      client_id: clientMeta.client_id,
+    }).toString();
+
+    const tokens = await _httpsPost(tokenEndpoint, body);
+
+    const updatedOauth = {
+      ...oauth,
+      accessToken: tokens.access_token,
+      expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+      // Capture rotated refresh token if the server issued a new one.
+      ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
+    };
+
+    const updated = { ...profile, claudeAiOauth: updatedOauth };
+    const tmp = profilePath + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(updated), 'utf8');
+    fs.renameSync(tmp, profilePath);
+    console.log(`[profiles] Proactively refreshed tokens for "${profileName}" (expires in ${Math.round((updatedOauth.expiresAt - Date.now()) / 60_000)} min)`);
+
+    // If this is the currently active profile, also update .credentials.json
+    // so the running Claude process picks up the new tokens immediately.
+    const m = readMeta();
+    if (m.active === profileName && !_credWriteInProgress) {
+      const { _oauthAccount, ...creds } = updated;
+      _writeCredentials(creds);
+    }
+
+    return true;
+  } catch (err) {
+    console.error(`[profiles] Token refresh failed for "${profileName}": ${err.message}`);
+    return false;
+  }
+}
+
+// Periodically refresh tokens for inactive profiles so they never grow so
+// stale that their refresh tokens rotate away.  Active profile is skipped —
+// Claude manages that itself.  Runs every 15 minutes; only touches profiles
+// whose token expires within 30 min.
+function setupProactiveRefresh() {
+  async function runRefreshCycle() {
+    const meta = readMeta();
+    for (const { name } of meta.profiles) {
+      // Claude manages the active profile's tokens — our refresh would race
+      // against Claude's own refresh grant and risk invalidating the refresh
+      // token it's about to use (rotating-token providers revoke the old RT
+      // the moment a new one is issued).
+      if (name === meta.active) continue;
+      await refreshProfileTokens(name);
+    }
+  }
+
+  // Run once shortly after startup (handles the stale-on-boot case).
+  setTimeout(() => { void runRefreshCycle(); }, 10_000);
+
+  setInterval(() => { void runRefreshCycle(); }, 15 * 60_000);
+  console.log('[profiles] Proactive token refresh scheduled (every 15 min)');
+}
+
 module.exports = {
   readMeta,
   writeMeta,
@@ -199,6 +409,8 @@ module.exports = {
   deleteProfile,
   updateActiveProfileCredentials,
   setupCredentialWatcher,
+  setupProactiveRefresh,
+  refreshProfileTokens,
   CREDENTIALS_PATH,
   CLAUDE_JSON_PATH,
   PROFILES_DIR,

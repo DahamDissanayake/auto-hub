@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as http from 'http';
 import * as fs from 'fs';
 import { statfs } from 'fs/promises';
-import { exec, spawn } from 'child_process'
+import { exec } from 'child_process'
 import { promisify } from 'util'
 
 const execAsync = promisify(exec)
@@ -544,72 +544,124 @@ export class DockerService {
   }
 
   async runSpeedTest(): Promise<SpeedTestResult> {
-    const SCRIPT = `
-import json, time, urllib.request, ssl
-ctx = ssl.create_default_context()
+    // Native Node implementation against Cloudflare's speed endpoints.
+    // The previous version shelled out to Python and required reading the
+    // full 25 MB body in one call, which threw IncompleteRead whenever the
+    // connection dropped mid-stream on a slow link. We instead time-box a
+    // streamed read and measure the bytes actually transferred, so a partial
+    // transfer still yields a valid result.
+    const DOWN = (bytes: number) =>
+      `https://speed.cloudflare.com/__down?bytes=${bytes}`
+    const UP = 'https://speed.cloudflare.com/__up'
 
-def fetch(url, data=None):
-    req = urllib.request.Request(url, data=data,
-        headers={'User-Agent': 'Mozilla/5.0',
-                 **(({'Content-Type': 'application/octet-stream'}) if data else {})})
-    with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
-        return r.read()
+    // Ping: best of a few tiny downloads. Individual samples that fail are
+    // skipped so one transient blip does not sink the measurement.
+    const measurePing = async (): Promise<number> => {
+      const samples: number[] = []
+      for (let i = 0; i < 5; i++) {
+        try {
+          const s = performance.now()
+          const res = await fetch(DOWN(1000))
+          await res.arrayBuffer()
+          samples.push(performance.now() - s)
+        } catch {
+          // ignore this sample
+        }
+      }
+      return samples.length ? Math.round(Math.min(...samples)) : 0
+    }
 
-def measure_ping():
-    t = []
-    for _ in range(3):
-        s = time.perf_counter()
-        fetch('https://speed.cloudflare.com/__down?bytes=1000')
-        t.append((time.perf_counter() - s) * 1000)
-    return round(min(t))
+    // Download: stream a large response for a fixed window and measure the
+    // bytes actually transferred. Timing starts on the first byte so
+    // connection setup does not skew the throughput figure. Retried a few
+    // times because a single connection reset on a slow link is common and
+    // should not fail the whole test.
+    const measureDownload = async (): Promise<number> => {
+      const WINDOW_MS = 8_000
+      let lastErr: unknown = null
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const controller = new AbortController()
+        const hardStop = setTimeout(() => controller.abort(), WINDOW_MS + 7_000)
+        let bytes = 0
+        let start = 0
+        try {
+          // 50 MB is the largest size Cloudflare's __down endpoint serves (it
+          // returns 403 above that); the 8 s window caps faster links anyway.
+          const res = await fetch(DOWN(50_000_000), { signal: controller.signal })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          if (!res.body) throw new Error('No response body')
+          const reader = res.body.getReader()
+          for (;;) {
+            const { done, value } = await reader.read()
+            if (done) break
+            if (value) {
+              if (start === 0) start = performance.now()
+              bytes += value.byteLength
+            }
+            if (start && performance.now() - start >= WINDOW_MS) {
+              void reader.cancel()
+              break
+            }
+          }
+        } catch (e) {
+          // Connection dropped: keep any bytes we did transfer as a sample.
+          lastErr = e
+        } finally {
+          clearTimeout(hardStop)
+        }
+        const elapsed = (performance.now() - start) / 1000
+        if (start !== 0 && bytes >= 200_000 && elapsed > 0) return (bytes * 8) / elapsed
+        await new Promise((r) => setTimeout(r, 500))
+      }
+      throw new Error(
+        `Download measurement failed${lastErr instanceof Error ? `: ${lastErr.message}` : ''}`,
+      )
+    }
 
-def measure_download():
-    s = time.perf_counter()
-    body = fetch('https://speed.cloudflare.com/__down?bytes=25000000')
-    return (len(body) * 8) / (time.perf_counter() - s)
+    // Upload: POST a fixed payload and measure how long it takes to drain.
+    const measureUpload = async (): Promise<number> => {
+      const payload = Buffer.alloc(10_000_000, 0x78) // 10 MB
+      let lastErr: unknown = null
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const controller = new AbortController()
+        const hardStop = setTimeout(() => controller.abort(), 30_000)
+        const start = performance.now()
+        try {
+          const res = await fetch(UP, {
+            method: 'POST',
+            body: payload,
+            headers: { 'Content-Type': 'application/octet-stream' },
+            signal: controller.signal,
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const elapsed = (performance.now() - start) / 1000
+          if (elapsed > 0) return (payload.byteLength * 8) / elapsed
+        } catch (e) {
+          lastErr = e
+        } finally {
+          clearTimeout(hardStop)
+        }
+        await new Promise((r) => setTimeout(r, 500))
+      }
+      throw new Error(
+        `Upload measurement failed${lastErr instanceof Error ? `: ${lastErr.message}` : ''}`,
+      )
+    }
 
-def measure_upload():
-    data = b'x' * 10_000_000
-    s = time.perf_counter()
-    fetch('https://speed.cloudflare.com/__up', data=data)
-    return (len(data) * 8) / (time.perf_counter() - s)
-
-try:
-    ping = measure_ping()
-    dl = measure_download()
-    ul = measure_upload()
-    print(json.dumps({'download': dl, 'upload': ul, 'ping': ping,
-                      'server': {'sponsor': 'Cloudflare', 'country': 'Global'}}))
-except Exception as e:
-    import sys; print(str(e), file=sys.stderr); sys.exit(1)
-`
-    const stdout = await new Promise<string>((resolve, reject) => {
-      const child = spawn('python3', ['-'], { timeout: 120_000 })
-      let out = ''
-      let err = ''
-      child.stdout.on('data', (d: Buffer) => { out += d.toString() })
-      child.stderr.on('data', (d: Buffer) => { err += d.toString() })
-      child.on('close', (code: number | null) => {
-        if (code === 0) resolve(out)
-        else reject(new Error(err.trim() || 'Speed test failed'))
-      })
-      child.on('error', (e: Error) => reject(new Error(`Speed test failed: ${e.message}`)))
-      child.stdin.write(SCRIPT)
-      child.stdin.end()
-    })
-
-    const data = JSON.parse(stdout) as {
-      download: number
-      upload: number
-      ping: number
-      server: { sponsor: string; country: string }
+    const ping = await measurePing()
+    const download = await measureDownload()
+    let upload = 0
+    try {
+      upload = await measureUpload()
+    } catch {
+      upload = 0 // Upload is best-effort; never fail the whole test on it.
     }
 
     return {
-      downloadMbps: parseFloat((data.download / 1_000_000).toFixed(2)),
-      uploadMbps: parseFloat((data.upload / 1_000_000).toFixed(2)),
-      pingMs: Math.round(data.ping),
-      server: `${data.server.sponsor}, ${data.server.country}`,
+      downloadMbps: parseFloat((download / 1_000_000).toFixed(2)),
+      uploadMbps: parseFloat((upload / 1_000_000).toFixed(2)),
+      pingMs: ping,
+      server: 'Cloudflare, Global',
     }
   }
 }

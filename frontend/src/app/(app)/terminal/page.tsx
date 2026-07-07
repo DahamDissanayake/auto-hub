@@ -23,7 +23,38 @@ type Step = 'loading' | 'session' | 'workspace' | 'repo' | 'clone' | 'terminal'
 
 const LAST_SESSION_KEY = 'autohub_last_terminal_session'
 type Workspace = 'home' | 'github' | 'auto-hub'
-type PasteFeedback = 'idle' | 'ok' | 'denied'
+type PasteFeedback = 'idle' | 'ok'
+type CopyFeedback = 'idle' | 'ok' | 'failed'
+
+// Writes text to the system clipboard. Tries the async Clipboard API first;
+// many non-Chromium / embedded mobile browsers (common on Termux-hosted
+// browser setups) never expose navigator.clipboard or reject it outside a
+// narrow user-gesture window, so we fall back to the legacy execCommand
+// path, which needs no permission and works in far more browsers.
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // fall through to legacy fallback below
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
 
 interface KeyDef {
   label: string
@@ -74,8 +105,9 @@ export default function TerminalPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [showSessionOverlay, setShowSessionOverlay] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
-  const [copyFeedback, setCopyFeedback] = useState(false)
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback>('idle')
   const [pasteFeedback, setPasteFeedback] = useState<PasteFeedback>('idle')
+  const [showPasteCatcher, setShowPasteCatcher] = useState(false)
   const [gridView, setGridView] = useState(false)
   const [showMdBrowser, setShowMdBrowser] = useState(false)
 
@@ -89,6 +121,7 @@ export default function TerminalPage() {
   const wsRef = useRef<WebSocket | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const selectModeRef = useRef(false)
+  const pasteCatcherRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => { selectModeRef.current = selectMode }, [selectMode])
 
@@ -253,9 +286,14 @@ export default function TerminalPage() {
       el.addEventListener('touchstart', onTouchStart, { passive: true })
       el.addEventListener('touchmove', onTouchMove, { passive: false })
 
-      // When selectMode is on, re-dispatch every mouse event with shiftKey=true so
-      // xterm.js bypasses tmux mouse-tracking and performs text selection instead.
-      // Single clicks still reach xterm (anchoring selection); drags extend it.
+      // Desktop: plain left-drag always performs local text selection — there's
+      // no mode toggle to think about. We re-dispatch every plain mouse event
+      // with shiftKey=true so xterm.js bypasses tmux/app mouse-tracking and
+      // selects text locally instead (xterm always honors Shift for this).
+      // Mobile keeps the explicit Select/Scroll toggle since touch has no
+      // Shift key to distinguish "select" from "scroll the pane".
+      const shouldReinject = () => (isMobile ? selectModeRef.current : true)
+
       let reinjecting = false
 
       const shiftClone = (type: string, src: MouseEvent) =>
@@ -268,8 +306,7 @@ export default function TerminalPage() {
         })
 
       const onCaptureMD = (e: MouseEvent) => {
-        if (reinjecting || e.shiftKey || e.button !== 0) return
-        if (!selectModeRef.current) return
+        if (reinjecting || e.shiftKey || e.button !== 0 || !shouldReinject()) return
         e.stopPropagation(); e.preventDefault()
         reinjecting = true
         ;(e.target as Element).dispatchEvent(shiftClone('mousedown', e))
@@ -277,8 +314,7 @@ export default function TerminalPage() {
       }
 
       const onCaptureMM = (e: MouseEvent) => {
-        if (reinjecting || e.shiftKey || !(e.buttons & 1)) return
-        if (!selectModeRef.current) return
+        if (reinjecting || e.shiftKey || !(e.buttons & 1) || !shouldReinject()) return
         e.stopPropagation(); e.preventDefault()
         reinjecting = true
         ;(e.target as Element).dispatchEvent(shiftClone('mousemove', e))
@@ -286,18 +322,26 @@ export default function TerminalPage() {
       }
 
       const onCaptureMU = (e: MouseEvent) => {
-        if (reinjecting || e.shiftKey || e.button !== 0) return
-        if (!selectModeRef.current) return
-        e.stopPropagation(); e.preventDefault()
-        reinjecting = true
-        ;(e.target as Element).dispatchEvent(shiftClone('mouseup', e))
-        reinjecting = false
-        // Auto-copy selection immediately — incoming PTY data clears it within ms
+        if (reinjecting) return
+        // Only reinject a plain (non-shift) release we intercepted at mousedown —
+        // a genuine Shift+drag is already native xterm selection, left untouched.
+        if (!e.shiftKey && e.button === 0 && shouldReinject()) {
+          e.stopPropagation(); e.preventDefault()
+          reinjecting = true
+          ;(e.target as Element).dispatchEvent(shiftClone('mouseup', e))
+          reinjecting = false
+        }
+        // Auto-copy whatever selection exists right now — runs regardless of
+        // whether this was our reinjected drag or a genuine Shift+drag, and
+        // fires immediately on release because a busy PTY (e.g. an app like
+        // Claude Code redrawing its UI) can clear the selection within ms,
+        // well before the user gets to click the separate Copy button.
         const sel = termRef.current?.getSelection()
         if (sel) {
-          navigator.clipboard.writeText(sel).catch(() => {})
-          setCopyFeedback(true)
-          setTimeout(() => setCopyFeedback(false), 1200)
+          copyToClipboard(sel).then(ok => {
+            setCopyFeedback(ok ? 'ok' : 'failed')
+            setTimeout(() => setCopyFeedback('idle'), ok ? 1200 : 2500)
+          })
         }
       }
 
@@ -333,29 +377,41 @@ export default function TerminalPage() {
     }
   }, [sessionName, isMobile])
 
-  const pasteFromClipboard = useCallback(async () => {
-    try {
-      const text = await navigator.clipboard.readText()
-      if (text && wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(text)
-        setPasteFeedback('ok')
-        setTimeout(() => setPasteFeedback('idle'), 1200)
-      }
-    } catch {
-      setPasteFeedback('denied')
-      setTimeout(() => setPasteFeedback('idle'), 2500)
+  const sendPasteText = useCallback((text: string) => {
+    if (text && wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(text)
+      setPasteFeedback('ok')
+      setTimeout(() => setPasteFeedback('idle'), 1200)
     }
   }, [])
+
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      if (!navigator.clipboard?.readText) throw new Error('unsupported')
+      const text = await navigator.clipboard.readText()
+      if (text) { sendPasteText(text); return }
+    } catch {
+      // Fall through to the manual fallback below — the async Clipboard
+      // read API is unsupported or denied on many non-Chromium / embedded
+      // mobile browsers (common on Termux-hosted browser setups), and once
+      // a browser has denied it once it often stays denied permanently.
+    }
+    setShowPasteCatcher(true)
+  }, [sendPasteText])
 
   const copySelection = useCallback(async () => {
     const term = termRef.current
     if (!term) return
     const text = term.getSelection()
     if (!text) return
-    await navigator.clipboard.writeText(text)
-    setCopyFeedback(true)
-    setTimeout(() => setCopyFeedback(false), 1200)
+    const ok = await copyToClipboard(text)
+    setCopyFeedback(ok ? 'ok' : 'failed')
+    setTimeout(() => setCopyFeedback('idle'), ok ? 1200 : 2500)
   }, [])
+
+  useEffect(() => {
+    if (showPasteCatcher) pasteCatcherRef.current?.focus()
+  }, [showPasteCatcher])
 
   // Custom scrollbar handlers — use xterm buffer API for metrics, term.scrollLines() for movement
   const handleTrackClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -689,13 +745,15 @@ export default function TerminalPage() {
             <button
               onClick={() => { void copySelection() }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
-                copyFeedback
+                copyFeedback === 'ok'
                   ? 'bg-[#10b981] text-white'
-                  : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#10b981]'
+                  : copyFeedback === 'failed'
+                    ? 'bg-[#b45309] text-white'
+                    : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#10b981]'
               }`}
             >
               <Clipboard size={11} />
-              {copyFeedback ? 'Copied!' : 'Copy'}
+              {copyFeedback === 'ok' ? 'Copied!' : copyFeedback === 'failed' ? 'Copy failed' : 'Copy'}
             </button>
 
             <button
@@ -703,17 +761,11 @@ export default function TerminalPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono select-none whitespace-nowrap shrink-0 transition-colors ${
                 pasteFeedback === 'ok'
                   ? 'bg-[#10b981] text-white'
-                  : pasteFeedback === 'denied'
-                    ? 'bg-[#b45309] text-white'
-                    : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6]'
+                  : 'bg-[#2a2a2a] text-[#e5e7eb] active:bg-[#3b82f6]'
               }`}
             >
               <ClipboardPaste size={11} />
-              {pasteFeedback === 'ok'
-                ? 'Pasted!'
-                : pasteFeedback === 'denied'
-                  ? 'Tap Allow ↑'
-                  : 'Paste'}
+              {pasteFeedback === 'ok' ? 'Pasted!' : 'Paste'}
             </button>
           </div>
         )}
@@ -721,37 +773,26 @@ export default function TerminalPage() {
         {!isMobile && (
           <div className="flex gap-1 px-2 py-1 items-center justify-end bg-[#1a1a1a] border-b border-[#2a2a2a] shrink-0">
             <button
-              onClick={() => setSelectMode(m => !m)}
-              title={selectMode ? 'Switch to normal mode (clicks go to tmux)' : 'Switch to select mode (click-drag to select text)'}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
-                selectMode
-                  ? 'bg-[#3b82f6] text-white'
-                  : 'bg-[#2a2a2a] text-[#9ca3af] hover:text-[#e5e7eb]'
-              }`}
-            >
-              <MousePointer size={11} /> {selectMode ? 'Select' : 'Normal'}
-            </button>
-            <button
               onClick={() => { void copySelection() }}
               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
-                copyFeedback
+                copyFeedback === 'ok'
                   ? 'bg-[#10b981] text-white'
-                  : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
+                  : copyFeedback === 'failed'
+                    ? 'bg-[#b45309] text-white'
+                    : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
               }`}
             >
-              <Clipboard size={11} /> {copyFeedback ? 'Copied!' : 'Copy'}
+              <Clipboard size={11} /> {copyFeedback === 'ok' ? 'Copied!' : copyFeedback === 'failed' ? 'Copy failed' : 'Copy'}
             </button>
             <button
               onClick={() => { void pasteFromClipboard() }}
               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono select-none transition-colors ${
                 pasteFeedback === 'ok'
                   ? 'bg-[#10b981] text-white'
-                  : pasteFeedback === 'denied'
-                    ? 'bg-[#b45309] text-white'
-                    : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
+                  : 'bg-[#2a2a2a] text-[#e5e7eb] hover:bg-[#3a3a3a]'
               }`}
             >
-              <ClipboardPaste size={11} /> {pasteFeedback === 'ok' ? 'Pasted!' : pasteFeedback === 'denied' ? 'Allow paste ↑' : 'Paste'}
+              <ClipboardPaste size={11} /> {pasteFeedback === 'ok' ? 'Pasted!' : 'Paste'}
             </button>
           </div>
         )}
@@ -792,6 +833,40 @@ export default function TerminalPage() {
                 onOpen={session => { setShowSessionOverlay(false); handleSessionOpen(session) }}
                 onNew={name => { setPendingName(name); setShowSessionOverlay(false); setStep('workspace') }}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Fallback paste target for browsers without a working async Clipboard
+            read API. A native OS paste into a focused field fires a real
+            'paste' DOM event with no special permission required, so this
+            works even where navigator.clipboard.readText() never will. */}
+        {showPasteCatcher && (
+          <div
+            className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center"
+            onClick={() => setShowPasteCatcher(false)}
+          >
+            <div onClick={e => e.stopPropagation()} className="flex flex-col gap-2 items-center px-4">
+              <p className="text-xs text-[#9ca3af] text-center">
+                Long-press the box below and choose Paste
+              </p>
+              <textarea
+                ref={pasteCatcherRef}
+                placeholder="Paste here…"
+                className="w-72 h-20 p-2 rounded bg-[#1a1a1a] text-[#e5e7eb] text-sm font-mono border border-[#3b82f6] outline-none resize-none"
+                onPaste={e => {
+                  e.preventDefault()
+                  const text = e.clipboardData?.getData('text/plain') ?? ''
+                  setShowPasteCatcher(false)
+                  if (text) sendPasteText(text)
+                }}
+              />
+              <button
+                onClick={() => setShowPasteCatcher(false)}
+                className="px-3 py-1 text-xs bg-[#2a2a2a] text-[#e5e7eb] rounded hover:bg-[#3a3a3a] transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}
