@@ -34,3 +34,6 @@ plugins/
 !backend/plugins/
 # .superpowers
 nginx/htpasswd
+
+# stray tmux capture logs
+tmux-*.log

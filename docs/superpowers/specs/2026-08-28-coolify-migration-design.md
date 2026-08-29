@@ -371,3 +371,41 @@ Nothing destructive touches the data volumes or the tunnel, so rollback is quick
 - Moving n8n's database out of the shared Postgres.
 - Multi-server / remote deploy targets in Coolify.
 - CI beyond Coolify's built-in git-push deploy.
+
+---
+
+## 15. As-built notes (2026-08-29)
+
+The migration ran but several design assumptions did not survive contact with Coolify 4.3.14.
+What actually shipped:
+
+- **Coolify's Docker Compose build pack rewrites the compose.** It ignores `external: true` and
+  namespaces every named volume as `<resource-uuid>_<name>` (`_`→`-`), and it rewrites
+  repo-relative bind mounts to empty dirs on disk. So the D3 "external volumes" plan did not
+  work.
+  - Fix: `nginx` now `build: ./nginx` — `nginx/Dockerfile` bakes in `nginx.conf` and generates
+    `/etc/nginx/htpasswd` from the `ADMIN_PASSWORD` build arg (`nginx/htpasswd` is gitignored).
+    The `/n8n/` basic-auth user is `admin`, password = `ADMIN_PASSWORD`.
+  - Fix: dropped the `./backend/plugins` bind mount — `backend/Dockerfile` already `COPY`s
+    `plugins/` and nothing writes them at runtime.
+  - Data: the real `auto-hub_*` volume contents were copied into Coolify's
+    `nk2lie8pkqrahkdxutemmhlw_{postgres-data,n8n-data,mails-data}` volumes. **Recreating the
+    Coolify `auto-hub` resource changes the UUID and needs the copy redone.**
+- **The Coolify installer overwrote `/etc/docker/daemon.json`** and dropped `data-root`, so
+  Docker reverted to `/var/lib/docker` (SD card). Restored: `data-root` back to
+  `/mnt/data/docker`, `/var/lib/docker` contents rsynced onto it, plus a drop-in
+  `/etc/systemd/system/docker.service.d/10-wait-for-ssd.conf` (`RequiresMountsFor=/mnt/data`)
+  so a slow boot can't start Docker before the SSD mounts.
+- **`/data/coolify`** is a symlink to `/mnt/data/coolify`.
+- **Instance/app domains use the `http://` scheme in Coolify** (not `https://`). With
+  `https://`, Coolify makes Traefik force http→https and the tunnel (plain-HTTP origin) loops
+  forever. Cloudflare SSL/TLS mode stays **Full**; the edge does TLS.
+- **Coolify's DNS validation** flags `autohub.<domain>` (resolves to Cloudflare IPs, not the
+  Pi) and `www.` (no record) — both expected with a tunnel; bypass the warning, set redirect
+  to non-www.
+- **`frontend/package-lock.json`** was out of sync with `package.json` (`sharp` missing) — a
+  latent bug that only surfaced on Coolify's clean `npm ci`. Regenerated.
+- Retired: `scripts/{install,deploy,watchdog}.sh` and the `auto-hub*.service` /
+  `auto-hub-watchdog.*` systemd units. Coolify owns deploy + lifecycle now.
+- Pre-migration backups kept at `/mnt/data/backups/pre-coolify-2026-08-28/` and
+  `/mnt/data/_preserve_volumes/`.

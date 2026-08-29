@@ -22,14 +22,18 @@ A self-hosted personal automation OS built for Raspberry Pi 5. AutoHub bundles a
 
 ```
 Browser
-  └─► Nginx (port 80)
-        ├─► /api/         → Backend  (NestJS)
-        ├─► /n8n/         → n8n
-        ├─► /terminal-ws/ → Terminal (node-pty WS)
-        ├─► /files-api/   → Files service
-        └─► /             → Frontend (Next.js)
+  └─► Cloudflare Tunnel → Coolify Traefik (:80/:443)
+        ├─► coolify.<domain>  → Coolify dashboard
+        └─► autohub.<domain>  → Nginx
+              ├─► /api/         → Backend  (NestJS)
+              ├─► /n8n/         → n8n
+              ├─► /terminal-ws/ → Terminal (node-pty WS)
+              ├─► /files-api/   → Files service
+              ├─► /mails-api/   → Mails service
+              └─► /             → Frontend (Next.js)
 
-Cloudflare Tunnel → Nginx   (public HTTPS, no port-forwarding)
+Public HTTPS via the tunnel, no port-forwarding. cloudflared and the AutoHub
+stack both run as Coolify resources.
 ```
 
 ### Services
@@ -43,8 +47,10 @@ Cloudflare Tunnel → Nginx   (public HTTPS, no port-forwarding)
 | `frontend` | `./frontend` | Next.js 14 app |
 | `terminal` | `./terminal` | WebSocket PTY server |
 | `files` | `./files` | File browser API |
-| `nginx` | nginx:alpine | Reverse proxy |
-| `cloudflared` | cloudflare/cloudflared | Cloudflare Tunnel connector |
+| `mails` | `./mails` | Mail app API (SQLite) |
+| `nginx` | `./nginx` | Reverse proxy (config + htpasswd baked in) |
+
+`cloudflared` (Cloudflare Tunnel connector) runs as a separate Coolify resource, not in this compose file.
 
 ### Technology Stack
 
@@ -96,29 +102,32 @@ nano .env
 
 Fill in every variable (see [Environment Variables](#environment-variables) below).
 
-### 3. Build and start
+### 3. Deploy
 
-```bash
-docker compose up -d --build
-```
+The stack runs on **Coolify** (self-hosted PaaS). See [Deployment](#deployment) for the
+full setup — in short:
 
-The first build takes 5–10 minutes on a Pi 5. Once complete:
+1. Install Coolify on the Pi and open its dashboard.
+2. Add AutoHub as a **Docker Compose** resource pointed at this repo / `main` / `docker-compose.yml`.
+3. Put the `.env` values in the resource's Environment Variables.
+4. Set the `nginx` service's domain to `http://<your-host>` (SSL off — the Cloudflare
+   edge terminates TLS), leave the other services blank.
+5. Deploy. First build takes ~15–20 min on a Pi 5 (5 images).
 
-```bash
-docker compose ps          # all services should show "running"
-curl http://localhost/api/health   # should return {"status":"ok"}
-```
+A local `docker compose up -d --build` from this directory still works for development, but
+the production stack is Coolify-managed.
 
 ### 4. Set up Cloudflare Tunnel
 
-1. Go to **Cloudflare Zero Trust → Networks → Tunnels → Create a tunnel**
-2. Name it `autohub`, save, and copy the tunnel token (the long `eyJ...` string)
-3. Add the token to `.env` as `CLOUDFLARE_TUNNEL_TOKEN=`
-4. In the tunnel's **Public Hostname** settings, add:
-   - **Subdomain:** `autohub` (or any prefix you like)
-   - **Domain:** `yourdomain.com`
-   - **Type:** HTTP, **URL:** `localhost:80`
-5. Restart cloudflared: `docker compose up -d cloudflared`
+`cloudflared` runs as its own Coolify **Docker Compose** resource (host network, just the
+`TUNNEL_TOKEN`), so it stays up independently of AutoHub redeploys.
+
+1. **Cloudflare Zero Trust → Networks → Tunnels** → create a tunnel, copy its token.
+2. Add a `cloudflared` Coolify resource with `TUNNEL_TOKEN` set to that value.
+3. In the tunnel's **Public Hostname** settings, add:
+   - **Subdomain:** `autohub` · **Domain:** `yourdomain.com`
+   - **Type:** HTTP · **URL:** `localhost:80` (Coolify's Traefik) · **HTTP Host Header:** the full hostname
+4. Ensure Cloudflare **SSL/TLS mode = Full**.
 
 Visit `https://autohub.yourdomain.com` — you should reach the login screen.
 
@@ -221,59 +230,48 @@ The web terminal connects over WebSocket to a `node-pty` process running inside 
 
 ---
 
-## Scripts
+## Deployment
 
-| Script | Usage |
-|---|---|
-| `scripts/install.sh` | One-shot installer: installs Docker if missing, clones repo, prompts for `.env`, builds stack |
-| `scripts/deploy.sh [service...]` | Rebuild and redeploy all services or specific ones without downtime |
-| `scripts/watchdog.sh` | Checks all containers; runs `docker compose up -d` if any are not running — set as a cron job |
+The Pi runs **Coolify**; AutoHub and `cloudflared` are Coolify resources.
 
-### Watchdog cron (recommended)
-
-```bash
-crontab -e
-# Add:
-*/5 * * * * /home/dama/repo/auto-hub/scripts/watchdog.sh >> /var/log/autohub-watchdog.log 2>&1
-```
-
----
-
-## Updating
-
-```bash
-cd ~/auto-hub
-git pull
-docker compose up -d --build
-```
-
-Only changed images are rebuilt. Database and plugin volumes are preserved.
+- **Host / dashboard:** Coolify manages the Docker stack. Reach it at `https://coolify.<your-domain>`.
+- **Deploy a change:** push to `main` (Coolify auto-deploys) or click **Redeploy** on the
+  `auto-hub` resource. First build ~15–20 min on a Pi 5; later builds reuse the layer cache.
+- **Env vars:** set on the `auto-hub` resource in Coolify — not a committed `.env`.
+- **Public access:** Cloudflare Tunnel → Coolify Traefik → the stack's `nginx`
+  (`autohub.<your-domain>`). Traefik owns host ports 80/443.
+- **nginx config:** `nginx.conf` and the `/n8n/` basic-auth `htpasswd` are baked into a small
+  image at build (`nginx/Dockerfile`; htpasswd is generated from `ADMIN_PASSWORD`, user `admin`).
+  Editing `nginx.conf` now needs a redeploy, not a hot reload.
+- **Docker data-root** is `/mnt/data/docker` (SSD); a `docker.service` drop-in waits for that
+  mount at boot.
+- **Data:** Postgres / n8n / mails live in Coolify-managed volumes named
+  `<resource-uuid>_{postgres-data,n8n-data,mails-data}`. They survive redeploys; recreating the
+  Coolify resource changes the UUID and would need a data copy.
+- **Migration record:** `docs/superpowers/specs/2026-08-28-coolify-migration-design.md`.
 
 ---
 
 ## Day-to-day commands
 
+Container names are Coolify-generated (`nginx-<uuid>-<n>`, …); use `docker` directly or the
+Coolify UI (Logs / Terminal / Restart per service).
+
 ```bash
-# Check container status
-docker compose ps
+# Status of the whole stack
+docker ps --format '{{.Names}}\t{{.Status}}' | grep -v coolify
 
-# Tail all logs
-docker compose logs -f
+# Tail one service's logs (tab-complete the name)
+docker logs -f "$(docker ps -qf name=backend-)"
 
-# Tail a single service
-docker compose logs -f backend
+# Restart one service
+docker restart "$(docker ps -qf name=backend-)"
 
-# Rebuild and redeploy specific services
-./scripts/deploy.sh backend frontend
-
-# Restart a single service
-docker compose restart backend
-
-# Open a shell in the backend container
-docker compose exec backend sh
+# Shell into a service
+docker exec -it "$(docker ps -qf name=backend-)" sh
 
 # Check the database
-docker compose exec postgres psql -U autohub -d autohub
+docker exec -it "$(docker ps -qf name=postgres-)" psql -U autohub -d autohub
 ```
 
 ---
@@ -289,15 +287,15 @@ docker compose logs frontend
 
 **Backend health check fails**
 ```bash
-docker compose logs backend
+docker logs "$(docker ps -qf name=backend-)"
 # Check DATABASE_URL and REDIS_URL are reachable
-docker compose exec backend sh -c 'echo $DATABASE_URL'
+docker exec "$(docker ps -qf name=backend-)" sh -c 'echo $DATABASE_URL'
 ```
 
 **`cloudflared` keeps restarting**
 ```bash
-docker compose logs cloudflared
-# CLOUDFLARE_TUNNEL_TOKEN is likely missing or malformed in .env
+docker logs "$(docker ps -qf name=cloudflared)"
+# TUNNEL_TOKEN is likely missing or malformed on the cloudflared Coolify resource
 ```
 
 **OTP never arrives on Telegram**
@@ -309,10 +307,7 @@ curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
 ```
 
 **Wipe everything and start fresh (destructive — deletes DB)**
-```bash
-docker compose down -v
-docker compose up -d --build
-```
+In Coolify: stop the `auto-hub` resource, delete its `*-data` volumes, redeploy.
 
 ---
 
@@ -324,8 +319,7 @@ auto-hub/
 ├── frontend/         # Next.js 14 app
 ├── terminal/         # WebSocket PTY server + Claude Code profile manager
 ├── files/            # File browser API
-├── nginx/            # nginx.conf and htpasswd
-├── scripts/          # install.sh, deploy.sh, watchdog.sh
+├── nginx/            # Dockerfile + nginx.conf (htpasswd generated at build)
 ├── dev-logs/         # Setup guides and test notes
 └── docker-compose.yml
 ```
